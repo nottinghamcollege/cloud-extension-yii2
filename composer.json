@@ -1,0 +1,17 @@
+{
+  "name": "craftcms/cloud-extension",
+  "type": "yii2-extension",
+  "require": {
+    "craftcms/cms": "^4.2.7",
+    "yiisoft/yii2-redis": "^2.0",
+    "yiisoft/yii2-queue": "^2.3"
+  },
+  "autoload": {
+    "psr-4": {
+      "craft\\cloud\\": "src/"
+    }
+  },
+  "extra": {
+    "bootstrap": "craft\\cloud\\Module"
+  }
+}
