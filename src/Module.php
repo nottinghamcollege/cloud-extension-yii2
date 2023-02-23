@@ -12,31 +12,34 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     public function bootstrap($app): void
     {
         $app->setComponents([
-            'cache' => fn() => Craft::createObject([
+            'cache' => [
                 'class' => \yii\redis\Cache::class,
                 'redis' => self::getRedisConfig(),
-                // 'keyPrefix' => 'cache_',
+                'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
+                // 'keyPrefix' => 'cache/',
                 // 'shareDatabase' => false,
-            ]),
-            'session' => fn() => Craft::createObject([
+            ],
+            'session' => [
                 'class' => \yii\redis\Session::class,
                 'redis' => self::getRedisConfig(),
-            ] + App::sessionConfig()),
-            'mutex' => fn() => Craft::createObject([
+                // 'keyPrefix' => 'session/',
+            ] + App::sessionConfig(),
+            'mutex' => [
                 'class' => \craft\mutex\Mutex::class,
                 'mutex' => [
-                    'class' => \yii\redis\Mutex::class,
+                    'class' => \craft\cloud\Mutex::class,
                     'redis' => self::getRedisConfig(),
+                    // 'keyPrefix' => 'mutex/'
                     // 'expire' => Craft::$app->request->isConsoleRequest ? 900 : 30,
                 ],
-            ]),
-            'queue' => Craft::createObject([
+            ],
+            'queue' => [
                 'class' => \craft\queue\Queue::class,
                 'proxyQueue' => [
                     'class' => \yii\queue\sqs\Queue::class,
                     'url' => '',
                 ],
-            ]),
+            ],
         ]);
     }
 

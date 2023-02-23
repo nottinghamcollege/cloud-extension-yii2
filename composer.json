@@ -1,5 +1,5 @@
 {
-  "name": "craftcms/cloud-extension",
+  "name": "craftcms/cloud",
   "type": "yii2-extension",
   "require": {
     "craftcms/cms": "^4.2.7",
