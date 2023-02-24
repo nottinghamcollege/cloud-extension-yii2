@@ -2,7 +2,10 @@
 namespace craft\cloud;
 
 use Craft;
+use craft\events\RegisterComponentTypesEvent;
 use craft\helpers\App;
+use craft\services\Fs as FsService;
+use yii\base\Event;
 
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 {
@@ -17,6 +20,20 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
      */
     public function bootstrap($app): void
     {
+        Event::on(FsService::class, FsService::EVENT_REGISTER_FILESYSTEM_TYPES, function(RegisterComponentTypesEvent $event) {
+            $event->types[] = Fs::class;
+        });
+
+        // Craft::$container->setDefinitions([
+        //     \craft\debug\Module::class => [
+        //         'class' => \craft\debug\Module::class,
+        //         'fs' => Craft::createObject([
+        //             'class' => Fs
+        //         ]),
+        //         'dataPath' => 'debug',
+        //     ]
+        // ]);
+
         if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
             $app->setComponents([
                 'session' => [
@@ -48,21 +65,21 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                         : self::MUTEX_EXPIRE_WEB,
                 ],
             ],
-            'queue' => [
-                'class' => \craft\queue\Queue::class,
-                'proxyQueue' => [
-                    'class' => \yii\queue\sqs\Queue::class,
-                    'url' => App::env('CRAFT_CLOUD_SQS_URL'),
-                ],
-            ],
+            // 'queue' => [
+            //     'class' => \craft\queue\Queue::class,
+            //     'proxyQueue' => [
+            //         'class' => \yii\queue\sqs\Queue::class,
+            //         'url' => App::env('CRAFT_CLOUD_SQS_URL'),
+            //     ],
+            // ],
         ]);
     }
 
     public static function getRedisConfig(): array
     {
         return [
-            'hostname' => App::env('REDIS_HOSTNAME') ?? 'localhost',
-            'port' => App::env('REDIS_PORT') ?? 6379,
+            'hostname' => App::env('CRAFT_CLOUD_REDIS_HOSTNAME') ?? 'localhost',
+            'port' => App::env('CRAFT_CLOUD_REDIS_PORT') ?? 6379,
         ];
     }
 }
