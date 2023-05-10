@@ -1,0 +1,24 @@
+
+{% import "_includes/forms" as forms %}
+
+{{ forms.autosuggestField({
+    label: "Subfolder"|t('aws-s3'),
+    instructions: "If you want to use a bucket’s subfolder as a fs, specify the path to use here."|t('aws-s3'),
+    id: 'subfolder',
+    class: 'ltr',
+    name: 'subfolder',
+    suggestEnvVars: true,
+    value: fs.subfolder,
+    errors: fs.getErrors('subfolder'),
+    placeholder: "path/to/subfolder"|t('aws-s3')
+}) }}
+
+{{ forms.lightswitchField({
+    label: "Make Uploads Public"|t('aws-s3'),
+    instructions: "Required for .",
+    id: 'makeUploadsPublic',
+    name: 'makeUploadsPublic',
+    on: fs.makeUploadsPublic
+}) }}
+
+<hr />
