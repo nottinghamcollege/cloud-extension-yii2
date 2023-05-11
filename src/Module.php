@@ -95,7 +95,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
     }
 
-
     protected function isCraftCloud(): bool
     {
         // TODO: should this be a dedicated env var?
