@@ -1,17 +1,22 @@
 <?php
 namespace craft\cloud;
 
+use Aws\Credentials\Credentials;
+use Aws\S3\S3Client;
 use Craft;
+use craft\base\Event as Event;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
+use craft\web\Response;
 use craft\web\View;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Uri;
 use League\Uri\UriTemplate;
-use yii\base\Event;
+use yii\base\Application as BaseApplication;
+use yii\base\Event as YiiEvent;
 
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 {
@@ -89,16 +94,25 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                     'fs' => Craft::createObject([
                         'class' => Fs::class,
                     ]),
-                    'dataPath' => 'debug',
+                    'dataPath' => sprintf('%s/storage/debug', App::env('CRAFT_CLOUD_ENVIRONMENT_ID')),
                 ]
             ]);
+
+            // TODO: check full list with Cloudflare
+            Craft::$container->setDefinitions([
+                \craft\services\Images::class => [
+                    'class' => \craft\services\Images::class,
+                    'supportedImageFormats' => ['jpg', 'jpeg', 'gif', 'png', 'heic'],
+                ]
+            ]);
+
         }
     }
 
     protected function isCraftCloud(): bool
     {
         // TODO: should this be a dedicated env var?
-        return (bool) App::env('CRAFT_CLOUD_BUILD_ID');
+        return (bool) App::env('AWS_LAMBDA_RUNTIME_API');
     }
 
     protected static function getCdnUrl(string $path = ''): UriInterface
@@ -168,6 +182,45 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
             function(RegisterTemplateRootsEvent $e) {
                 $e->roots[$this->id] = sprintf('%s/templates', $this->getBasePath());
+            }
+        );
+
+        Event::once(
+            Response::class,
+            \yii\web\Response::EVENT_BEFORE_SEND,
+            function (YiiEvent $event) {
+
+                /** @var Response $response */
+                $response = $event->sender;
+
+                if (!$response->stream) {
+                    return;
+                }
+
+                $fs = new Fs();
+                $stream = $response->stream[0];
+                $path = sprintf('%s/storage/tmp/%s', App::env('CRAFT_CLOUD_ENVIRONMENT_ID'), uniqid('', true));
+
+                // TODO: set expiry
+                $fs->writeFileFromStream($path, $stream);
+                $s3Client = new S3Client([
+                    'credentials' => new Credentials(
+                        App::env('AWS_ACCESS_KEY_ID'),
+                        App::env('AWS_SECRET_ACCESS_KEY')
+                    ),
+                    'version' => 'latest',
+                    'region' => App::env('AWS_REGION'),
+                ]);
+
+                $cmd = $s3Client->getCommand('GetObject', [
+                    'Bucket' => App::env('CRAFT_CLOUD_PROJECT_ID'),
+                    'Key' => $path,
+                    'ResponseContentDisposition' => $response->getHeaders()->get('content-disposition'),
+                ]);
+
+                $s3Request = $s3Client->createPresignedRequest($cmd, '+20 minutes');
+                $url = (string) $s3Request->getUri();
+                $response->redirect($url);
             }
         );
     }
