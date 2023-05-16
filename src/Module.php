@@ -5,6 +5,7 @@ use Aws\Credentials\Credentials;
 use Aws\S3\S3Client;
 use Craft;
 use craft\base\Event as Event;
+use craft\cloud\console\controllers\CloudController;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
@@ -15,7 +16,6 @@ use craft\web\View;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Uri;
 use League\Uri\UriTemplate;
-use yii\base\Application as BaseApplication;
 use yii\base\Event as YiiEvent;
 
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
@@ -26,12 +26,37 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     public const MUTEX_EXPIRE_WEB = 30;
     public const MUTEX_EXPIRE_CONSOLE = 900;
 
+    public function __construct($id, $parent = null, $config = [])
+    {
+        // dd($id);
+        parent::__construct($id, $parent, $config);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function init(): void
+    {
+        $this->registerEventHandlers();
+        $this->setDefinitions();
+
+        $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
+            ? 'craft\\cloud\\console\\controllers'
+            : 'craft\\cloud\\controllers';
+
+        parent::init();
+    }
+
     /**
      * @inheritDoc
      */
     public function bootstrap($app): void
     {
-        $this->registerEventHandlers();
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+            $app->controllerMap['cloud'] = [
+                'class' => CloudController::class,
+            ];
+        }
 
         $app->setAliases([
             '@craftCloudAssetBaseUrl' => self::getAssetUrl(),
@@ -83,30 +108,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         //         ],
         //     ],
         // ]);
-
-        // When the module is resolved, the module config is merged into the definition,
-        // so we can't override anything set in \craft\web\Application::debugBootstrap
-        // or config/debug.php
-        if ($this->isCraftCloud()) {
-            Craft::$container->setDefinitions([
-                \craft\debug\Module::class => [
-                    'class' => \craft\debug\Module::class,
-                    'fs' => Craft::createObject([
-                        'class' => Fs::class,
-                    ]),
-                    'dataPath' => sprintf('%s/storage/debug', App::env('CRAFT_CLOUD_ENVIRONMENT_ID')),
-                ]
-            ]);
-
-            // TODO: check full list with Cloudflare
-            Craft::$container->setDefinitions([
-                \craft\services\Images::class => [
-                    'class' => \craft\services\Images::class,
-                    'supportedImageFormats' => ['jpg', 'jpeg', 'gif', 'png', 'heic'],
-                ]
-            ]);
-
-        }
     }
 
     protected function isCraftCloud(): bool
@@ -222,5 +223,31 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 $response->redirect($url);
             }
         );
+    }
+
+    public function setDefinitions(): void
+    {
+        // When the module is resolved, the module config is merged into the definition,
+        // so we can't override anything set in \craft\web\Application::debugBootstrap
+        // or config/debug.php
+        if ($this->isCraftCloud()) {
+            Craft::$container->setDefinitions([
+                \craft\debug\Module::class => [
+                    'class' => \craft\debug\Module::class,
+                    'fs' => Craft::createObject([
+                        'class' => Fs::class,
+                    ]),
+                    'dataPath' => sprintf('%s/storage/debug', App::env('CRAFT_CLOUD_ENVIRONMENT_ID')),
+                ]
+            ]);
+
+            // TODO: check full list with Cloudflare
+            Craft::$container->setDefinitions([
+                \craft\services\Images::class => [
+                    'class' => \craft\services\Images::class,
+                    'supportedImageFormats' => ['jpg', 'jpeg', 'gif', 'png', 'heic'],
+                ]
+            ]);
+        }
     }
 }
