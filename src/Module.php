@@ -111,7 +111,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
     protected function isCraftCloud(): bool
     {
-        // TODO: should this be a dedicated env var?
         return (bool) App::env('AWS_LAMBDA_RUNTIME_API');
     }
 
@@ -121,8 +120,8 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             self::collapseSlashes($path),
             [
                 'envId' => App::env('CRAFT_CLOUD_ENVIRONMENT_ID') ?? '__ENVIRONMENT_ID__',
-                'buildId' => App::env('CRAFT_CLOUD_BUILD_ID') ?? '__BUILD_ID__',
-                'projectId' => App::env('CRAFT_CLOUD_PROJECT_ID') ?? '__PROJECT_ID__',
+                'buildId' => App::env('CRAFT_BUILD_ID') ?? '__BUILD_ID__',
+                'projectId' => App::env('CRAFT_APP_ID') ?? '__PROJECT_ID__',
             ]
         );
 
@@ -213,7 +212,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 ]);
 
                 $cmd = $s3Client->getCommand('GetObject', [
-                    'Bucket' => App::env('CRAFT_CLOUD_PROJECT_ID'),
+                    'Bucket' => App::env('CRAFT_APP_ID'),
                     'Key' => $path,
                     'ResponseContentDisposition' => $response->getHeaders()->get('content-disposition'),
                 ]);
