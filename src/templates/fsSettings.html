@@ -13,12 +13,44 @@
     placeholder: "path/to/subfolder"|t('aws-s3')
 }) }}
 
-{{ forms.lightswitchField({
-    label: "Make Uploads Public"|t('aws-s3'),
-    instructions: "Required for .",
-    id: 'makeUploadsPublic',
-    name: 'makeUploadsPublic',
-    on: fs.makeUploadsPublic
-}) }}
+{#{{ forms.lightswitchField({#}
+{#    label: "Make Uploads Public"|t('aws-s3'),#}
+{#    instructions: "Required for .",#}
+{#    id: 'makeUploadsPublic',#}
+{#    name: 'makeUploadsPublic',#}
+{#    on: fs.makeUploadsPublic#}
+{#}) }}#}
 
 <hr />
+
+{% set cacheInput %}
+    {% set expires = (fs.expires|length > 0 ? fs.expires|split(' ') : ['', ''])%}
+
+    <div class="flex">
+        <div>
+            {{ forms.text({
+                id: 'expiresAmount',
+                value: expires[0],
+                size: 2,
+                class: 's3-expires-amount'
+            }) }}
+        </div>
+        {{ forms.select({
+            id: 'expiresPeriod',
+            options: periods,
+            value: expires[1],
+            class: 's3-expires-period'
+        }) }}
+    </div>
+    {{ forms.hidden({
+        name: "expires",
+        value: fs.expires,
+        class: "expires-combined"
+    }) }}
+{% endset %}
+
+{{ forms.field({
+    label: "Cache Duration"|t,
+    instructions: "The Cache-Control duration that assets should be uploaded to the cloud with.",
+    id: 'cacheDuration',
+}, cacheInput) }}

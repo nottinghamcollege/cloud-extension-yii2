@@ -6,6 +6,8 @@ use Aws\S3\S3Client;
 use Craft;
 use craft\base\Event as Event;
 use craft\cloud\console\controllers\CloudController;
+use craft\cloud\fs\Fs;
+use craft\cloud\fs\AssetFs;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
@@ -25,12 +27,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     public const REDIS_DATABASE_MUTEX = 2;
     public const MUTEX_EXPIRE_WEB = 30;
     public const MUTEX_EXPIRE_CONSOLE = 900;
-
-    public function __construct($id, $parent = null, $config = [])
-    {
-        // dd($id);
-        parent::__construct($id, $parent, $config);
-    }
 
     /**
      * @inheritDoc
@@ -59,11 +55,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         $app->setAliases([
-            '@craftCloudAssetBaseUrl' => self::getAssetUrl(),
             '@craftCloudBuildBaseUrl' => self::getBuildUrl(),
         ]);
 
-        if ($this->isCraftCloud()) {
+        if (self::isCraftCloud()) {
             $app->setComponents([
                 'cache' => [
                     'class' => \yii\redis\Cache::class,
@@ -110,19 +105,19 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // ]);
     }
 
-    protected function isCraftCloud(): bool
+    public static function isCraftCloud(): bool
     {
         return (bool) App::env('AWS_LAMBDA_RUNTIME_API');
     }
 
-    protected static function getCdnUrl(string $path = ''): UriInterface
+    public static function getCdnUrl(string $path = ''): UriInterface
     {
         $template = new UriTemplate(
             self::collapseSlashes($path),
             [
-                'envId' => App::env('CRAFT_CLOUD_ENVIRONMENT_ID') ?? '__ENVIRONMENT_ID__',
-                'buildId' => App::env('CRAFT_BUILD_ID') ?? '__BUILD_ID__',
-                'projectId' => App::env('CRAFT_APP_ID') ?? '__PROJECT_ID__',
+                'environmentId' => self::getEnvironmentId() ?? '__ENVIRONMENT_ID__',
+                'buildId' => Craft::$app->getConfig()->getGeneral()->buildId ?? '__BUILD_ID__',
+                'projectId' => Craft::$app->id ?? '__PROJECT_ID__',
             ]
         );
 
@@ -132,14 +127,19 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         );
     }
 
-    protected static function getAssetUrl(string $path = ''): UriInterface
+    public static function getBuildUrl(string $path = ''): UriInterface
     {
-        return self::getCdnUrl("{envId}/assets/${path}");
+        return self::getCdnUrl("{environmentId}/builds/{buildId}/${path}");
     }
 
-    protected static function getBuildUrl(string $path = ''): UriInterface
+    public static function getCpResourcesUrl(string $path = ''): UriInterface
     {
-        return self::getCdnUrl("{envId}/builds/{buildId}/${path}");
+        return self::getCdnUrl("{environmentId}/cpresources/${path}");
+    }
+
+    public static function getEnvironmentId(): ?string
+    {
+        return App::env('CRAFT_CLOUD_ENVIRONMENT_ID');
     }
 
     protected static function collapseSlashes(string $path): string
@@ -173,7 +173,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             FsService::class,
             FsService::EVENT_REGISTER_FILESYSTEM_TYPES,
             static function(RegisterComponentTypesEvent $event) {
-                $event->types[] = Fs::class;
+                $event->types[] = AssetFs::class;
             }
         );
 
@@ -230,7 +230,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // When the module is resolved, the module config is merged into the definition,
         // so we can't override anything set in \craft\web\Application::debugBootstrap
         // or config/debug.php
-        if ($this->isCraftCloud()) {
+        if (self::isCraftCloud()) {
             Craft::$container->setDefinitions([
                 \craft\debug\Module::class => [
                     'class' => \craft\debug\Module::class,
@@ -240,6 +240,15 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                     'dataPath' => sprintf('%s/storage/debug', App::env('CRAFT_CLOUD_ENVIRONMENT_ID')),
                 ]
             ]);
+
+                // Craft::$container->setDefinitions([
+                //     \craft\web\AssetManager::class => [
+                //         'class' => AssetManager::class,
+                //         'fs' => Craft::createObject([
+                //             'class' => Fs::class,
+                //         ]),
+                //     ]
+                // ]);
 
             // TODO: check full list with Cloudflare
             Craft::$container->setDefinitions([
