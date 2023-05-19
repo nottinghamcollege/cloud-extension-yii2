@@ -194,31 +194,24 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                     return;
                 }
 
+                /** @var StorageFs $fs */
                 $fs = Craft::createObject([
                     'class' => StorageFs::class,
-                    'subfolder' => 'debug',
+                    'subfolder' => 'tmp',
                 ]);
                 $stream = $response->stream[0];
-                $path = sprintf('%s/storage/tmp/%s', App::env('CRAFT_CLOUD_ENVIRONMENT_ID'), uniqid('', true));
+                $path = uniqid('', true);
 
                 // TODO: set expiry
                 $fs->writeFileFromStream($path, $stream);
-                $s3Client = new S3Client([
-                    'credentials' => new Credentials(
-                        App::env('AWS_ACCESS_KEY_ID'),
-                        App::env('AWS_SECRET_ACCESS_KEY')
-                    ),
-                    'version' => 'latest',
-                    'region' => App::env('AWS_REGION'),
-                ]);
 
-                $cmd = $s3Client->getCommand('GetObject', [
-                    'Bucket' => App::env('CRAFT_APP_ID'),
-                    'Key' => $path,
+                $cmd = $fs->getClient()->getCommand('GetObject', [
+                    'Bucket' => $fs->getBucketName(),
+                    'Key' => $fs->getPrefix($path),
                     'ResponseContentDisposition' => $response->getHeaders()->get('content-disposition'),
                 ]);
 
-                $s3Request = $s3Client->createPresignedRequest($cmd, '+20 minutes');
+                $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
                 $url = (string) $s3Request->getUri();
                 $response->redirect($url);
             }
@@ -231,6 +224,16 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // so we can't override anything set in \craft\web\Application::debugBootstrap
         // or config/debug.php
         if (self::isCraftCloud()) {
+            // TODO: check full list with Cloudflare
+            // supportedImageFormats DI isnt working
+            Craft::$container->setDefinitions([
+                \craft\services\Images::class => [
+                    'class' => \craft\services\Images::class,
+                    'supportedImageFormats' => ['jpg', 'jpeg', 'gif', 'png', 'heic'],
+                ]
+            ]);
+            Craft::$app->getImages()->supportedImageFormats = ['jpg', 'jpeg', 'gif', 'png', 'heic'];
+
             Craft::$container->setDefinitions([
                 \craft\debug\Module::class => [
                     'class' => \craft\debug\Module::class,
@@ -248,14 +251,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                     'fs' => Craft::createObject([
                         'class' => CpResourcesFs::class,
                     ]),
-                ]
-            ]);
-
-            // TODO: check full list with Cloudflare
-            Craft::$container->setDefinitions([
-                \craft\services\Images::class => [
-                    'class' => \craft\services\Images::class,
-                    'supportedImageFormats' => ['jpg', 'jpeg', 'gif', 'png', 'heic'],
                 ]
             ]);
         }
