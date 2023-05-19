@@ -6,8 +6,10 @@ use Aws\S3\S3Client;
 use Craft;
 use craft\base\Event as Event;
 use craft\cloud\console\controllers\CloudController;
+use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\Fs;
 use craft\cloud\fs\AssetFs;
+use craft\cloud\fs\StorageFs;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
@@ -132,11 +134,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         return self::getCdnUrl("{environmentId}/builds/{buildId}/${path}");
     }
 
-    public static function getCpResourcesUrl(string $path = ''): UriInterface
-    {
-        return self::getCdnUrl("{environmentId}/cpresources/${path}");
-    }
-
     public static function getEnvironmentId(): ?string
     {
         return App::env('CRAFT_CLOUD_ENVIRONMENT_ID');
@@ -197,7 +194,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                     return;
                 }
 
-                $fs = new Fs();
+                $fs = Craft::createObject([
+                    'class' => StorageFs::class,
+                    'subfolder' => 'debug',
+                ]);
                 $stream = $response->stream[0];
                 $path = sprintf('%s/storage/tmp/%s', App::env('CRAFT_CLOUD_ENVIRONMENT_ID'), uniqid('', true));
 
@@ -235,20 +235,21 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 \craft\debug\Module::class => [
                     'class' => \craft\debug\Module::class,
                     'fs' => Craft::createObject([
-                        'class' => Fs::class,
+                        'class' => StorageFs::class,
+                        'subfolder' => 'debug',
                     ]),
-                    'dataPath' => sprintf('%s/storage/debug', App::env('CRAFT_CLOUD_ENVIRONMENT_ID')),
+                    'dataPath' => '',
                 ]
             ]);
 
-                // Craft::$container->setDefinitions([
-                //     \craft\web\AssetManager::class => [
-                //         'class' => AssetManager::class,
-                //         'fs' => Craft::createObject([
-                //             'class' => Fs::class,
-                //         ]),
-                //     ]
-                // ]);
+            Craft::$container->setDefinitions([
+                \craft\web\AssetManager::class => [
+                    'class' => AssetManager::class,
+                    'fs' => Craft::createObject([
+                        'class' => CpResourcesFs::class,
+                    ]),
+                ]
+            ]);
 
             // TODO: check full list with Cloudflare
             Craft::$container->setDefinitions([

@@ -4,10 +4,12 @@ namespace craft\cloud\fs;
 
 use Aws\Credentials\Credentials;
 use Aws\Handler\GuzzleV6\GuzzleHandler;
+use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
 use Craft;
 use craft\behaviors\EnvAttributeParserBehavior;
 use craft\cloud\Module;
+use craft\errors\FsException;
 use craft\flysystem\base\FlysystemFs;
 use craft\helpers\App;
 use craft\helpers\Assets;
@@ -16,6 +18,8 @@ use DateTime;
 use Illuminate\Support\Collection;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\FilesystemException;
+use League\Flysystem\UnableToWriteFile;
 use League\Flysystem\Visibility;
 
 /**
@@ -28,7 +32,7 @@ use League\Flysystem\Visibility;
 class Fs extends FlysystemFs
 {
     public ?string $subfolder = null;
-    private ?string $_expires = null;
+    protected ?string $expires = null;
     protected string $type;
     private S3Client $_client;
 
@@ -69,12 +73,12 @@ class Fs extends FlysystemFs
 
     public function getExpires(): ?string
     {
-        return $this->_expires;
+        return $this->expires;
     }
 
     public function setExpires(null|string|array $expires): void
     {
-        $this->_expires = is_array($expires) ? $this->normalizeExpires($expires): $expires;
+        $this->expires = is_array($expires) ? $this->normalizeExpires($expires): $expires;
     }
 
     public function normalizeExpires(array $expires): ?string
@@ -115,10 +119,10 @@ class Fs extends FlysystemFs
      */
     protected function addFileMetadataToConfig(array $config): array
     {
-        if (!empty($this->expires) && DateTimeHelper::isValidIntervalString($this->expires)) {
+        if (!empty($this->getExpires()) && DateTimeHelper::isValidIntervalString($this->getExpires())) {
             $expires = new DateTime();
             $now = new DateTime();
-            $expires->modify('+' . $this->expires);
+            $expires->modify('+' . $this->getExpires());
             $diff = (int)$expires->format('U') - (int)$now->format('U');
             $config['CacheControl'] = 'max-age=' . $diff;
         }
@@ -138,12 +142,13 @@ class Fs extends FlysystemFs
         ]);
     }
 
-    public function getPrefix(): string
+    public function getPrefix(?string $path = null): string
     {
         return Collection::make([
             Module::getEnvironmentId(),
             $this->type,
             $this->subfolder,
+            $path,
         ])->filter()->join('/');
     }
 
@@ -188,5 +193,20 @@ class Fs extends FlysystemFs
     protected function visibility(): string
     {
         return Visibility::PRIVATE;
+    }
+
+    public function uploadDirectory(string $path, string $destPath, $config = [])
+    {
+        try {
+            $config = $this->addFileMetadataToConfig($config);
+            return $this->getClient()->uploadDirectory(
+                $path,
+                $this->getBucketName(),
+                $this->getPrefix($destPath),
+                $config,
+            );
+        } catch (Throwable $exception) {
+            throw new FsException($exception->getMessage(), 0, $exception);
+        }
     }
 }

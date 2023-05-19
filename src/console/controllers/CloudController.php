@@ -4,6 +4,7 @@ namespace craft\cloud\console\controllers;
 
 use Craft;
 use craft\cloud\AssetHelper;
+use craft\cloud\AssetManager;
 use craft\console\Controller;
 use craft\helpers\App;
 use craft\helpers\Console;
@@ -28,7 +29,8 @@ class CloudController extends Controller
             return ExitCode::USAGE;
         }
 
-        $assetManager = Craft::createObject(App::assetManagerConfig());
+        $assetManager = Craft::createObject(AssetManager::class);
+        $assetBundle->publishOptions = ['force' => true];
         $assetBundle->publish($assetManager);
 
         return ExitCode::OK;
