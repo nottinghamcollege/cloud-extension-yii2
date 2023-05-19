@@ -17,15 +17,22 @@ use Illuminate\Support\Collection;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\Visibility;
-use League\Uri\Contracts\UriInterface;
-use League\Uri\Uri;
 
+/**
+ *
+ * @property-read string $bucketName
+ * @property-read string $prefix
+ * @property-read S3Client $client
+ * @property-read ?string $settingsHtml
+ */
 class Fs extends FlysystemFs
 {
     public ?string $subfolder = null;
     public ?string $expires = null;
-    protected ?string $typePrefix = null;
+    protected string $type;
     private S3Client $_client;
+
+    public const TAG_PRIVATE = 'private';
 
     /**
      * @inheritdoc
@@ -89,6 +96,10 @@ class Fs extends FlysystemFs
             $config['CacheControl'] = 'max-age=' . $diff;
         }
 
+        if (!$this->hasUrls) {
+            $config['Tagging'] = self::TAG_PRIVATE;
+        }
+
         return parent::addFileMetadataToConfig($config);
     }
 
@@ -104,7 +115,7 @@ class Fs extends FlysystemFs
     {
         return Collection::make([
             Module::getEnvironmentId(),
-            $this->typePrefix,
+            $this->type,
             $this->subfolder,
         ])->filter()->join('/');
     }
