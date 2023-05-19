@@ -28,7 +28,7 @@ use League\Flysystem\Visibility;
 class Fs extends FlysystemFs
 {
     public ?string $subfolder = null;
-    public ?string $expires = null;
+    private ?string $_expires = null;
     protected string $type;
     private S3Client $_client;
 
@@ -60,6 +60,33 @@ class Fs extends FlysystemFs
         ];
 
         return $behaviors;
+    }
+
+    public function settingsAttributes(): array
+    {
+        return array_merge(parent::settingsAttributes(), ['expires']);
+    }
+
+    public function getExpires(): ?string
+    {
+        return $this->_expires;
+    }
+
+    public function setExpires(null|string|array $expires): void
+    {
+        $this->_expires = is_array($expires) ? $this->normalizeExpires($expires): $expires;
+    }
+
+    public function normalizeExpires(array $expires): ?string
+    {
+        $amount = (int)$expires['amount'];
+        $period = $expires['period'];
+
+        if (!$amount || !$period) {
+            return null;
+        }
+
+        return "$amount $period";
     }
 
     /**
@@ -107,7 +134,7 @@ class Fs extends FlysystemFs
     {
         return Craft::$app->getView()->renderTemplate('fsSettings', [
             'fs' => $this,
-            'periods' => array_merge(['' => ''], Assets::periodList()),
+            'periods' => Assets::periodList(),
         ]);
     }
 

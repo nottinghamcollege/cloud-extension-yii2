@@ -1,48 +1,45 @@
-
 {% import "_includes/forms" as forms %}
 
 {{ forms.autosuggestField({
-    label: "Subfolder"|t('aws-s3'),
-    instructions: "If you want to use a bucket’s subfolder as a fs, specify the path to use here."|t('aws-s3'),
+    label: "Subfolder"|t('cloud'),
+    instructions: "Where assets should be stored on the filesystem."|t('cloud'),
     id: 'subfolder',
     class: 'ltr',
     name: 'subfolder',
     suggestEnvVars: true,
     value: fs.subfolder,
     errors: fs.getErrors('subfolder'),
-    placeholder: "path/to/subfolder"|t('aws-s3')
+    placeholder: "path/to/subfolder"|t('cloud')
 }) }}
 
 <hr />
 
-{% set cacheInput %}
-    {% set expires = (fs.expires|length > 0 ? fs.expires|split(' ') : ['', ''])%}
+{% set cacheDurationInput %}
+    {% set expires = fs.expires ? fs.expires|split(' ') : null %}
 
     <div class="flex">
         <div>
             {{ forms.text({
                 id: 'expiresAmount',
-                value: expires[0],
+                value: expires[0] ?? null,
                 size: 2,
-                class: 's3-expires-amount'
+                class: 's3-expires-amount',
+                name: 'expires[amount]',
             }) }}
         </div>
         {{ forms.select({
             id: 'expiresPeriod',
             options: periods,
-            value: expires[1],
-            class: 's3-expires-period'
+            value: expires[1] ?? null,
+            class: 's3-expires-period',
+            name: 'expires[period]',
         }) }}
     </div>
-    {{ forms.hidden({
-        name: "expires",
-        value: fs.expires,
-        class: "expires-combined"
-    }) }}
+
 {% endset %}
 
 {{ forms.field({
     label: "Cache Duration"|t,
-    instructions: "The Cache-Control duration that assets should be uploaded to the cloud with.",
+    instructions: "The Cache-Control duration set on assets in this filesystem.",
     id: 'cacheDuration',
-}, cacheInput) }}
+}, cacheDurationInput) }}
