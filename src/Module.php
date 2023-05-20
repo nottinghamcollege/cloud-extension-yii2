@@ -13,6 +13,7 @@ use craft\cloud\fs\StorageFs;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
+use craft\models\ImageTransform;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Response;
@@ -233,6 +234,12 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 ]
             ]);
             Craft::$app->getImages()->supportedImageFormats = ['jpg', 'jpeg', 'gif', 'png', 'heic'];
+
+            Craft::$container->setDefinitions([
+                \craft\imagetransforms\ImageTransformer::class => [
+                    'class' => ImageTransformer::class,
+                ]
+            ]);
 
             Craft::$container->setDefinitions([
                 \craft\debug\Module::class => [
