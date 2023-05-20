@@ -121,7 +121,7 @@ class Fs extends FlysystemFs
             $now = new DateTime();
             $expires->modify('+' . $this->getExpires());
             $diff = (int)$expires->format('U') - (int)$now->format('U');
-            $config['CacheControl'] = 'max-age=' . $diff;
+            $config['CacheControl'] = "max-age=$diff";
         }
 
         if (!$this->hasUrls) {
