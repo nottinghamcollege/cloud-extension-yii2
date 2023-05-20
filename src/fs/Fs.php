@@ -4,7 +4,6 @@ namespace craft\cloud\fs;
 
 use Aws\Credentials\Credentials;
 use Aws\Handler\GuzzleV6\GuzzleHandler;
-use Aws\S3\Exception\S3Exception;
 use Aws\S3\S3Client;
 use Craft;
 use craft\behaviors\EnvAttributeParserBehavior;
@@ -18,8 +17,6 @@ use DateTime;
 use Illuminate\Support\Collection;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\FilesystemAdapter;
-use League\Flysystem\FilesystemException;
-use League\Flysystem\UnableToWriteFile;
 use League\Flysystem\Visibility;
 
 /**
