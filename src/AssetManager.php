@@ -11,6 +11,7 @@ class AssetManager extends \craft\web\AssetManager
 {
     public Fs $fs;
     public $basePath = '';
+    private array $_published = [];
 
     public function init(): void
     {
@@ -19,6 +20,7 @@ class AssetManager extends \craft\web\AssetManager
         ]);
 
         $this->baseUrl = $this->fs->getRootUrl();
+
         parent::init();
     }
 
@@ -49,8 +51,9 @@ class AssetManager extends \craft\web\AssetManager
     {
         $hash = $this->hash($src);
         $dest = $this->fs->getPrefix($this->hash($src));
+
         // TODO: try/catch, options, check if exists first?
-        // Note: Flysystem's directoryExists doesn't work.
+        // Note: Flysystem's directoryExists doesn't seem to work.
         $this->fs->uploadDirectory($src, $hash);
 
         return [$dest, Module::getCdnUrl($dest)];
@@ -58,14 +61,35 @@ class AssetManager extends \craft\web\AssetManager
 
     /**
      * @inheritDoc
-     * Always use published assets, regardless of isEphemeral
+     * Always publish from cli, never from web
      */
     public function publish($path, $options = []): array
     {
-        if ($options['force'] ?? false) {
-            return parent::publish($path, $options);
+        if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
+            return [$path, $this->getPublishedUrl($path)];
         }
 
-        return [$path, $this->getPublishedUrl($path)];
+        $path = Craft::getAlias($path);
+
+        if (isset($this->_published[$path])) {
+            return $this->_published[$path];
+        }
+
+        $src = realpath($path);
+
+        if ($src === false) {
+            throw new InvalidArgumentException("The file or directory to be published does not exist: $path");
+        }
+
+        if (!is_readable($src)) {
+            throw new InvalidArgumentException("The file or directory to be published is not readable: $path");
+        }
+
+        if (is_file($src)) {
+            return $this->_published[$path] = $this->publishFile($src);
+        }
+
+        return $this->_published[$path] = $this->publishDirectory($src, $options);
     }
+
 }

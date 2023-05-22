@@ -172,6 +172,9 @@ class Fs extends FlysystemFs
             'version' => 'latest',
             'http_handler' => new GuzzleHandler(Craft::createGuzzleClient()),
             'endpoint' => App::env('CRAFT_CLOUD_FS_ENDPOINT'),
+
+            // TODO: local settings
+            'use_path_style_endpoint' => App::env('CRAFT_CLOUD_FS_USE_PATH_STYLE_ENDPOINT') ?? false,
             'credentials' => $this->createCredentials(),
         ];
 

@@ -1,19 +1,15 @@
 <?php
 namespace craft\cloud;
 
-use Aws\Credentials\Credentials;
-use Aws\S3\S3Client;
 use Craft;
 use craft\base\Event as Event;
 use craft\cloud\console\controllers\CloudController;
-use craft\cloud\fs\CpResourcesFs;
-use craft\cloud\fs\Fs;
 use craft\cloud\fs\AssetFs;
 use craft\cloud\fs\StorageFs;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
-use craft\models\ImageTransform;
+use craft\helpers\StringHelper;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Response;
@@ -124,9 +120,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ]
         );
 
+        $baseUrl = StringHelper::ensureRight(App::env('CRAFT_CLOUD_CDN_BASE_URL') ?? 'https://cdn.craft.cloud', '/');
+
         return Uri::createFromBaseUri(
             $template->expand(),
-            App::env('CRAFT_CLOUD_CDN_BASE_URL') ?? 'https://cdn.craft.cloud',
+            $baseUrl,
         );
     }
 
@@ -255,9 +253,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             Craft::$container->setDefinitions([
                 \craft\web\AssetManager::class => [
                     'class' => AssetManager::class,
-                    'fs' => Craft::createObject([
-                        'class' => CpResourcesFs::class,
-                    ]),
                 ]
             ]);
         }

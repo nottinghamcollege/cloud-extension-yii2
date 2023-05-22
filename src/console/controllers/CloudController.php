@@ -6,11 +6,8 @@ use Craft;
 use craft\cloud\AssetHelper;
 use craft\cloud\AssetManager;
 use craft\console\Controller;
-use craft\helpers\App;
 use craft\helpers\Console;
 use Illuminate\Support\Collection;
-use Illuminate\Support\LazyCollection;
-use ProcessPool\ProcessPool;
 use Symfony\Component\Process\Process;
 use Throwable;
 use yii\console\ExitCode;
@@ -30,7 +27,6 @@ class CloudController extends Controller
         }
 
         $assetManager = Craft::createObject(AssetManager::class);
-        $assetBundle->publishOptions = ['force' => true];
         $assetBundle->publish($assetManager);
 
         return ExitCode::OK;
@@ -43,7 +39,7 @@ class CloudController extends Controller
         Collection::make($classMap)
             ->keys()
             ->filter(fn($className) => str_contains($className, '\\assets\\') || preg_match('/Asset(Bundle)?$/', $className))
-            ->map(function(string $className) {
+            ->each(function(string $className) {
                 $process = new Process([
                     PHP_BINARY,
                     $this->request->getScriptFile(),
@@ -55,7 +51,7 @@ class CloudController extends Controller
                 try {
                     $this->do("Publishing “{$className}”", fn() => $process->run(function ($type, $buffer) {
                         if ($type === Process::ERR) {
-                            throw new \yii\console\Exception($buffer);
+                            return;
                         }
 
                         $this->stdout($buffer);
