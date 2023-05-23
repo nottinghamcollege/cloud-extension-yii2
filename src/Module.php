@@ -6,6 +6,7 @@ use craft\base\Event as Event;
 use craft\cloud\console\controllers\CloudController;
 use craft\cloud\fs\AssetFs;
 use craft\cloud\fs\StorageFs;
+use craft\config\BaseConfig;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
@@ -27,19 +28,38 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     public const MUTEX_EXPIRE_WEB = 30;
     public const MUTEX_EXPIRE_CONSOLE = 900;
 
+    private BaseConfig $_config;
+
     /**
      * @inheritDoc
      */
     public function init(): void
     {
+        parent::init();
+
         $this->registerEventHandlers();
         $this->setDefinitions();
 
+        // When automatically bootstrapped, id will be `null`.
+        $this->id = $this->id ?? 'cloud';
+
+        $this->getConfig();
         $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
             ? 'craft\\cloud\\console\\controllers'
             : 'craft\\cloud\\controllers';
+    }
 
-        parent::init();
+    public function getConfig(): Config
+    {
+        if (isset($this->_config)) {
+            return $this->_config;
+        }
+
+        $fileConfig = Craft::$app->getConfig()->getConfigFromFile($this->id);
+        $config = is_array($fileConfig) ? Craft::createObject(Config::class, $fileConfig) : $fileConfig;
+        $this->_config = Craft::configure($config, App::envConfig(Config::class, 'CRAFT_CLOUD_'));
+
+        return $this->_config;
     }
 
     /**
@@ -48,7 +68,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     public function bootstrap($app): void
     {
         if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-            $app->controllerMap['cloud'] = [
+            $app->controllerMap[$this->id] = [
                 'class' => CloudController::class,
             ];
         }

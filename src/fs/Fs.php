@@ -167,16 +167,16 @@ class Fs extends FlysystemFs
 
     public function createClient(array $config = []): S3Client
     {
-        $config += [
-            'region' => App::env('AWS_REGION') ?? App::env('CRAFT_CLOUD_ACCESS_REGION'),
-            'version' => 'latest',
-            'http_handler' => new GuzzleHandler(Craft::createGuzzleClient()),
-            'endpoint' => App::env('CRAFT_CLOUD_FS_ENDPOINT'),
-
-            // TODO: local settings
-            'use_path_style_endpoint' => App::env('CRAFT_CLOUD_FS_USE_PATH_STYLE_ENDPOINT') ?? false,
-            'credentials' => $this->createCredentials(),
-        ];
+        $config = array_merge(
+            [
+                'region' => App::env('AWS_REGION') ?? App::env('CRAFT_CLOUD_ACCESS_REGION'),
+                'version' => 'latest',
+                'http_handler' => new GuzzleHandler(Craft::createGuzzleClient()),
+                'credentials' => $this->createCredentials(),
+            ],
+            Module::getInstance()->getConfig()->s3ClientOptions,
+            $config
+        );
 
         return new S3Client($config);
     }
