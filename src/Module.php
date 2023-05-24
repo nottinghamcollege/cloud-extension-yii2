@@ -37,16 +37,15 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     {
         parent::init();
 
-        $this->registerEventHandlers();
-        $this->setDefinitions();
-
         // When automatically bootstrapped, id will be `null`.
         $this->id = $this->id ?? 'cloud';
 
-        $this->getConfig();
         $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
             ? 'craft\\cloud\\console\\controllers'
             : 'craft\\cloud\\controllers';
+
+        $this->registerEventHandlers();
+        $this->setDefinitions();
     }
 
     public function getConfig(): Config
@@ -73,55 +72,50 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ];
         }
 
-        $app->setAliases([
-            '@craftCloudBuildBaseUrl' => self::getBuildUrl(),
-        ]);
-
-        if (self::isCraftCloud()) {
-            $app->setComponents([
-                'cache' => [
-                    'class' => \yii\redis\Cache::class,
-                    'redis' => self::getRedisConfig() + [
-                        'database' => self::REDIS_DATABASE_CACHE
-                    ],
-                    'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
+        if ($this->getConfig()->enableCache) {
+            $app->set('cache', [
+                'class' => \yii\redis\Cache::class,
+                'redis' => self::getRedisConfig() + [
+                    'database' => self::REDIS_DATABASE_CACHE
                 ],
+                'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
+            ]);
+        }
+
+        if ($this->getConfig()->enableMutex) {
+            $app->set('mutex', [
+                'class' => \craft\mutex\Mutex::class,
                 'mutex' => [
-                    'class' => \craft\mutex\Mutex::class,
-                    'mutex' => [
-                        'class' => \craft\cloud\Mutex::class,
-                        'redis' => self::getRedisConfig() + [
-                            'database' => self::REDIS_DATABASE_MUTEX
-                        ],
-                        'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
-                            ? self::MUTEX_EXPIRE_CONSOLE
-                            : self::MUTEX_EXPIRE_WEB,
+                    'class' => \craft\cloud\Mutex::class,
+                    'redis' => self::getRedisConfig() + [
+                        'database' => self::REDIS_DATABASE_MUTEX
                     ],
+                    'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
+                        ? self::MUTEX_EXPIRE_CONSOLE
+                        : self::MUTEX_EXPIRE_WEB,
                 ],
             ]);
+        }
 
-            if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
-                $app->setComponents([
-                    'session' => [
-                        'class' => \yii\redis\Session::class,
-                        'redis' => self::getRedisConfig() + [
-                            'database' => self::REDIS_DATABASE_SESSION
-                        ],
-                    ] + App::sessionConfig(),
-                ]);
-            }
+        if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
+            $app->set('session', [
+                'class' => \yii\redis\Session::class,
+                'redis' => self::getRedisConfig() + [
+                    'database' => self::REDIS_DATABASE_SESSION
+                ],
+            ] + App::sessionConfig());
         }
 
         // TODO: https://github.com/craftcms/cloud/issues/155
-        // $app->setComponents([
-        //     'queue' => [
-        //         'class' => \craft\queue\Queue::class,
-        //         'proxyQueue' => [
-        //             'class' => \yii\queue\sqs\Queue::class,
-        //             'url' => App::env('CRAFT_CLOUD_SQS_URL'),
-        //         ],
-        //     ],
-        // ]);
+        if ($this->getConfig()->enableQueue) {
+            $app->set('queue', [
+                'class' => \craft\queue\Queue::class,
+                'proxyQueue' => [
+                    'class' => \yii\queue\sqs\Queue::class,
+                    'url' => App::env('CRAFT_CLOUD_SQS_URL'),
+                ],
+            ]);
+        }
     }
 
     public static function isCraftCloud(): bool
@@ -201,48 +195,18 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             }
         );
 
-        Event::once(
-            Response::class,
-            \yii\web\Response::EVENT_BEFORE_SEND,
-            function (YiiEvent $event) {
-
-                /** @var Response $response */
-                $response = $event->sender;
-
-                if (!$response->stream) {
-                    return;
-                }
-
-                /** @var StorageFs $fs */
-                $fs = Craft::createObject([
-                    'class' => StorageFs::class,
-                    'subfolder' => 'tmp',
-                ]);
-                $stream = $response->stream[0];
-                $path = uniqid('', true);
-
-                // TODO: set expiry
-                $fs->writeFileFromStream($path, $stream);
-
-                $cmd = $fs->getClient()->getCommand('GetObject', [
-                    'Bucket' => $fs->getBucketName(),
-                    'Key' => $fs->getPrefix($path),
-                    'ResponseContentDisposition' => $response->getHeaders()->get('content-disposition'),
-                ]);
-
-                $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
-                $url = (string) $s3Request->getUri();
-                $response->redirect($url);
-            }
-        );
+        if (!$this->getConfig()->allowBinaryResponses) {
+            Event::once(
+                Response::class,
+                \yii\web\Response::EVENT_BEFORE_SEND,
+                [$this, 'handleBeforeSend']
+            );
+        }
     }
 
-    public function setDefinitions(): void
+    protected function setDefinitions(): void
     {
-        // When the module is resolved, the module config is merged into the definition,
-        // so we can't override anything set in \craft\web\Application::debugBootstrap
-        // or config/debug.php
-        if (self::isCraftCloud()) {
+        if ($this->getConfig()->enableCdn) {
             // TODO: check full list with Cloudflare
             // supportedImageFormats DI isnt working
             Craft::$container->setDefinitions([
@@ -260,6 +224,14 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ]);
 
             Craft::$container->setDefinitions([
+                \craft\web\AssetManager::class => [
+                    'class' => AssetManager::class,
+                ]
+            ]);
+        }
+
+        if ($this->getConfig()->enableDebug) {
+            Craft::$container->setDefinitions([
                 \craft\debug\Module::class => [
                     'class' => \craft\debug\Module::class,
                     'fs' => Craft::createObject([
@@ -269,12 +241,37 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                     'dataPath' => '',
                 ]
             ]);
-
-            Craft::$container->setDefinitions([
-                \craft\web\AssetManager::class => [
-                    'class' => AssetManager::class,
-                ]
-            ]);
         }
+    }
+
+    protected function handleBeforeSend(YiiEvent $event): void
+    {
+        /** @var Response $response */
+        $response = $event->sender;
+
+        if (!$response->stream) {
+            return;
+        }
+
+        /** @var StorageFs $fs */
+        $fs = Craft::createObject([
+            'class' => StorageFs::class,
+            'subfolder' => 'tmp',
+        ]);
+        $stream = $response->stream[0];
+        $path = uniqid('', true);
+
+        // TODO: set expiry
+        $fs->writeFileFromStream($path, $stream);
+
+        $cmd = $fs->getClient()->getCommand('GetObject', [
+            'Bucket' => $fs->getBucketName(),
+            'Key' => $fs->getPrefix($path),
+            'ResponseContentDisposition' => $response->getHeaders()->get('content-disposition'),
+        ]);
+
+        $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
+        $url = (string) $s3Request->getUri();
+        $response->redirect($url);
     }
 }
