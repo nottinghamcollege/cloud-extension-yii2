@@ -99,7 +99,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'class' => \craft\queue\Queue::class,
                 'proxyQueue' => [
                     'class' => \yii\queue\sqs\Queue::class,
-                    'url' => App::env('CRAFT_CLOUD_SQS_URL'),
+                    'url' => $this->getConfig()->sqsUrl,
                 ],
             ]);
         }
