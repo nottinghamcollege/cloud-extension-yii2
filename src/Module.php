@@ -10,14 +10,10 @@ use craft\config\BaseConfig;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
-use craft\helpers\StringHelper;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Response;
 use craft\web\View;
-use League\Uri\Contracts\UriInterface;
-use League\Uri\Uri;
-use League\Uri\UriTemplate;
 use yii\base\Event as YiiEvent;
 
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
@@ -48,19 +44,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         $this->setDefinitions();
     }
 
-    public function getConfig(): Config
-    {
-        if (isset($this->_config)) {
-            return $this->_config;
-        }
-
-        $fileConfig = Craft::$app->getConfig()->getConfigFromFile($this->id);
-        $config = is_array($fileConfig) ? Craft::createObject(Config::class, $fileConfig) : $fileConfig;
-        $this->_config = Craft::configure($config, App::envConfig(Config::class, 'CRAFT_CLOUD_'));
-
-        return $this->_config;
-    }
-
     /**
      * @inheritDoc
      */
@@ -75,9 +58,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         if ($this->getConfig()->enableCache) {
             $app->set('cache', [
                 'class' => \yii\redis\Cache::class,
-                'redis' => self::getRedisConfig() + [
+                'redis' => $this->getRedisConfig([
                     'database' => self::REDIS_DATABASE_CACHE
-                ],
+                ]),
                 'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
             ]);
         }
@@ -87,9 +70,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'class' => \craft\mutex\Mutex::class,
                 'mutex' => [
                     'class' => \craft\cloud\Mutex::class,
-                    'redis' => self::getRedisConfig() + [
+                    'redis' => $this->getRedisConfig([
                         'database' => self::REDIS_DATABASE_MUTEX
-                    ],
+                    ]),
                     'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
                         ? self::MUTEX_EXPIRE_CONSOLE
                         : self::MUTEX_EXPIRE_WEB,
@@ -100,9 +83,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
             $app->set('session', [
                 'class' => \yii\redis\Session::class,
-                'redis' => self::getRedisConfig() + [
+                'redis' => $this->getRedisConfig([
                     'database' => self::REDIS_DATABASE_SESSION
-                ],
+                ]),
             ] + App::sessionConfig());
         }
 
@@ -118,55 +101,17 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
     }
 
-    public static function isCraftCloud(): bool
+    public function getConfig(): Config
     {
-        return (bool) App::env('AWS_LAMBDA_RUNTIME_API');
-    }
+        if (isset($this->_config)) {
+            return $this->_config;
+        }
 
-    public static function getCdnUrl(string $path = ''): UriInterface
-    {
-        $template = new UriTemplate(
-            self::collapseSlashes($path),
-            [
-                'environmentId' => self::getEnvironmentId() ?? '__ENVIRONMENT_ID__',
-                'buildId' => Craft::$app->getConfig()->getGeneral()->buildId ?? '__BUILD_ID__',
-                'projectId' => Craft::$app->id ?? '__PROJECT_ID__',
-            ]
-        );
+        $fileConfig = Craft::$app->getConfig()->getConfigFromFile($this->id);
+        $config = is_array($fileConfig) ? Craft::createObject(Config::class, $fileConfig) : $fileConfig;
+        $this->_config = Craft::configure($config, App::envConfig(Config::class, 'CRAFT_CLOUD_'));
 
-        $baseUrl = StringHelper::ensureRight(App::env('CRAFT_CLOUD_CDN_BASE_URL') ?? 'https://cdn.craft.cloud', '/');
-
-        return Uri::createFromBaseUri(
-            $template->expand(),
-            $baseUrl,
-        );
-    }
-
-    public static function getBuildUrl(string $path = ''): UriInterface
-    {
-        return self::getCdnUrl("{environmentId}/builds/{buildId}/${path}");
-    }
-
-    public static function getEnvironmentId(): ?string
-    {
-        return App::env('CRAFT_CLOUD_ENVIRONMENT_ID');
-    }
-
-    protected static function collapseSlashes(string $path): string
-    {
-        return preg_replace('#/{2,}#', '/', $path);
-    }
-
-    protected static function getRedisConfig(): array
-    {
-        $url = App::env('CRAFT_CLOUD_REDIS_URL') ?? 'tcp://localhost:6379';
-        $urlParts = parse_url($url);
-
-        return [
-            'scheme' => $urlParts['scheme'],
-            'hostname' => $urlParts['host'],
-            'port' => $urlParts['port'],
-        ];
+        return $this->_config;
     }
 
     protected function registerEventHandlers(): void
@@ -217,6 +162,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ]);
             Craft::$app->getImages()->supportedImageFormats = ['jpg', 'jpeg', 'gif', 'png', 'heic'];
 
+            /**
+             * Currently this is the only reasonable way to change the default
+             */
             Craft::$container->setDefinitions([
                 \craft\imagetransforms\ImageTransformer::class => [
                     'class' => ImageTransformer::class,
@@ -273,5 +221,16 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
         $url = (string) $s3Request->getUri();
         $response->redirect($url);
+    }
+
+    public function getRedisConfig(array $config = []): array
+    {
+        $urlParts = parse_url($this->getConfig()->redisUrl);
+
+        return $config + [
+            'scheme' => $urlParts['scheme'],
+            'hostname' => $urlParts['host'],
+            'port' => $urlParts['port'],
+        ];
     }
 }

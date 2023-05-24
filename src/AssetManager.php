@@ -41,7 +41,7 @@ class AssetManager extends \craft\web\AssetManager
 
         $this->fs->writeFileFromStream($dest, $stream);
 
-        return [$dest, Module::getCdnUrl($prefixedDest)];
+        return [$dest, Helper::getCdnUrl($prefixedDest)];
     }
 
     /**
@@ -56,7 +56,7 @@ class AssetManager extends \craft\web\AssetManager
         // Note: Flysystem's directoryExists doesn't seem to work.
         $this->fs->uploadDirectory($src, $hash);
 
-        return [$dest, Module::getCdnUrl($dest)];
+        return [$dest, Helper::getCdnUrl($dest)];
     }
 
     /**

@@ -11,6 +11,7 @@ class Config extends BaseConfig
 {
     public array $s3ClientOptions = [];
     public string $cdnBaseUrl = 'https://cdn.craft.cloud';
+    public string $redisUrl = 'tcp://localhost:6379';
     public bool $enableCache = false;
     public bool $enableMutex = false;
     public bool $enableSession = false;
@@ -21,7 +22,7 @@ class Config extends BaseConfig
 
     public function init(): void
     {
-        if (Module::isCraftCloud()) {
+        if (Helper::isCraftCloud()) {
             $this->enableCache = true;
             $this->enableMutex = true;
             $this->enableSession = true;
