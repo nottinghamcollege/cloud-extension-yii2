@@ -3,7 +3,6 @@
 namespace craft\cloud;
 
 use Craft;
-use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\Fs;
 use yii\base\InvalidArgumentException;
 
@@ -11,18 +10,8 @@ class AssetManager extends \craft\web\AssetManager
 {
     public Fs $fs;
     public $basePath = '';
+    public $baseUrl = '';
     private array $_published = [];
-
-    public function init(): void
-    {
-        $this->fs = Craft::createObject([
-            'class' => CpResourcesFs::class,
-        ]);
-
-        $this->baseUrl = $this->fs->getRootUrl();
-
-        parent::init();
-    }
 
     /**
      * @inheritDoc

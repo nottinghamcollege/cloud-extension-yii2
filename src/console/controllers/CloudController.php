@@ -26,7 +26,7 @@ class CloudController extends Controller
             return ExitCode::USAGE;
         }
 
-        $assetManager = Craft::createObject(AssetManager::class);
+        $assetManager = Craft::$app->getAssetManager();
         $assetBundle->publish($assetManager);
 
         return ExitCode::OK;

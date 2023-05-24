@@ -5,6 +5,7 @@ use Craft;
 use craft\base\Event as Event;
 use craft\cloud\console\controllers\CloudController;
 use craft\cloud\fs\AssetFs;
+use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
 use craft\config\BaseConfig;
 use craft\events\RegisterComponentTypesEvent;
@@ -40,16 +41,19 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // When automatically bootstrapped, id will be `null`.
         $this->id = $this->id ?? 'cloud';
 
+        // Set instance early so our dependencies can use it
+        self::setInstance($this);
+
         $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
             ? 'craft\\cloud\\console\\controllers'
             : 'craft\\cloud\\controllers';
 
         $this->registerEventHandlers();
-        $this->setDefinitions();
     }
 
     /**
      * @inheritDoc
+     * Any components registered with closures must be overridden here.
      */
     public function bootstrap($app): void
     {
@@ -86,11 +90,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
             $app->set('session', [
-                'class' => \yii\redis\Session::class,
-                'redis' => $this->getRedisConfig([
-                    'database' => self::REDIS_DATABASE_SESSION
-                ]),
-            ] + App::sessionConfig());
+                    'class' => \yii\redis\Session::class,
+                    'redis' => $this->getRedisConfig([
+                        'database' => self::REDIS_DATABASE_SESSION
+                    ]),
+                ] + App::sessionConfig());
         }
 
         // TODO: https://github.com/craftcms/cloud/issues/155
@@ -101,6 +105,38 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                     'class' => \yii\queue\sqs\Queue::class,
                     'url' => $this->getConfig()->sqsUrl,
                 ],
+            ]);
+        }
+
+        if ($this->getConfig()->enableCdn) {
+            $cpResourcesFs = Craft::createObject(CpResourcesFs::class);
+            $app->set('assetManager', [
+                'class' => AssetManager::class,
+                'fs' => $cpResourcesFs,
+                'baseUrl' => $cpResourcesFs->getRootUrl(),
+            ]);
+
+            $app->set('images', [
+                'class' => \craft\services\Images::class,
+                'supportedImageFormats' => ImageTransformer::SUPPORTED_IMAGE_FORMATS,
+            ]);
+
+            /**
+             * Currently this is the only reasonable way to change the default transformer
+             */
+            Craft::$container->set(
+                \craft\imagetransforms\ImageTransformer::class,
+                ImageTransformer::class,
+            );
+        }
+
+        if ($this->getConfig()->enableDebug) {
+            $app->setModule('debug', [
+                'class' => \craft\debug\Module::class,
+                'fs' => Craft::createObject(StorageFs::class, [
+                    'subfolder' => 'debug',
+                ]),
+                'dataPath' => '',
             ]);
         }
     }
@@ -153,49 +189,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
     }
 
-    protected function setDefinitions(): void
-    {
-        if ($this->getConfig()->enableCdn) {
-            // TODO: check full list with Cloudflare
-            // supportedImageFormats DI isnt working
-            Craft::$container->setDefinitions([
-                \craft\services\Images::class => [
-                    'class' => \craft\services\Images::class,
-                    'supportedImageFormats' => ['jpg', 'jpeg', 'gif', 'png', 'heic'],
-                ]
-            ]);
-            Craft::$app->getImages()->supportedImageFormats = ['jpg', 'jpeg', 'gif', 'png', 'heic'];
-
-            /**
-             * Currently this is the only reasonable way to change the default
-             */
-            Craft::$container->setDefinitions([
-                \craft\imagetransforms\ImageTransformer::class => [
-                    'class' => ImageTransformer::class,
-                ]
-            ]);
-
-            Craft::$container->setDefinitions([
-                \craft\web\AssetManager::class => [
-                    'class' => AssetManager::class,
-                ]
-            ]);
-        }
-
-        if ($this->getConfig()->enableDebug) {
-            Craft::$container->setDefinitions([
-                \craft\debug\Module::class => [
-                    'class' => \craft\debug\Module::class,
-                    'fs' => Craft::createObject([
-                        'class' => StorageFs::class,
-                        'subfolder' => 'debug',
-                    ]),
-                    'dataPath' => '',
-                ]
-            ]);
-        }
-    }
-
     protected function handleBeforeSend(YiiEvent $event): void
     {
         /** @var Response $response */
@@ -206,8 +199,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         /** @var StorageFs $fs */
-        $fs = Craft::createObject([
-            'class' => StorageFs::class,
+        $fs = Craft::createObject(StorageFs::class, [
             'subfolder' => 'tmp',
         ]);
         $stream = $response->stream[0];
