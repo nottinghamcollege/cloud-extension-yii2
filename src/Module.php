@@ -16,6 +16,10 @@ use craft\web\Response;
 use craft\web\View;
 use yii\base\Event as YiiEvent;
 
+/**
+ *
+ * @property-read Config $config
+ */
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 {
     public const REDIS_DATABASE_CACHE = 0;
