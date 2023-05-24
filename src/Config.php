@@ -3,6 +3,7 @@
 namespace craft\cloud;
 
 use craft\config\BaseConfig;
+use craft\helpers\StringHelper;
 
 /**
  * @method array s3ClientOptions(array $options)
@@ -13,6 +14,7 @@ class Config extends BaseConfig
     public string $cdnBaseUrl = 'https://cdn.craft.cloud';
     public string $redisUrl = 'tcp://localhost:6379';
     public string $sqsUrl = '';
+    public ?string $environmentId = null;
     public bool $enableCache = false;
     public bool $enableMutex = false;
     public bool $enableSession = false;
@@ -43,5 +45,10 @@ class Config extends BaseConfig
 
             return $this;
         }
+    }
+
+    public function getCdnBaseUrl(): string
+    {
+        return StringHelper::ensureRight($this->cdnBaseUrl, '/');
     }
 }

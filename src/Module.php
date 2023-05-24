@@ -53,7 +53,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
     /**
      * @inheritDoc
-     * Any components registered with closures must be overridden here.
      */
     public function bootstrap($app): void
     {
@@ -90,11 +89,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
             $app->set('session', [
-                    'class' => \yii\redis\Session::class,
-                    'redis' => $this->getRedisConfig([
-                        'database' => self::REDIS_DATABASE_SESSION
-                    ]),
-                ] + App::sessionConfig());
+                'class' => \yii\redis\Session::class,
+                'redis' => $this->getRedisConfig([
+                    'database' => self::REDIS_DATABASE_SESSION
+                ]),
+            ] + App::sessionConfig());
         }
 
         // TODO: https://github.com/craftcms/cloud/issues/155
@@ -219,7 +218,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         $response->redirect($url);
     }
 
-    public function getRedisConfig(array $config = []): array
+    protected function getRedisConfig(array $config = []): array
     {
         $urlParts = parse_url($this->getConfig()->redisUrl);
 

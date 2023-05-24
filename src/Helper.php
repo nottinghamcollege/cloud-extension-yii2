@@ -22,23 +22,16 @@ class Helper
         $template = new UriTemplate(
             self::collapseSlashes($path),
             [
-                'environmentId' => self::getEnvironmentId() ?? '__ENVIRONMENT_ID__',
+                'environmentId' => Module::getInstance()->getConfig()->environmentId ?? '__ENVIRONMENT_ID__',
                 'buildId' => Craft::$app->getConfig()->getGeneral()->buildId ?? '__BUILD_ID__',
                 'projectId' => Craft::$app->id ?? '__PROJECT_ID__',
             ]
         );
 
-        $baseUrl = StringHelper::ensureRight(App::env('CRAFT_CLOUD_CDN_BASE_URL') ?? 'https://cdn.craft.cloud', '/');
-
         return Uri::createFromBaseUri(
             $template->expand(),
-            $baseUrl,
+            Module::getInstance()->getConfig()->getCdnBaseUrl(),
         );
-    }
-
-    public static function getEnvironmentId(): ?string
-    {
-        return App::env('CRAFT_CLOUD_ENVIRONMENT_ID');
     }
 
     /**

@@ -143,7 +143,7 @@ class Fs extends FlysystemFs
     public function getPrefix(?string $path = null): string
     {
         return Collection::make([
-            Helper::getEnvironmentId(),
+            Module::getInstance()->getConfig()->environmentId,
             $this->type,
             $this->subfolder,
             $path,
