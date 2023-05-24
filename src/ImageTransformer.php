@@ -13,6 +13,8 @@ use craft\models\ImageTransform;
 
 class ImageTransformer extends Component implements ImageTransformerInterface, ImageEditorTransformerInterface
 {
+    public const SIGNING_PARAM = 's';
+
     public function getTransformUrl(Asset $asset, ImageTransform $imageTransform, bool $immediately): string
     {
         $assetUrl = $asset->getUrl();
@@ -24,7 +26,7 @@ class ImageTransformer extends Component implements ImageTransformerInterface, I
         $transformParams = $this->buildTransformParams($imageTransform);
         $path = parse_url($assetUrl, PHP_URL_PATH);
         $params = $transformParams + [
-            's' => $this->sign($path, $transformParams),
+            self::SIGNING_PARAM => $this->sign($path, $transformParams),
         ];
 
         return UrlHelper::urlWithParams($assetUrl, $params);
