@@ -18,6 +18,7 @@ use DateTime;
 use Illuminate\Support\Collection;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\FilesystemAdapter;
+use League\Flysystem\FilesystemException;
 use League\Flysystem\Visibility;
 
 /**
@@ -134,7 +135,7 @@ class Fs extends FlysystemFs
 
     public function getSettingsHtml(): ?string
     {
-        return Craft::$app->getView()->renderTemplate('fsSettings', [
+        return Craft::$app->getView()->renderTemplate('cloud/fsSettings', [
             'fs' => $this,
             'periods' => Assets::periodList(),
         ]);
@@ -207,6 +208,19 @@ class Fs extends FlysystemFs
                 $config,
             );
         } catch (Throwable $exception) {
+            throw new FsException($exception->getMessage(), 0, $exception);
+        }
+    }
+
+    /**
+     * Fixes \craft\flysystem\base\FlysystemFs::directoryExists,
+     * which uses fileExists, and doesn't work on S3.
+     */
+    public function directoryExists(string $path): bool
+    {
+        try {
+            return $this->adapter()->directoryExists($path);
+        } catch (FilesystemException $exception) {
             throw new FsException($exception->getMessage(), 0, $exception);
         }
     }

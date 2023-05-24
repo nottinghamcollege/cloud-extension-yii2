@@ -41,9 +41,10 @@ class AssetManager extends \craft\web\AssetManager
         $hash = $this->hash($src);
         $dest = $this->fs->getPrefix($this->hash($src));
 
-        // TODO: try/catch, options, check if exists first?
-        // Note: Flysystem's directoryExists doesn't seem to work.
-        $this->fs->uploadDirectory($src, $hash);
+        // TODO: try/catch
+        if (!$this->fs->directoryExists($hash)) {
+            $this->fs->uploadDirectory($src, $hash);
+        }
 
         return [$dest, Helper::getCdnUrl($dest)];
     }

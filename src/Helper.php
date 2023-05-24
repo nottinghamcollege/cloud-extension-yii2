@@ -4,7 +4,6 @@ namespace craft\cloud;
 
 use Craft;
 use craft\helpers\App;
-use craft\helpers\StringHelper;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Uri;
 use League\Uri\UriTemplate;

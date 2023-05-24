@@ -129,14 +129,19 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             );
         }
 
+        /**
+         * We have to use DI here (can't use setModule), as
+         * \craft\web\Application::debugBootstrap will be called after and override it.
+         */
         if ($this->getConfig()->enableDebug) {
-            $app->setModule('debug', [
-                'class' => \craft\debug\Module::class,
-                'fs' => Craft::createObject(StorageFs::class, [
-                    'subfolder' => 'debug',
-                ]),
-                'dataPath' => '',
-            ]);
+            Craft::$container->set(
+                \craft\debug\Module::class,
+                [
+                    'class' => \craft\debug\Module::class,
+                    'fs' => Craft::createObject(StorageFs::class),
+                    'dataPath' => 'debug',
+                ],
+            );
         }
     }
 
@@ -188,7 +193,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
     }
 
-    protected function handleBeforeSend(YiiEvent $event): void
+    public function handleBeforeSend(YiiEvent $event): void
     {
         /** @var Response $response */
         $response = $event->sender;
@@ -198,7 +203,8 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         /** @var StorageFs $fs */
-        $fs = Craft::createObject(StorageFs::class, [
+        $fs = Craft::createObject([
+            'class' => StorageFs::class,
             'subfolder' => 'tmp',
         ]);
         $stream = $response->stream[0];
@@ -207,6 +213,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // TODO: set expiry
         $fs->writeFileFromStream($path, $stream);
 
+        // TODO: use \League\Flysystem\AwsS3V3\AwsS3V3Adapter::temporaryUrl
         $cmd = $fs->getClient()->getCommand('GetObject', [
             'Bucket' => $fs->getBucketName(),
             'Key' => $fs->getPrefix($path),
@@ -215,6 +222,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
         $url = (string) $s3Request->getUri();
+        $response->stream = null;
         $response->redirect($url);
     }
 
