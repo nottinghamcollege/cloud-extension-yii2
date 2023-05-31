@@ -2,8 +2,9 @@
 namespace craft\cloud;
 
 use Craft;
-use craft\base\Event as Event;
-use craft\cloud\console\controllers\CloudController;
+use craft\base\Event;
+use craft\cloud\console\controllers\CloudController as ConsoleController;
+use craft\cloud\controllers\CloudController as WebController;
 use craft\cloud\fs\AssetFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
@@ -15,7 +16,6 @@ use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Response;
 use craft\web\View;
-use yii\base\Event as YiiEvent;
 
 /**
  *
@@ -56,11 +56,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
      */
     public function bootstrap($app): void
     {
-        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-            $app->controllerMap[$this->id] = [
-                'class' => CloudController::class,
-            ];
-        }
+        $app->controllerMap[$this->id] = [
+            'class' => Craft::$app->getRequest()->getIsConsoleRequest()
+                ? ConsoleController::class
+                : WebController::class,
+        ];
 
         if ($this->getConfig()->enableCache) {
             $app->set('cache', [
@@ -184,6 +184,14 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             }
         );
 
+        // Event::on(
+        //     Asset::class,
+        //     Model::EVENT_DEFINE_BEHAVIORS,
+        //     static function(DefineBehaviorsEvent $e) {
+        //         $e->behaviors['cloud:asset'] = AssetBehavior::class;
+        //     }
+        // );
+
         if (!$this->getConfig()->allowBinaryResponses) {
             Event::once(
                 Response::class,
@@ -193,7 +201,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
     }
 
-    public function handleBeforeSend(YiiEvent $event): void
+    public function handleBeforeSend(\yii\base\Event $event): void
     {
         /** @var Response $response */
         $response = $event->sender;
@@ -208,7 +216,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             'subfolder' => 'tmp',
         ]);
         $stream = $response->stream[0];
-        $path = uniqid('', true);
+        $path = uniqid('binary', true);
 
         // TODO: set expiry
         $fs->writeFileFromStream($path, $stream);
@@ -216,7 +224,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // TODO: use \League\Flysystem\AwsS3V3\AwsS3V3Adapter::temporaryUrl
         $cmd = $fs->getClient()->getCommand('GetObject', [
             'Bucket' => $fs->getBucketName(),
-            'Key' => $fs->getPrefix($path),
+            'Key' => $fs->prefixPath($path),
             'ResponseContentDisposition' => $response->getHeaders()->get('content-disposition'),
         ]);
 

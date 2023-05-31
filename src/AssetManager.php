@@ -21,7 +21,7 @@ class AssetManager extends \craft\web\AssetManager
         $dir = $this->hash($src);
         $fileName = basename($src);
         $dest = "$dir/$fileName";
-        $prefixedDest = $this->fs->getPrefix($dest);
+        $prefixedDest = $this->fs->prefixPath($dest);
         $stream = @fopen($src, 'rb');
 
         if (!$stream) {
@@ -39,12 +39,14 @@ class AssetManager extends \craft\web\AssetManager
     protected function publishDirectory($src, $options): array
     {
         $hash = $this->hash($src);
-        $dest = $this->fs->getPrefix($this->hash($src));
 
         // TODO: try/catch
         if (!$this->fs->directoryExists($hash)) {
             $this->fs->uploadDirectory($src, $hash);
         }
+
+        // TODO: use getPublicUrl
+        $dest = $this->fs->prefixPath($this->hash($src));
 
         return [$dest, Helper::getCdnUrl($dest)];
     }

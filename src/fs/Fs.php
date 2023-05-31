@@ -15,11 +15,14 @@ use craft\helpers\App;
 use craft\helpers\Assets;
 use craft\helpers\DateTimeHelper;
 use DateTime;
+use DateTimeInterface;
 use Illuminate\Support\Collection;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
-use League\Flysystem\FilesystemAdapter;
 use League\Flysystem\FilesystemException;
+use League\Flysystem\UnableToCopyFile;
+use League\Flysystem\UnableToMoveFile;
 use League\Flysystem\Visibility;
+use Throwable;
 
 /**
  *
@@ -46,7 +49,7 @@ class Fs extends FlysystemFs
             return null;
         }
 
-        return Helper::getCdnUrl($this->getPrefix());
+        return Helper::getCdnUrl($this->prefixPath());
     }
 
     /**
@@ -95,12 +98,12 @@ class Fs extends FlysystemFs
     /**
      * @inheritDoc
      */
-    protected function createAdapter(): FilesystemAdapter
+    protected function createAdapter(): AwsS3V3Adapter
     {
         return new AwsS3V3Adapter(
             client: $this->getClient(),
             bucket: $this->getBucketName(),
-            prefix: $this->getPrefix(),
+            prefix: $this->prefixPath(),
         );
     }
 
@@ -141,7 +144,7 @@ class Fs extends FlysystemFs
         ]);
     }
 
-    public function getPrefix(?string $path = null): string
+    public function prefixPath(?string $path = null): string
     {
         return Collection::make([
             Module::getInstance()->getConfig()->environmentId,
@@ -201,10 +204,11 @@ class Fs extends FlysystemFs
     {
         try {
             $config = $this->addFileMetadataToConfig($config);
+
             return $this->getClient()->uploadDirectory(
                 $path,
                 $this->getBucketName(),
-                $this->getPrefix($destPath),
+                $this->prefixPath($destPath),
                 $config,
             );
         } catch (Throwable $exception) {
@@ -212,15 +216,44 @@ class Fs extends FlysystemFs
         }
     }
 
-    /**
-     * Fixes \craft\flysystem\base\FlysystemFs::directoryExists,
-     * which uses fileExists, and doesn't work on S3.
-     */
-    public function directoryExists(string $path): bool
+    public function temporaryUrl(string $path, DateTimeInterface $expiresAt, $config = []): string
     {
         try {
-            return $this->adapter()->directoryExists($path);
+            $config = $this->addFileMetadataToConfig($config);
+            return $this->filesystem()->temporaryUrl(
+                $path,
+                $expiresAt,
+                $config,
+            );
         } catch (FilesystemException $exception) {
+            throw new FsException($exception->getMessage(), 0, $exception);
+        }
+    }
+
+    /**
+     * Duping parent to add config…
+     * See https://github.com/craftcms/flysystem/pull/9
+     */
+    public function copyFile(string $path, string $newPath): void
+    {
+        try {
+            $config = $this->addFileMetadataToConfig([]);
+            $this->filesystem()->copy($path, $newPath, $config);
+        } catch (FilesystemException | UnableToCopyFile $exception) {
+            throw new FsException($exception->getMessage(), 0, $exception);
+        }
+    }
+
+    /**
+     * Duping parent to add config…
+     * See https://github.com/craftcms/flysystem/pull/9
+     */
+    public function renameFile(string $path, string $newPath): void
+    {
+        try {
+            $config = $this->addFileMetadataToConfig([]);
+            $this->filesystem()->move($path, $newPath, $config);
+        } catch (FilesystemException | UnableToMoveFile $exception) {
             throw new FsException($exception->getMessage(), 0, $exception);
         }
     }

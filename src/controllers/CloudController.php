@@ -10,12 +10,12 @@ use craft\helpers\Console;
 use Illuminate\Support\Collection;
 use Symfony\Component\Process\Process;
 use Throwable;
-use yii\base\Exception;
 use yii\console\ExitCode;
 use yii\web\AssetBundle;
 
 class CloudController extends Controller
 {
+    protected array $processes = [];
     public function actionPublishAssetBundle(string $className): int
     {
         /** @var AssetBundle $assetBundle */
@@ -51,7 +51,7 @@ class CloudController extends Controller
                 try {
                     $this->do("Publishing “{$className}”", fn() => $process->run(function ($type, $buffer) {
                         if ($type === Process::ERR) {
-                            throw new Exception('Invalid asset bundle.');
+                            return;
                         }
 
                         $this->stdout($buffer);
