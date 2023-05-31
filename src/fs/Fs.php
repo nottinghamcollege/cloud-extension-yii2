@@ -34,6 +34,7 @@ use Throwable;
 class Fs extends FlysystemFs
 {
     public ?string $subfolder = null;
+    protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
     protected string $type;
     private S3Client $_client;
