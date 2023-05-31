@@ -37,7 +37,21 @@ class CloudController extends Controller
             'file' => $file,
             'bucket' => $fs->getBucketName(),
             'key' => $fs->prefixPath($filename),
+            'filename' => $filename,
         ]);
+    }
+
+
+    public function actionCreateAsset(): Response
+    {
+        $this->requireAcceptsJson();
+
+        $elementsService = Craft::$app->getElements();
+        $tempBucket = $this->request->getBodyParam('bucket') ?: null;
+        $tempBucketKey = $this->request->getBodyParam('key') ?: null;
+        $filename = $this->request->getBodyParam('filename') ?: null;
+        $folderId = (int)$this->request->getBodyParam('folderId') ?: null;
+        $fieldId = (int)$this->request->getBodyParam('fieldId') ?: null;
     }
 }
 
