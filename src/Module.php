@@ -9,6 +9,7 @@ use craft\cloud\controllers\CloudController as WebController;
 use craft\cloud\fs\AssetFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
+use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
@@ -126,6 +127,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 \craft\imagetransforms\ImageTransformer::class,
                 ImageTransformer::class,
             );
+        }
+
+        if ($app->getRequest()->getIsCpRequest()) {
+            $app->getView()->registerAssetBundle(UploaderAsset::class);
         }
 
         Craft::$container->set(
