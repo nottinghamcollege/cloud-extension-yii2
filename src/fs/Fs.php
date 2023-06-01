@@ -36,7 +36,7 @@ class Fs extends FlysystemFs
     public ?string $subfolder = null;
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
-    protected string $type;
+    protected ?string $type = null;
     private S3Client $_client;
 
     public const TAG_PRIVATE = 'private';

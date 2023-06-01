@@ -27,6 +27,9 @@ class CloudController extends Controller
         $assetManager = Craft::$app->getAssetManager();
         $assetBundle->publish($assetManager);
 
+        $this->stdout("Published “{$className}”");
+        $this->stdout(PHP_EOL);
+
         return ExitCode::OK;
     }
 
@@ -37,28 +40,26 @@ class CloudController extends Controller
         Collection::make($classMap)
             ->keys()
             ->filter(fn($className) => str_contains($className, '\\assets\\') || preg_match('/Asset(Bundle)?$/', $className))
-            ->each(function(string $className) {
+            ->mapWithKeys(function(string $className) {
                 $process = new Process([
                     PHP_BINARY,
                     $this->request->getScriptFile(),
                     'cloud/publish-asset-bundle',
                     $className,
                 ]);
+                $process->start();
 
-                // TODO: run in parallel
-                try {
-                    $this->do("Publishing “{$className}”", fn() => $process->run(function($type, $buffer) {
-                        if ($type === Process::ERR) {
-                            throw new Exception('Invalid asset bundle.');
-                        }
-
-                        $this->stdout($buffer);
-                    }));
-                } catch (Throwable) {
-                    // Carry on, we expect some failures
+                return [$className => $process];
+            })
+            ->each(function(Process $process, string $className) {
+                while ($process->isRunning()) {
+                    sleep(1);
+                    continue;
                 }
 
-                return $process;
+                if ($process->isSuccessful()) {
+                    $this->stdout($process->getOutput());
+                }
             });
 
         return ExitCode::OK;

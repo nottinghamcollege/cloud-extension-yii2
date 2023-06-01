@@ -4,7 +4,7 @@ namespace craft\cloud\fs;
 
 class AssetFs extends Fs
 {
-    protected string $type = 'assets';
+    protected ?string $type = 'assets';
 
     /**
      * @inheritDoc
