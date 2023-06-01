@@ -19,8 +19,8 @@ use craft\web\Response;
 use craft\web\View;
 
 /**
- *
  * @property-read Config $config
+ * @property ?string $id When auto-bootstrapped as an extension, this can be `null`.
  */
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 {
@@ -30,7 +30,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     public const MUTEX_EXPIRE_WEB = 30;
     public const MUTEX_EXPIRE_CONSOLE = 900;
 
-    private BaseConfig $_config;
+    private Config $_config;
 
     /**
      * @inheritDoc
@@ -39,7 +39,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     {
         parent::init();
 
-        // When automatically bootstrapped, id will be `null`.
         $this->id = $this->id ?? 'cloud';
 
         // Set instance early so our dependencies can use it
@@ -161,6 +160,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         $fileConfig = Craft::$app->getConfig()->getConfigFromFile($this->id);
+        /** @var Config $config */
         $config = is_array($fileConfig) ? Craft::createObject(Config::class, $fileConfig) : $fileConfig;
         $this->_config = Craft::configure($config, App::envConfig(Config::class, 'CRAFT_CLOUD_'));
 
@@ -239,7 +239,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
         $url = (string) $s3Request->getUri();
-        $response->stream = null;
+        unset($response->stream);
         $response->redirect($url);
     }
 

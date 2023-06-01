@@ -9,7 +9,7 @@ use craft\helpers\Assets;
 use yii\base\Behavior;
 
 /**
- * @property $owner Asset
+ * @property Asset $owner
  */
 class AssetBehavior extends Behavior
 {

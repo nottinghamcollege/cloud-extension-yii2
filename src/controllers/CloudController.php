@@ -17,7 +17,7 @@ class CloudController extends Controller
         $extension = pathinfo($file['name'], PATHINFO_EXTENSION);
         $filename = sprintf('%s.%s', uniqid('upload', true), $extension);
 
-        /** @var StorageFs $tmpFs */
+        /** @var StorageFs $fs */
         $fs = Craft::createObject([
             'class' => StorageFs::class,
             'subfolder' => 'tmp',
@@ -52,5 +52,7 @@ class CloudController extends Controller
         $filename = $this->request->getBodyParam('filename') ?: null;
         $folderId = (int)$this->request->getBodyParam('folderId') ?: null;
         $fieldId = (int)$this->request->getBodyParam('fieldId') ?: null;
+
+        return $this->asJson([]);
     }
 }

@@ -10,7 +10,10 @@ use craft\helpers\App;
 use craft\helpers\UrlHelper;
 use craft\models\ImageTransform;
 
-class ImageTransformer extends Component implements ImageTransformerInterface, ImageEditorTransformerInterface
+/**
+ * TODO: ImageEditorTransformerInterface
+ */
+class ImageTransformer extends Component implements ImageTransformerInterface
 {
     public const SIGNING_PARAM = 's';
     public const SUPPORTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'gif', 'png', 'heic'];
@@ -34,51 +37,6 @@ class ImageTransformer extends Component implements ImageTransformerInterface, I
 
     public function invalidateAssetTransforms(Asset $asset): void
     {
-    }
-
-    public function startImageEditing(Asset $asset): void
-    {
-        // TODO: Implement startImageEditing() method.
-    }
-
-    public function flipImage(bool $flipX, bool $flipY): void
-    {
-        // TODO: Implement flipImage() method.
-    }
-
-    public function scaleImage(int $width, int $height): void
-    {
-        // TODO: Implement scaleImage() method.
-    }
-
-    public function rotateImage(float $degrees): void
-    {
-        // TODO: Implement rotateImage() method.
-    }
-
-    public function getEditedImageWidth(): int
-    {
-        // TODO: Implement getEditedImageWidth() method.
-    }
-
-    public function getEditedImageHeight(): int
-    {
-        // TODO: Implement getEditedImageHeight() method.
-    }
-
-    public function crop(int $x, int $y, int $width, int $height): void
-    {
-        // TODO: Implement crop() method.
-    }
-
-    public function finishImageEditing(): string
-    {
-        // TODO: Implement finishImageEditing() method.
-    }
-
-    public function cancelImageEditing(): string
-    {
-        // TODO: Implement cancelImageEditing() method.
     }
 
     public function buildTransformParams(ImageTransform $imageTransform): array
