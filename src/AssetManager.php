@@ -83,5 +83,4 @@ class AssetManager extends \craft\web\AssetManager
 
         return $this->_published[$path] = $this->publishDirectory($src, $options);
     }
-
 }

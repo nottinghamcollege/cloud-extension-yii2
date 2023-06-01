@@ -10,7 +10,6 @@ use League\Uri\UriTemplate;
 
 class Helper
 {
-
     public static function getBuildUrl(string $path = ''): UriInterface
     {
         return self::getCdnUrl("{environmentId}/builds/{buildId}/${path}");

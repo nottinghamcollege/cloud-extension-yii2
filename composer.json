@@ -11,6 +11,15 @@
     "bref/extra-php-extensions": "^1.2",
     "league/flysystem-aws-s3-v3": "^3.15"
   },
+  "require-dev": {
+    "craftcms/ecs": "dev-main",
+    "craftcms/phpstan": "dev-main"
+  },
+  "scripts": {
+    "check-cs": "ecs check --ansi",
+    "fix-cs": "ecs check --ansi --fix",
+    "phpstan": "phpstan --memory-limit=1G"
+  },
   "autoload": {
     "psr-4": {
       "craft\\cloud\\": "src/"

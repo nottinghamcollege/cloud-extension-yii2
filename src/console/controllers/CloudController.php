@@ -3,8 +3,6 @@
 namespace craft\cloud\console\controllers;
 
 use Craft;
-use craft\cloud\AssetHelper;
-use craft\cloud\AssetManager;
 use craft\console\Controller;
 use craft\helpers\Console;
 use Illuminate\Support\Collection;
@@ -49,14 +47,14 @@ class CloudController extends Controller
 
                 // TODO: run in parallel
                 try {
-                    $this->do("Publishing “{$className}”", fn() => $process->run(function ($type, $buffer) {
+                    $this->do("Publishing “{$className}”", fn() => $process->run(function($type, $buffer) {
                         if ($type === Process::ERR) {
                             throw new Exception('Invalid asset bundle.');
                         }
 
                         $this->stdout($buffer);
                     }));
-                } catch(Throwable) {
+                } catch (Throwable) {
                     // Carry on, we expect some failures
                 }
 
@@ -66,4 +64,3 @@ class CloudController extends Controller
         return ExitCode::OK;
     }
 }
-

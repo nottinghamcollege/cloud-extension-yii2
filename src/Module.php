@@ -1,4 +1,5 @@
 <?php
+
 namespace craft\cloud;
 
 use Craft;
@@ -66,7 +67,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->set('cache', [
                 'class' => \yii\redis\Cache::class,
                 'redis' => $this->getRedisConfig([
-                    'database' => self::REDIS_DATABASE_CACHE
+                    'database' => self::REDIS_DATABASE_CACHE,
                 ]),
                 'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
             ]);
@@ -78,7 +79,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'mutex' => [
                     'class' => \craft\cloud\Mutex::class,
                     'redis' => $this->getRedisConfig([
-                        'database' => self::REDIS_DATABASE_MUTEX
+                        'database' => self::REDIS_DATABASE_MUTEX,
                     ]),
                     'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
                         ? self::MUTEX_EXPIRE_CONSOLE
@@ -91,7 +92,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->set('session', [
                 'class' => \yii\redis\Session::class,
                 'redis' => $this->getRedisConfig([
-                    'database' => self::REDIS_DATABASE_SESSION
+                    'database' => self::REDIS_DATABASE_SESSION,
                 ]),
             ] + App::sessionConfig());
         }
@@ -128,6 +129,14 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 ImageTransformer::class,
             );
         }
+
+        Craft::$container->set(
+            \craft\fs\Temp::class,
+            [
+                'class' => StorageFs::class,
+                'subfolder' => 'tmp',
+            ],
+        );
 
         /**
          * We have to use DI here (can't use setModule), as

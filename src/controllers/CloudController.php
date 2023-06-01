@@ -54,4 +54,3 @@ class CloudController extends Controller
         $fieldId = (int)$this->request->getBodyParam('fieldId') ?: null;
     }
 }
-

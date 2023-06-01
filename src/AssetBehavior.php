@@ -3,15 +3,9 @@
 namespace craft\cloud;
 
 use Craft;
-use craft\base\Fs;
 use craft\elements\Asset;
-use craft\errors\FileException;
-use craft\errors\VolumeException;
 use craft\events\AssetEvent;
 use craft\helpers\Assets;
-use craft\helpers\FileHelper;
-use craft\helpers\Image;
-use DateTime;
 use yii\base\Behavior;
 
 /**

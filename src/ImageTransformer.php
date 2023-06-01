@@ -3,7 +3,6 @@
 namespace craft\cloud;
 
 use craft\base\Component;
-use craft\base\imagetransforms\EagerImageTransformerInterface;
 use craft\base\imagetransforms\ImageEditorTransformerInterface;
 use craft\base\imagetransforms\ImageTransformerInterface;
 use craft\elements\Asset;
@@ -35,7 +34,6 @@ class ImageTransformer extends Component implements ImageTransformerInterface, I
 
     public function invalidateAssetTransforms(Asset $asset): void
     {
-
     }
 
     public function startImageEditing(Asset $asset): void

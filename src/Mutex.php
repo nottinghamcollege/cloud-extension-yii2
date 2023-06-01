@@ -16,7 +16,7 @@ class Mutex extends \yii\redis\Mutex
         $key = $this->calculateKey($name);
         $value = Yii::$app->security->generateRandomString(20);
 
-        $result = $this->retryAcquire($timeout, function () use ($key, $value) {
+        $result = $this->retryAcquire($timeout, function() use ($key, $value) {
             return $this->redis->executeCommand('SET', [$key, $value, 'NX', 'PX', (int) ($this->expire * 1000)]);
         });
 

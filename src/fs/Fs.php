@@ -81,7 +81,7 @@ class Fs extends FlysystemFs
 
     public function setExpires(null|string|array $expires): void
     {
-        $this->expires = is_array($expires) ? $this->normalizeExpires($expires): $expires;
+        $this->expires = is_array($expires) ? $this->normalizeExpires($expires) : $expires;
     }
 
     public function normalizeExpires(array $expires): ?string
