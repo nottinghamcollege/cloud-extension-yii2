@@ -1,2 +1,2 @@
 Craft.CloudUploader=Craft.Uploader.extend({init:function(t,e){this.base(t,e),this.uploader.on("fileuploadsubmit",this.onSubmit.bind(this))},onSubmit:function(t,e){var a=this,i=e.files[0],o=this.uploader.fileupload("option","formData");return e.jqXHR=Craft.sendActionRequest("POST","cloud/get-upload-url",{data:{file:{lastModified:i.lastModified,name:i.name,size:i.size,type:i.type}}}).then((function(t){return Object.assign(o,t.data),Object.assign(e,{type:"PUT",url:t.data.url}),a.uploader.fileupload("send",e)})).then((function(){return $.ajax({url:Craft.getActionUrl("cloud/create-asset"),type:"POST",headers:a.uploader.fileupload("option","headers"),data:o})})),!1}});
-//# sourceMappingURL=CloudUploader.js.map
+//# sourceMappingURL=uploader.js.map

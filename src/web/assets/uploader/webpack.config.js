@@ -5,7 +5,7 @@ module.exports = getConfig({
   context: __dirname,
   config: {
     entry: {
-      CloudUploader: './CloudUploader.js',
+      uploader: './uploader.js',
     },
   },
 });

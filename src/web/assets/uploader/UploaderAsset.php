@@ -12,7 +12,7 @@ class UploaderAsset extends AssetBundle
 
     /** @inheritdoc */
     public $js = [
-        'axios.js',
+        'uploader.js',
     ];
 
     /**
