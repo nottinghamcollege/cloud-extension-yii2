@@ -9,7 +9,6 @@ use craft\cloud\controllers\CloudController as WebController;
 use craft\cloud\fs\AssetFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
-use craft\config\BaseConfig;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
