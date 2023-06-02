@@ -16,7 +16,7 @@ use craft\models\ImageTransform;
 class ImageTransformer extends Component implements ImageTransformerInterface
 {
     public const SIGNING_PARAM = 's';
-    public const SUPPORTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'gif', 'png', 'heic'];
+    public const SUPPORTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'gif', 'png', 'avif'];
 
     public function getTransformUrl(Asset $asset, ImageTransform $imageTransform, bool $immediately): string
     {
