@@ -78,7 +78,10 @@ Craft.CloudUploader = Craft.Uploader.extend({
       );
       this.$element.trigger('fileuploaddone', [response.data]);
     } catch (err) {
-      this.$element.trigger('fileuploadfail', [err]);
+      this.$element.trigger('fileuploadfail', [{
+        message: err.message,
+        filename: file.name,
+      }]);
     } finally {
       this.$element.trigger('fileuploadalways');
     }
