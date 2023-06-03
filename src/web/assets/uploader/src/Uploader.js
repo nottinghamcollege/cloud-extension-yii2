@@ -25,6 +25,7 @@ Craft.CloudUploader = Craft.Uploader.extend({
     this.formData = {};
     this.$fileInput = this.$element.prev();
     this.$fileInput.on('change', this.upload.bind(this));
+    this._inProgressCounter = 0;
   },
 
   /**
@@ -42,17 +43,35 @@ Craft.CloudUploader = Craft.Uploader.extend({
 
     this.formData = paramObject;
   },
-  upload: async function (event) {
+  upload: function (event) {
     const files = event.target.files;
-    const file = files[0];
 
+    for(const file of files) {
+      this._validFileCounter++;
+    }
+
+    for(const file of files) {
+      this.uploadFile(file);
+
+      if (++this._totalFileCounter === files.length) {
+        this._totalFileCounter = 0;
+        this._validFileCounter = 0;
+        this.processErrorMessages();
+      }
+    };
+  },
+  uploadFile: async function (file) {
     Object.assign(this.formData, {
       filename: file.name,
     });
 
-    this.$element.trigger('fileuploadstart');
-
     try {
+      this._inProgressCounter++;
+      this.$element.trigger('fileuploadstart');
+      this.$element.trigger('fileuploadprogressall', [{
+        loaded: this._inProgressCounter,
+        total: this._validFileCounter,
+      }]);
       let response = await Craft.sendActionRequest(
         'POST',
         'cloud/get-upload-url',
@@ -68,7 +87,7 @@ Craft.CloudUploader = Craft.Uploader.extend({
           'Content-Type': file.type,
         },
         onUploadProgress: (axiosProgressEvent) => {
-          this.$element.trigger('fileuploadprogressall', [axiosProgressEvent]);
+          this.$element.trigger('fileuploadprogress', [axiosProgressEvent]);
         },
       });
 
@@ -84,6 +103,7 @@ Craft.CloudUploader = Craft.Uploader.extend({
       }]);
     } finally {
       this.$element.trigger('fileuploadalways');
+      this._inProgressCounter--;
     }
   },
 
@@ -91,7 +111,7 @@ Craft.CloudUploader = Craft.Uploader.extend({
    * Get the number of uploads in progress.
    */
   getInProgress: function () {
-    return 0;
+    return this._inProgressCounter;
   },
 });
 
