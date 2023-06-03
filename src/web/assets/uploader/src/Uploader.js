@@ -1,7 +1,7 @@
 /** global: Craft */
 /** global: Garnish */
 
-const getUploadUrl = function(data) {
+const getUploadUrl = function (data) {
   const formData = data.formData;
   const file = data.files[0];
 
@@ -15,7 +15,7 @@ const getUploadUrl = function(data) {
       },
     }),
   }).then(() => data.submit());
-}
+};
 
 Craft.CloudUploader = Craft.Uploader.extend({
   init: function ($element, settings) {
@@ -24,13 +24,13 @@ Craft.CloudUploader = Craft.Uploader.extend({
     this.uploader = null;
     this.formData = {};
     this.$fileInput = this.$element.prev();
-    this.$fileInput.on('change', this.upload);
+    this.$fileInput.on('change', this.upload.bind(this));
   },
 
   /**
    * Set uploader parameters.
    */
-  setParams: (paramObject) => {
+  setParams: function (paramObject) {
     // If CSRF protection isn't enabled, these won't be defined.
     if (
       typeof Craft.csrfTokenName !== 'undefined' &&
@@ -42,26 +42,55 @@ Craft.CloudUploader = Craft.Uploader.extend({
 
     this.formData = paramObject;
   },
-  upload: (event) => {
+  upload: async function (event) {
     const files = event.target.files;
     const file = files[0];
 
     Object.assign(this.formData, {
-      filename: file.name
+      filename: file.name,
     });
-    Craft.sendActionRequest('POST', 'cloud/get-upload-url', {
-      data: this.formData
-    }).then((response) => {
+
+    this.$element.trigger('fileuploadstart');
+
+    try {
+      let response = await Craft.sendActionRequest(
+        'POST',
+        'cloud/get-upload-url',
+        {
+          data: this.formData,
+        }
+      );
+
       Object.assign(this.formData, response.data);
 
-      return axios.put(response.data.url, file, {
+      await axios.put(response.data.url, file, {
         headers: {
           'Content-Type': file.type,
-        }
-      }).then(() => axios.post(
+        },
+        onUploadProgress: (axiosProgressEvent) => {
+          this.$element.trigger('fileuploadprogressall', [axiosProgressEvent]);
+        },
+      });
+
+      response = await axios.post(
         Craft.getActionUrl('cloud/create-asset'),
-        this.formData,
-      ));
-    });
+        this.formData
+      );
+      this.$element.trigger('fileuploaddone', [response.data]);
+    } catch (err) {
+      this.$element.trigger('fileuploadfail', [err]);
+    } finally {
+      this.$element.trigger('fileuploadalways');
+    }
+  },
+
+  /**
+   * Get the number of uploads in progress.
+   */
+  getInProgress: function () {
+    return 0;
   },
 });
+
+// Register it!
+// Craft.registerAssetUploaderClass('craft\\cloud\\AssetFs', Craft.CloudUploader);

@@ -5,7 +5,7 @@ module.exports = getConfig({
   context: __dirname,
   config: {
     entry: {
-      uploader: './uploader.js',
+      Uploader: './Uploader.js',
     },
   },
 });
