@@ -24,8 +24,12 @@ Craft.CloudUploader = Craft.Uploader.extend({
     this.uploader = null;
     this.formData = {};
     this.$fileInput = this.$element.prev();
-    this.$fileInput.on('change', this.upload.bind(this));
-    this._inProgressCounter = 0;
+    this.$fileInput.on('change', this.uploadFiles.bind(this));
+    this.resetCounters();
+
+    if (this.allowedKinds && !this._extensionList) {
+      this._createExtensionList();
+    }
   },
 
   /**
@@ -43,22 +47,55 @@ Craft.CloudUploader = Craft.Uploader.extend({
 
     this.formData = paramObject;
   },
-  upload: function (event) {
-    const files = event.target.files;
+  uploadFiles: async function (event) {
+    const files = [...event.target.files];
+    const validFiles = files.filter((file) => {
+      let valid = true;
 
-    for(const file of files) {
-      this._validFileCounter++;
+      if (this._extensionList?.length) {
+        const matches = file.name.match(/\.([a-z0-4_]+)$/i);
+        const fileExtension = matches[1];
+
+        if (this._extensionList.includes(fileExtension.toLowerCase())) {
+          this._rejectedFiles.type.push('“' + file.name + '”');
+          valid = false;
+        }
+      }
+
+      if (file.size > this.settings.maxFileSize) {
+        this._rejectedFiles.size.push('“' + file.name + '”');
+        valid = false;
+      }
+
+      // If the validation has passed for this file up to now, check if we're not hitting any limits
+      if (
+        valid &&
+        typeof this.settings.canAddMoreFiles === 'function' &&
+        !this.settings.canAddMoreFiles(this._validFileCounter)
+      ) {
+        this._rejectedFiles.limit.push('“' + file.name + '”');
+        valid = false;
+      }
+
+      if (valid) {
+        this._totalBytes += file.size;
+        this._validFileCounter++;
+        this._inProgressCounter++;
+      }
+
+      return valid;
+    });
+
+    this.processErrorMessages();
+
+    this.$element.trigger('fileuploadstart');
+
+    for (const file of validFiles) {
+      await this.uploadFile(file);
+      this._inProgressCounter--;
     }
 
-    for(const file of files) {
-      this.uploadFile(file);
-
-      if (++this._totalFileCounter === files.length) {
-        this._totalFileCounter = 0;
-        this._validFileCounter = 0;
-        this.processErrorMessages();
-      }
-    };
+    this.resetCounters();
   },
   uploadFile: async function (file) {
     Object.assign(this.formData, {
@@ -66,12 +103,6 @@ Craft.CloudUploader = Craft.Uploader.extend({
     });
 
     try {
-      this._inProgressCounter++;
-      this.$element.trigger('fileuploadstart');
-      this.$element.trigger('fileuploadprogressall', [{
-        loaded: this._inProgressCounter,
-        total: this._validFileCounter,
-      }]);
       let response = await Craft.sendActionRequest(
         'POST',
         'cloud/get-upload-url',
@@ -87,7 +118,12 @@ Craft.CloudUploader = Craft.Uploader.extend({
           'Content-Type': file.type,
         },
         onUploadProgress: (axiosProgressEvent) => {
-          this.$element.trigger('fileuploadprogress', [axiosProgressEvent]);
+          this._uploadedBytes = this._uploadedBytes + axiosProgressEvent.loaded - this._lastUploadedBytes;
+          this._lastUploadedBytes = axiosProgressEvent.loaded;
+          this.$element.trigger('fileuploadprogressall', {
+            loaded: this._uploadedBytes,
+            total: this._totalBytes,
+          });
         },
       });
 
@@ -95,16 +131,23 @@ Craft.CloudUploader = Craft.Uploader.extend({
         Craft.getActionUrl('cloud/create-asset'),
         this.formData
       );
-      this.$element.trigger('fileuploaddone', [response.data]);
-    } catch (err) {
-      this.$element.trigger('fileuploadfail', [{
-        message: err.message,
+      this.$element.trigger('fileuploaddone', response.data);
+    } catch (error) {
+      this.$element.trigger('fileuploadfail', {
+        message: error.message,
         filename: file.name,
-      }]);
+      });
     } finally {
+      this._lastUploadedBytes = 0;
       this.$element.trigger('fileuploadalways');
-      this._inProgressCounter--;
     }
+  },
+
+  resetCounters: function () {
+    this._totalBytes = 0;
+    this._uploadedBytes = 0;
+    this._lastUploadedBytes = 0;
+    this._inProgressCounter = 0;
   },
 
   /**
