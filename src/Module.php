@@ -243,7 +243,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
         $url = (string) $s3Request->getUri();
-        unset($response->stream);
+        $response->stream = null;
         $response->redirect($url);
     }
 
