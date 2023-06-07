@@ -23,13 +23,36 @@ Craft.CloudUploader = Craft.Uploader.extend({
     this.uploader.off('fileuploadadd');
     this.uploader = null;
     this.formData = {};
-    this.$fileInput = this.$element.prev();
-    this.$fileInput.on('change', this.uploadFiles.bind(this));
+    this.$dropZone = settings.dropZone
+    this.$fileInput = settings.fileInput;
+    this.$fileInput.on('change', (event) => this.uploadFiles.call(this, event.target.files));
     this.resetCounters();
 
     if (this.allowedKinds && !this._extensionList) {
       this._createExtensionList();
     }
+
+    this.$dropZone.on({
+      dragover: (event) => {
+        this.handleDragEvent(event);
+        event.dataTransfer.dropEffect = 'copy';
+      },
+      drop: (event) => {
+        this.handleDragEvent(event);
+        this.uploadFiles(event.dataTransfer.files);
+      },
+      dragenter: this.handleDragEvent,
+      dragleave: this.handleDragEvent,
+    });
+  },
+
+  handleDragEvent: function(event) {
+    if (!event?.dataTransfer?.files) {
+      return;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
   },
 
   /**
@@ -37,18 +60,14 @@ Craft.CloudUploader = Craft.Uploader.extend({
    */
   setParams: function (paramObject) {
     // If CSRF protection isn't enabled, these won't be defined.
-    if (
-      typeof Craft.csrfTokenName !== 'undefined' &&
-      typeof Craft.csrfTokenValue !== 'undefined'
-    ) {
-      // Add the CSRF token
+    if (Craft?.csrfTokenName && Craft?.csrfTokenValue) {
       paramObject[Craft.csrfTokenName] = Craft.csrfTokenValue;
     }
 
     this.formData = paramObject;
   },
-  uploadFiles: async function (event) {
-    const files = [...event.target.files];
+  uploadFiles: async function (FileList) {
+    const files = [...FileList];
     const validFiles = files.filter((file) => {
       let valid = true;
 
@@ -67,7 +86,6 @@ Craft.CloudUploader = Craft.Uploader.extend({
         valid = false;
       }
 
-      // If the validation has passed for this file up to now, check if we're not hitting any limits
       if (
         valid &&
         typeof this.settings.canAddMoreFiles === 'function' &&
@@ -100,6 +118,7 @@ Craft.CloudUploader = Craft.Uploader.extend({
   uploadFile: async function (file) {
     Object.assign(this.formData, {
       filename: file.name,
+      lastModified: file.lastModified,
     });
 
     try {
@@ -159,4 +178,4 @@ Craft.CloudUploader = Craft.Uploader.extend({
 });
 
 // Register it!
-// Craft.registerAssetUploaderClass('craft\\cloud\\AssetFs', Craft.CloudUploader);
+Craft.registerAssetUploaderClass('craft\\cloud\\fs\\AssetFs', Craft.CloudUploader);
