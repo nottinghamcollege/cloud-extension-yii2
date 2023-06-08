@@ -4,11 +4,12 @@ namespace craft\cloud\controllers;
 
 use Craft;
 use craft\cloud\fs\Fs;
-use craft\cloud\fs\StorageFs;
 use craft\elements\Asset;
+use craft\fields\Assets as AssetsField;
 use craft\helpers\Assets;
 use craft\web\Controller;
 use DateTime;
+use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
 class CloudController extends Controller
@@ -20,11 +21,38 @@ class CloudController extends Controller
         $originalFilename = $this->request->getRequiredBodyParam('filename');
         $extension = pathinfo($originalFilename, PATHINFO_EXTENSION);
         $filename = sprintf('%s.%s', uniqid('upload', true), $extension);
-        $folderId = $this->request->getRequiredBodyParam('folderId');
+        $folderId = $this->request->getBodyParam('folderId');
+        $fieldId = $this->request->getBodyParam('fieldId');
+
+        if (!$folderId && !$fieldId) {
+            throw new BadRequestHttpException('No target destination provided for uploading');
+        }
+
+        if (!$folderId) {
+            /** @var AssetsField|null $field */
+            $field = Craft::$app->getFields()->getFieldById($fieldId);
+            $elementId = $this->request->getBodyParam('elementId');
+            $siteId = $this->request->getBodyParam('siteId');
+            $element = $elementId
+                ? Craft::$app->getElements()->getElementById($elementId, null, $siteId)
+                : null;
+
+            $folderId = $field->resolveDynamicPathToFolderId($element);
+        }
+
+        if (!$folderId) {
+            throw new BadRequestHttpException('The target destination provided for uploading is not valid');
+        }
+
         $folder = Craft::$app->getAssets()->findFolder(['id' => $folderId]);
+
+        if (!$folder) {
+            throw new BadRequestHttpException('The target folder provided for uploading is not valid');
+        }
+
         $pathInVolume = "{$folder->path}$filename";
 
-        /** @var StorageFs $fs */
+        /** @var Fs $fs */
         $fs = $folder->getVolume()->getFs();
 
         // TODO: add an fs upload and use that
@@ -68,6 +96,7 @@ class CloudController extends Controller
         }
 
         $assets = Craft::$app->getAssets();
+        $selectionCondition = null;
 
         if (empty($folderId)) {
             /** @var AssetsField|null $field */
@@ -89,8 +118,6 @@ class CloudController extends Controller
             if ($selectionCondition instanceof ElementCondition) {
                 $selectionCondition->referenceElement = $element;
             }
-        } else {
-            $selectionCondition = null;
         }
 
         if (empty($folderId)) {

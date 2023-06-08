@@ -1,28 +1,12 @@
 /** global: Craft */
 /** global: Garnish */
 
-const getUploadUrl = function (data) {
-  const formData = data.formData;
-  const file = data.files[0];
-
-  return Craft.sendActionRequest('POST', 'cloud/get-upload-url', {
-    data: Object.assign(formData, {
-      file: {
-        lastModified: file.lastModified,
-        name: file.name,
-        size: file.size,
-        type: file.type,
-      },
-    }),
-  }).then(() => data.submit());
-};
-
 Craft.CloudUploader = Craft.Uploader.extend({
   init: function ($element, settings) {
     this.base($element, settings);
     this.uploader.off('fileuploadadd');
     this.uploader = null;
-    this.formData = {};
+    this.formData = settings.formData || {};
     this.$dropZone = settings.dropZone
     this.$fileInput = settings.fileInput;
     this.$fileInput.on('change', (event) => this.uploadFiles.call(this, event.target.files));
@@ -34,12 +18,14 @@ Craft.CloudUploader = Craft.Uploader.extend({
 
     this.$dropZone.on({
       dragover: (event) => {
-        this.handleDragEvent(event);
-        event.dataTransfer.dropEffect = 'copy';
+        if(this.handleDragEvent(event)) {
+          event.dataTransfer.dropEffect = 'copy';
+        }
       },
       drop: (event) => {
-        this.handleDragEvent(event);
-        this.uploadFiles(event.dataTransfer.files);
+        if (this.handleDragEvent(event)) {
+          this.uploadFiles(event.dataTransfer.files);
+        }
       },
       dragenter: this.handleDragEvent,
       dragleave: this.handleDragEvent,
@@ -48,11 +34,13 @@ Craft.CloudUploader = Craft.Uploader.extend({
 
   handleDragEvent: function(event) {
     if (!event?.dataTransfer?.files) {
-      return;
+      return false;
     }
 
     event.preventDefault();
     event.stopPropagation();
+
+    return true;
   },
 
   /**
