@@ -6,6 +6,9 @@ Craft.CloudUploader = Craft.Uploader.extend(
     init: function ($element, settings) {
       settings = $.extend({}, Craft.CloudUploader.defaults, settings);
       this.base($element, settings);
+      this.url = settings.paramName === 'replaceFile'
+        ? Craft.getActionUrl('cloud/replace-asset')
+        : Craft.getActionUrl('cloud/create-asset');
       this.uploader.off('fileuploadadd');
       this.uploader = null;
       this.formData = settings.formData || {};
@@ -18,20 +21,22 @@ Craft.CloudUploader = Craft.Uploader.extend(
         this._createExtensionList();
       }
 
-      this.$dropZone.on({
-        dragover: (event) => {
-          if(this.handleDragEvent(event)) {
-            event.dataTransfer.dropEffect = 'copy';
-          }
-        },
-        drop: (event) => {
-          if (this.handleDragEvent(event)) {
-            this.uploadFiles(event.dataTransfer.files);
-          }
-        },
-        dragenter: this.handleDragEvent,
-        dragleave: this.handleDragEvent,
-      });
+      if (this.$dropZone) {
+        this.$dropZone.on({
+          dragover: (event) => {
+            if(this.handleDragEvent(event)) {
+              event.dataTransfer.dropEffect = 'copy';
+            }
+          },
+          drop: (event) => {
+            if (this.handleDragEvent(event)) {
+              this.uploadFiles(event.dataTransfer.files);
+            }
+          },
+          dragenter: this.handleDragEvent,
+          dragleave: this.handleDragEvent,
+        });
+      }
     },
 
     handleDragEvent: function(event) {
@@ -136,10 +141,7 @@ Craft.CloudUploader = Craft.Uploader.extend(
           },
         });
 
-        response = await axios.post(
-          Craft.getActionUrl('cloud/create-asset'),
-          this.formData
-        );
+        response = await axios.post(this.url, this.formData);
         this.$element.trigger('fileuploaddone', response.data);
       } catch (error) {
         this.$element.trigger('fileuploadfail', {
@@ -169,7 +171,6 @@ Craft.CloudUploader = Craft.Uploader.extend(
   {
     defaults: {
       maxFileSize: Craft.maxUploadFileSize,
-      paramName: null,
     },
   }
 );
