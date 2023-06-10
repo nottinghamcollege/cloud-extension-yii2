@@ -7,6 +7,8 @@ use craft\cloud\fs\Fs;
 use craft\elements\Asset;
 use craft\fields\Assets as AssetsField;
 use craft\helpers\Assets;
+use craft\helpers\Db;
+use craft\i18n\Formatter;
 use craft\web\Controller;
 use DateTime;
 use yii\web\BadRequestHttpException;
@@ -74,7 +76,6 @@ class CloudController extends Controller
         ]);
     }
 
-
     public function actionCreateAsset(): Response
     {
         $this->requireAcceptsJson();
@@ -82,6 +83,9 @@ class CloudController extends Controller
         $filename = $this->request->getRequiredBodyParam('filename');
         $originalFilename = $this->request->getRequiredBodyParam('originalFilename');
         $lastModified = $this->request->getBodyParam('lastModified');
+        $size = $this->request->getBodyParam('size');
+        $width = $this->request->getBodyParam('width');
+        $height = $this->request->getBodyParam('height');
         $elementsService = Craft::$app->getElements();
 
         if (!$filename) {
@@ -97,6 +101,7 @@ class CloudController extends Controller
 
         $assets = Craft::$app->getAssets();
         $selectionCondition = null;
+        $element = null;
 
         if (empty($folderId)) {
             /** @var AssetsField|null $field */
@@ -109,11 +114,9 @@ class CloudController extends Controller
             if ($elementId = $this->request->getBodyParam('elementId')) {
                 $siteId = $this->request->getBodyParam('siteId') ?: null;
                 $element = $elementsService->getElementById($elementId, null, $siteId);
-            } else {
-                $element = null;
             }
-            $folderId = $field->resolveDynamicPathToFolderId($element);
 
+            $folderId = $field->resolveDynamicPathToFolderId($element);
             $selectionCondition = $field->getSelectionCondition();
             if ($selectionCondition instanceof ElementCondition) {
                 $selectionCondition->referenceElement = $element;
@@ -131,67 +134,55 @@ class CloudController extends Controller
         }
 
         // Check the permissions to upload in the resolved folder.
-        // $this->requireVolumePermissionByFolder('saveAssets', $folder);
+        $this->requireVolumePermissionByFolder('saveAssets', $folder);
 
-        // $normalizedFilename = Assets::prepareAssetName($filename);
-
-        // if ($selectionCondition) {
-        //     $tempFolder = Craft::$app->getAssets()->getUserTemporaryUploadFolder();
-        //     if ($folder->id !== $tempFolder->id) {
-        //         // upload to the user's temp folder initially, with a temp name
-        //         $originalFolder = $folder;
-        //         $originalFilename = $filename;
-        //         $folder = $tempFolder;
-        //         $filename = uniqid('asset', true) . '.' . pathinfo($filename, PATHINFO_EXTENSION);
-        //     }
-        // }
-
+        $normalizedOriginalFilename = Assets::prepareAssetName($originalFilename);
         $asset = new Asset();
-        $asset->newFilename = Assets::prepareAssetName($originalFilename);
         $asset->setFilename($filename);
         $asset->folderId = $folder->id;
         $asset->setVolumeId($folder->volumeId);
         $asset->uploaderId = Craft::$app->getUser()->getId();
         $asset->avoidFilenameConflicts = true;
         $asset->dateModified = $lastModified ? new DateTime('@' . $lastModified) : null;
+        $asset->size = $size;
+        $asset->width = $width;
+        $asset->height = $height;
 
-        // kind, size, width, height?
+        if (!$selectionCondition) {
+            $asset->newFilename = $normalizedOriginalFilename;
+        }
 
         if (isset($originalFilename)) {
             $asset->title = Assets::filename2Title(pathinfo($originalFilename, PATHINFO_FILENAME));
         }
 
-        $result = $elementsService->saveElement($asset);
+        $saved = $elementsService->saveElement($asset);
 
         // In case of error, let user know about it.
-        if (!$result) {
+        if (!$saved) {
             $errors = $asset->getFirstErrors();
             return $this->asFailure(implode("\n", $errors));
         }
 
-        // if ($selectionCondition) {
-        //     if (!$selectionCondition->matchElement($asset)) {
-        //         // delete and reject it
-        //         $elementsService->deleteElement($asset, true);
-        //         return $this->asFailure(Craft::t('app', '{filename} isn’t selectable for this field.', [
-        //             'filename' => $uploadedFile->name,
-        //         ]));
-        //     }
-        //
-        //     if (isset($originalFilename, $originalFolder)) {
-        //         // move it into the original target destination
-        //         $asset->newFilename = $originalFilename;
-        //         $asset->newFolderId = $originalFolder->id;
-        //         $asset->setScenario(Asset::SCENARIO_MOVE);
-        //
-        //         if (!$elementsService->saveElement($asset)) {
-        //             $errors = $asset->getFirstErrors();
-        //             return $this->asJson([
-        //                 'error' => $this->asFailure(implode("\n", $errors)),
-        //             ]);
-        //         }
-        //     }
-        // }
+        if ($selectionCondition) {
+            if (!$selectionCondition->matchElement($asset)) {
+                // delete and reject it
+                $elementsService->deleteElement($asset, true);
+                return $this->asFailure(Craft::t('app', '{filename} isn’t selectable for this field.', [
+                    'filename' => $originalFilename,
+                ]));
+            }
+
+            $asset->newFilename = $normalizedOriginalFilename;
+            $asset->setScenario(Asset::SCENARIO_MOVE);
+
+            if (!$elementsService->saveElement($asset)) {
+                $errors = $asset->getFirstErrors();
+                return $this->asJson([
+                    'error' => $this->asFailure(implode("\n", $errors)),
+                ]);
+            }
+        }
 
         if ($asset->conflictingFilename !== null) {
             $conflictingAsset = Asset::findOne(['folderId' => $folder->id, 'filename' => $asset->conflictingFilename]);

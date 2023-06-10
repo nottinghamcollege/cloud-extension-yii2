@@ -6,12 +6,13 @@ Craft.CloudUploader = Craft.Uploader.extend(
     init: function ($element, settings) {
       settings = $.extend({}, Craft.CloudUploader.defaults, settings);
       this.base($element, settings);
+
+      // TODO: toggle this based on a new setting (settings.replace)
       this.url = settings.paramName === 'replaceFile'
         ? Craft.getActionUrl('cloud/replace-asset')
         : Craft.getActionUrl('cloud/create-asset');
       this.uploader.off('fileuploadadd');
-      this.uploader = null;
-      this.formData = settings.formData || {};
+      this.formData = {};
       this.$dropZone = settings.dropZone
       this.$fileInput = settings.fileInput;
       this.$fileInput.on('change', (event) => this.uploadFiles.call(this, event.target.files));
@@ -111,7 +112,7 @@ Craft.CloudUploader = Craft.Uploader.extend(
       this.resetCounters();
     },
     uploadFile: async function (file) {
-      Object.assign(this.formData, {
+      const formData = Object.assign({}, this.formData, {
         filename: file.name,
         lastModified: file.lastModified,
       });
@@ -121,11 +122,18 @@ Craft.CloudUploader = Craft.Uploader.extend(
           'POST',
           'cloud/get-upload-url',
           {
-            data: this.formData,
+            data: formData,
           }
         );
 
-        Object.assign(this.formData, response.data);
+        Object.assign(formData, response.data, {
+          size: file.size,
+        });
+
+        try {
+          const {width, height} = await this.getImage(file);
+          Object.assign(formData, {width, height});
+        } catch (e) {}
 
         await axios.put(response.data.url, file, {
           headers: {
@@ -141,7 +149,7 @@ Craft.CloudUploader = Craft.Uploader.extend(
           },
         });
 
-        response = await axios.post(this.url, this.formData);
+        response = await axios.post(this.url, formData);
         this.$element.trigger('fileuploaddone', response.data);
       } catch (error) {
         this.$element.trigger('fileuploadfail', {
@@ -167,6 +175,31 @@ Craft.CloudUploader = Craft.Uploader.extend(
     getInProgress: function () {
       return this._inProgressCounter;
     },
+
+    getImage: function(file) {
+      return new Promise((resolve, reject) => {
+        if (!file.type.startsWith('image/')) {
+          reject(new Error('File is not an image.'));
+        }
+
+        var reader = new FileReader();
+
+        reader.addEventListener('load', (event) => {
+          const image = new Image();
+          image.src = reader.result;
+
+          image.addEventListener('load', (event) => {
+            resolve(event.target)
+          });
+
+          image.addEventListener('error', (event) => {
+            reject(new Error('Error loading image.'));
+          });
+        }, false);
+
+        reader.readAsDataURL(file);
+      });
+    }
   },
   {
     defaults: {
