@@ -8,6 +8,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
     _totalBytes: 0,
     _uploadedBytes: 0,
     _lastUploadedBytes: 0,
+    _validFileCounter: 0,
 
     init: function ($element, settings) {
       settings = $.extend({}, Craft.CloudUploader.defaults, settings);
