@@ -14,9 +14,11 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       settings = $.extend({}, Craft.CloudUploader.defaults, settings);
       this.base($element, settings);
       this.element = $element[0];
-      this.$dropZone = settings.dropZone
+      this.$dropZone = settings.dropZone;
       this.$fileInput = settings.fileInput || $element;
-      this.$fileInput.on('change', (event) => this.uploadFiles.call(this, event.target.files));
+      this.$fileInput.on('change', (event) =>
+        this.uploadFiles.call(this, event.target.files)
+      );
 
       Object.entries(settings.events).forEach(([name, handler]) => {
         this.element.addEventListener(name, handler);
@@ -29,7 +31,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       if (this.$dropZone) {
         this.$dropZone.on({
           dragover: (event) => {
-            if(this.handleDragEvent(event)) {
+            if (this.handleDragEvent(event)) {
               event.dataTransfer.dropEffect = 'copy';
             }
           },
@@ -44,7 +46,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       }
     },
 
-    handleDragEvent: function(event) {
+    handleDragEvent: function (event) {
       if (!event?.dataTransfer?.files) {
         return false;
       }
@@ -137,36 +139,43 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
             'Content-Type': file.type,
           },
           onUploadProgress: (axiosProgressEvent) => {
-            this._uploadedBytes = this._uploadedBytes + axiosProgressEvent.loaded - this._lastUploadedBytes;
+            this._uploadedBytes =
+              this._uploadedBytes +
+              axiosProgressEvent.loaded -
+              this._lastUploadedBytes;
             this._lastUploadedBytes = axiosProgressEvent.loaded;
 
-            this.element.dispatchEvent(new CustomEvent('fileuploadprogressall', {
-              detail: {
-                loaded: this._uploadedBytes,
-                total: this._totalBytes,
-              }
-            }));
+            this.element.dispatchEvent(
+              new CustomEvent('fileuploadprogressall', {
+                detail: {
+                  loaded: this._uploadedBytes,
+                  total: this._totalBytes,
+                },
+              })
+            );
           },
         });
 
         response = await axios.post(this.settings.url, formData);
-        this.element.dispatchEvent(new CustomEvent('fileuploaddone', {detail: response.data}));
-
+        this.element.dispatchEvent(
+          new CustomEvent('fileuploaddone', {detail: response.data})
+        );
       } catch (error) {
-        this.element.dispatchEvent(new CustomEvent('fileuploadfail', {
-          detail: {
-            message: error.message,
-            filename: file.name,
-          }
-        }));
-
+        this.element.dispatchEvent(
+          new CustomEvent('fileuploadfail', {
+            detail: {
+              message: error.message,
+              filename: file.name,
+            },
+          })
+        );
       } finally {
         this._lastUploadedBytes = 0;
         this.element.dispatchEvent(new Event('fileuploadalways'));
       }
     },
 
-    getImage: function(file) {
+    getImage: function (file) {
       return new Promise((resolve, reject) => {
         if (!file.type.startsWith('image/')) {
           reject(new Error('File is not an image.'));
@@ -174,22 +183,26 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
 
         var reader = new FileReader();
 
-        reader.addEventListener('load', (event) => {
-          const image = new Image();
-          image.src = reader.result;
+        reader.addEventListener(
+          'load',
+          (event) => {
+            const image = new Image();
+            image.src = reader.result;
 
-          image.addEventListener('load', (event) => {
-            resolve(event.target)
-          });
+            image.addEventListener('load', (event) => {
+              resolve(event.target);
+            });
 
-          image.addEventListener('error', (event) => {
-            reject(new Error('Error loading image.'));
-          });
-        }, false);
+            image.addEventListener('error', (event) => {
+              reject(new Error('Error loading image.'));
+            });
+          },
+          false
+        );
 
         reader.readAsDataURL(file);
       });
-    }
+    },
   },
   {
     defaults: {
@@ -201,4 +214,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
 );
 
 // Register it!
-Craft.registerAssetUploaderClass('craft\\cloud\\fs\\AssetFs', Craft.CloudUploader);
+Craft.registerAssetUploaderClass(
+  'craft\\cloud\\fs\\AssetFs',
+  Craft.CloudUploader
+);

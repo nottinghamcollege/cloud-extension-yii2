@@ -7,8 +7,6 @@ use craft\console\Controller;
 use craft\helpers\Console;
 use Illuminate\Support\Collection;
 use Symfony\Component\Process\Process;
-use Throwable;
-use yii\base\Exception;
 use yii\console\ExitCode;
 use yii\web\AssetBundle;
 
