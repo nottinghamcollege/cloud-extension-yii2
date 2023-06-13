@@ -1,22 +1,25 @@
 /** global: Craft */
 /** global: Garnish */
 
-Craft.CloudUploader = Craft.Uploader.extend(
+Craft.CloudUploader = Craft.BaseUploader.extend(
   {
+    element: null,
+    $fileInput: null,
+    _totalBytes: 0,
+    _uploadedBytes: 0,
+    _lastUploadedBytes: 0,
+
     init: function ($element, settings) {
       settings = $.extend({}, Craft.CloudUploader.defaults, settings);
       this.base($element, settings);
-
-      // TODO: toggle this based on a new setting (settings.replace)
-      this.url = settings.paramName === 'replaceFile'
-        ? Craft.getActionUrl('cloud/replace-asset')
-        : Craft.getActionUrl('cloud/create-asset');
-      this.uploader.off('fileuploadadd');
-      this.formData = {};
+      this.element = $element[0];
       this.$dropZone = settings.dropZone
-      this.$fileInput = settings.fileInput;
+      this.$fileInput = settings.fileInput || $element;
       this.$fileInput.on('change', (event) => this.uploadFiles.call(this, event.target.files));
-      this.resetCounters();
+
+      Object.entries(settings.events).forEach(([name, handler]) => {
+        this.element.addEventListener(name, handler);
+      });
 
       if (this.allowedKinds && !this._extensionList) {
         this._createExtensionList();
@@ -51,17 +54,6 @@ Craft.CloudUploader = Craft.Uploader.extend(
       return true;
     },
 
-    /**
-     * Set uploader parameters.
-     */
-    setParams: function (paramObject) {
-      // If CSRF protection isn't enabled, these won't be defined.
-      if (Craft?.csrfTokenName && Craft?.csrfTokenValue) {
-        paramObject[Craft.csrfTokenName] = Craft.csrfTokenValue;
-      }
-
-      this.formData = paramObject;
-    },
     uploadFiles: async function (FileList) {
       const files = [...FileList];
       const validFiles = files.filter((file) => {
@@ -102,17 +94,21 @@ Craft.CloudUploader = Craft.Uploader.extend(
 
       this.processErrorMessages();
 
-      this.$element.trigger('fileuploadstart');
+      this.element.dispatchEvent(new Event('fileuploadstart'));
 
       for (const file of validFiles) {
         await this.uploadFile(file);
         this._inProgressCounter--;
       }
 
-      this.resetCounters();
+      this._totalBytes = 0;
+      this._uploadedBytes = 0;
+      this._lastUploadedBytes = 0;
+      this._inProgressCounter = 0;
     },
+
     uploadFile: async function (file) {
-      const formData = Object.assign({}, this.formData, {
+      const formData = Object.assign({}, this.params, {
         filename: file.name,
         lastModified: file.lastModified,
       });
@@ -142,38 +138,31 @@ Craft.CloudUploader = Craft.Uploader.extend(
           onUploadProgress: (axiosProgressEvent) => {
             this._uploadedBytes = this._uploadedBytes + axiosProgressEvent.loaded - this._lastUploadedBytes;
             this._lastUploadedBytes = axiosProgressEvent.loaded;
-            this.$element.trigger('fileuploadprogressall', {
-              loaded: this._uploadedBytes,
-              total: this._totalBytes,
-            });
+
+            this.element.dispatchEvent(new CustomEvent('fileuploadprogressall', {
+              detail: {
+                loaded: this._uploadedBytes,
+                total: this._totalBytes,
+              }
+            }));
           },
         });
 
-        response = await axios.post(this.url, formData);
-        this.$element.trigger('fileuploaddone', response.data);
+        response = await axios.post(this.settings.url, formData);
+        this.element.dispatchEvent(new CustomEvent('fileuploaddone', {detail: response.data}));
+
       } catch (error) {
-        this.$element.trigger('fileuploadfail', {
-          message: error.message,
-          filename: file.name,
-        });
+        this.element.dispatchEvent(new CustomEvent('fileuploadfail', {
+          detail: {
+            message: error.message,
+            filename: file.name,
+          }
+        }));
+
       } finally {
         this._lastUploadedBytes = 0;
-        this.$element.trigger('fileuploadalways');
+        this.element.dispatchEvent(new Event('fileuploadalways'));
       }
-    },
-
-    resetCounters: function () {
-      this._totalBytes = 0;
-      this._uploadedBytes = 0;
-      this._lastUploadedBytes = 0;
-      this._inProgressCounter = 0;
-    },
-
-    /**
-     * Get the number of uploads in progress.
-     */
-    getInProgress: function () {
-      return this._inProgressCounter;
     },
 
     getImage: function(file) {
@@ -204,6 +193,8 @@ Craft.CloudUploader = Craft.Uploader.extend(
   {
     defaults: {
       maxFileSize: Craft.maxUploadFileSize,
+      createAction: 'cloud/create-asset',
+      replaceAction: 'cloud/replace-file',
     },
   }
 );
