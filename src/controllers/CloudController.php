@@ -92,11 +92,12 @@ class CloudController extends Controller
 
         $filename = $this->request->getRequiredBodyParam('filename');
         $originalFilename = $this->request->getRequiredBodyParam('originalFilename');
-        $lastModified = $this->request->getBodyParam('lastModified');
         $size = $this->request->getBodyParam('size');
         $width = $this->request->getBodyParam('width');
         $height = $this->request->getBodyParam('height');
         $elementsService = Craft::$app->getElements();
+        $lastModifiedMs = (int) $this->request->getBodyParam('lastModified');
+        $dateModified = $lastModifiedMs ? DateTime::createFromFormat('U', (int)($lastModifiedMs / 1000)) : new DateTime();
 
         if (!$filename) {
             throw new BadRequestHttpException('No file was uploaded');
@@ -156,7 +157,7 @@ class CloudController extends Controller
         $asset->setVolumeId($folder->volumeId);
         $asset->uploaderId = Craft::$app->getUser()->getId();
         $asset->avoidFilenameConflicts = true;
-        $asset->dateModified = $lastModified ? new DateTime('@' . $lastModified) : null;
+        $asset->dateModified = $dateModified;
         $asset->size = $size;
         $asset->width = $width;
         $asset->height = $height;
