@@ -9,6 +9,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
     _uploadedBytes: 0,
     _lastUploadedBytes: 0,
     _validFileCounter: 0,
+    _handleChange: null,
 
     init: function ($element, settings) {
       settings = $.extend({}, Craft.CloudUploader.defaults, settings);
@@ -16,11 +17,10 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       this.element = $element[0];
       this.$dropZone = settings.dropZone;
       this.$fileInput = settings.fileInput || $element;
-      this.$fileInput.on('change', (event) =>
-        this.uploadFiles.call(this, event.target.files)
-      );
+      this._handleChange = this.handleChange.bind(this);
+      this.$fileInput.on('change', this._handleChange);
 
-      Object.entries(settings.events).forEach(([name, handler]) => {
+      Object.entries(this.settings.events).forEach(([name, handler]) => {
         this.element.addEventListener(name, handler);
       });
 
@@ -32,12 +32,12 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
         this.$dropZone.on({
           dragover: (event) => {
             if (this.handleDragEvent(event)) {
-              event.dataTransfer.dropEffect = 'copy';
+              event.originalEvent.dataTransfer.dropEffect = 'copy';
             }
           },
           drop: (event) => {
             if (this.handleDragEvent(event)) {
-              this.uploadFiles(event.dataTransfer.files);
+              this.uploadFiles(event.originalEvent.dataTransfer.files);
             }
           },
           dragenter: this.handleDragEvent,
@@ -47,7 +47,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
     },
 
     handleDragEvent: function (event) {
-      if (!event?.dataTransfer?.files) {
+      if (!event?.originalEvent?.dataTransfer?.files) {
         return false;
       }
 
@@ -175,6 +175,10 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       }
     },
 
+    handleChange: function(event) {
+      this.uploadFiles(event.target.files);
+    },
+
     getImage: function (file) {
       return new Promise((resolve, reject) => {
         if (!file.type.startsWith('image/')) {
@@ -201,6 +205,15 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
         );
 
         reader.readAsDataURL(file);
+      });
+    },
+
+    destroy: function () {
+      this.$fileInput.off('change', this._handleChange);
+      this.$dropZone.off('dragover drop dragenter dragleave');
+
+      Object.entries(this.settings.events).forEach(([name, handler]) => {
+        this.element.removeEventListener(name, handler);
       });
     },
   },
