@@ -277,8 +277,11 @@ class CloudController extends Controller
             // e.g. triggered by selecting "replace it" in asset index modal
             if ($assetToReplace) {
                 // TODO: do this without downloading local file if both Cloud FSs
-                $tempPath = $sourceAsset->getCopyOfFile();
-                $assets->replaceAssetFile($assetToReplace, $tempPath, $assetToReplace->getFilename());
+                $assets->replaceAssetFile(
+                    $assetToReplace,
+                    $sourceAsset->getCopyOfFile(),
+                    $assetToReplace->getFilename()
+                );
                 Craft::$app->getElements()->deleteElement($sourceAsset);
             } else {
                 // TODO: when/how does this occur?
