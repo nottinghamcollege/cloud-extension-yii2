@@ -133,13 +133,15 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->getView()->registerAssetBundle(UploaderAsset::class);
         }
 
-        Craft::$container->set(
-            \craft\fs\Temp::class,
-            [
-                'class' => StorageFs::class,
-                'subfolder' => 'tmp',
-            ],
-        );
+        if ($this->getConfig()->enableTmpFs) {
+            Craft::$container->set(
+                \craft\fs\Temp::class,
+                [
+                    'class' => StorageFs::class,
+                    'subfolder' => 'tmp',
+                ],
+            );
+        }
 
         /**
          * We have to use DI here (can't use setModule), as

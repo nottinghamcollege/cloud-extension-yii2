@@ -21,6 +21,7 @@ class Config extends BaseConfig
     public bool $enableQueue = false;
     public bool $enableCdn = false;
     public bool $enableDebug = false;
+    public bool $enableTmpFs = false;
     public bool $allowBinaryResponses = true;
 
     public function init(): void
@@ -32,6 +33,7 @@ class Config extends BaseConfig
             $this->enableQueue = true;
             $this->enableCdn = true;
             $this->enableDebug = true;
+            $this->enableTmpFs = true;
             $this->allowBinaryResponses = false;
         }
 
