@@ -176,6 +176,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
 
     handleChange: function (event) {
       this.uploadFiles(event.target.files);
+      this.$fileInput.val('');
     },
 
     getImage: function (file) {

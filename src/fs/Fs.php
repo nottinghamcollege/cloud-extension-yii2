@@ -20,6 +20,7 @@ use Illuminate\Support\Collection;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\FilesystemException;
 use League\Flysystem\UnableToCopyFile;
+use League\Flysystem\UnableToCreateDirectory;
 use League\Flysystem\UnableToMoveFile;
 use League\Flysystem\Visibility;
 use Throwable;
@@ -246,8 +247,12 @@ class Fs extends FlysystemFs
     }
 
     /**
-     * Duping parent to add config…
+     * Duping parent methods to add config…
      * See https://github.com/craftcms/flysystem/pull/9
+     */
+
+    /**
+     * @inheritdoc
      */
     public function renameFile(string $path, string $newPath): void
     {
@@ -255,6 +260,19 @@ class Fs extends FlysystemFs
             $config = $this->addFileMetadataToConfig([]);
             $this->filesystem()->move($path, $newPath, $config);
         } catch (FilesystemException | UnableToMoveFile $exception) {
+            throw new FsException($exception->getMessage(), 0, $exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function createDirectory(string $path, array $config = []): void
+    {
+        try {
+            $config = $this->addFileMetadataToConfig([]);
+            $this->filesystem()->createDirectory($path, $config);
+        } catch (FilesystemException | UnableToCreateDirectory $exception) {
             throw new FsException($exception->getMessage(), 0, $exception);
         }
     }

@@ -6,12 +6,14 @@ use Craft;
 use craft\cloud\fs\Fs;
 use craft\elements\Asset;
 use craft\elements\conditions\ElementCondition;
+use craft\events\ReplaceAssetEvent;
 use craft\fields\Assets as AssetsField;
 use craft\helpers\Assets;
 use craft\helpers\Db;
 use craft\i18n\Formatter;
 use craft\web\Controller;
 use DateTime;
+use yii\base\Exception;
 use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -222,12 +224,6 @@ class CloudController extends Controller
         $sourceAssetId = $this->request->getBodyParam('sourceAssetId');
         $filename = $this->request->getBodyParam('filename');
         $originalFilename = $this->request->getBodyParam('originalFilename');
-        $folderId = $this->request->getBodyParam('folderId');
-        $lastModified = $this->request->getBodyParam('lastModified');
-        $size = $this->request->getBodyParam('size');
-        $width = $this->request->getBodyParam('width');
-        $height = $this->request->getBodyParam('height');
-
         $targetFilename = $originalFilename ? Assets::prepareAssetName($originalFilename) : null;
         $assets = Craft::$app->getAssets();
 
@@ -256,10 +252,9 @@ class CloudController extends Controller
 
         // Handle the Element Action
         if ($assetToReplace !== null && $filename) {
-            $assetToReplace->getVolume()->renameFile(
-                $assetToReplace->getPath($filename),
-                $assetToReplace->getPath(),
-            );
+            if (!$this->replaceAssetFile($assetToReplace, $filename, $targetFilename)) {
+                throw new Exception('Unable to replace asset.');
+            }
         } elseif ($sourceAsset !== null) {
             // Or replace using an existing Asset
 
@@ -279,14 +274,14 @@ class CloudController extends Controller
             }
 
             // If we have an actual asset for which to replace the file, just do it.
-            if (!empty($assetToReplace)) {
-                $assetToReplace->getVolume()->renameFile(
-                    $sourceAsset->getPath(),
-                    $assetToReplace->getPath(),
-                );
-
+            // e.g. triggered by selecting "replace it" in asset index modal
+            if ($assetToReplace) {
+                // TODO: do this without downloading local file if both Cloud FSs
+                $tempPath = $sourceAsset->getCopyOfFile();
+                $assets->replaceAssetFile($assetToReplace, $tempPath, $assetToReplace->getFilename());
                 Craft::$app->getElements()->deleteElement($sourceAsset);
             } else {
+                // TODO: when/how does this occur?
                 // If all we have is the filename, then make sure that the destination is empty and go for it.
                 $volume = $sourceAsset->getVolume();
                 $volume->deleteFile(rtrim($sourceAsset->folderPath, '/') . '/' . $targetFilename);
@@ -307,5 +302,36 @@ class CloudController extends Controller
             'formattedDateUpdated' => Craft::$app->getFormatter()->asDatetime($resultingAsset->dateUpdated, Formatter::FORMAT_WIDTH_SHORT),
             'dimensions' => $resultingAsset->getDimensions(),
         ]);
+    }
+
+    public function replaceAssetFile(Asset $asset, string $filename, string $targetFilename): bool
+    {
+        $assets = Craft::$app->getAssets();
+
+        if ($assets->hasEventHandlers($assets::EVENT_BEFORE_REPLACE_ASSET)) {
+            $event = new ReplaceAssetEvent([
+                'asset' => $asset,
+                'replaceWith' => '',
+                'filename' => '',
+            ]);
+            $assets->trigger($assets::EVENT_BEFORE_REPLACE_ASSET, $event);
+            $targetFilename = $event->filename ?: $targetFilename;
+        }
+
+        $asset->uploaderId = Craft::$app->getUser()->getId();
+        $asset->avoidFilenameConflicts = true;
+        $asset->setFilename($filename);
+        $asset->newFilename = $targetFilename;
+
+        $saved = Craft::$app->getElements()->saveElement($asset);
+
+        if ($assets->hasEventHandlers($assets::EVENT_AFTER_REPLACE_ASSET)) {
+            $assets->trigger($assets::EVENT_AFTER_REPLACE_ASSET, new ReplaceAssetEvent([
+                'asset' => $asset,
+                'filename' => $filename,
+            ]));
+        }
+
+        return $saved;
     }
 }
