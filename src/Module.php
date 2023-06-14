@@ -133,13 +133,13 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->getView()->registerAssetBundle(UploaderAsset::class);
         }
 
-        // Craft::$container->set(
-        //     \craft\fs\Temp::class,
-        //     [
-        //         'class' => StorageFs::class,
-        //         'subfolder' => 'tmp',
-        //     ],
-        // );
+        Craft::$container->set(
+            \craft\fs\Temp::class,
+            [
+                'class' => StorageFs::class,
+                'subfolder' => 'tmp',
+            ],
+        );
 
         /**
          * We have to use DI here (can't use setModule), as
@@ -196,14 +196,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 $e->roots[$this->id] = sprintf('%s/templates', $this->getBasePath());
             }
         );
-
-        // Event::on(
-        //     Asset::class,
-        //     Model::EVENT_DEFINE_BEHAVIORS,
-        //     static function(DefineBehaviorsEvent $e) {
-        //         $e->behaviors['cloud:asset'] = AssetBehavior::class;
-        //     }
-        // );
 
         if (!$this->getConfig()->allowBinaryResponses) {
             Event::once(
