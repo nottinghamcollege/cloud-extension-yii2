@@ -16,7 +16,6 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       this.base($element, settings);
       this.element = $element[0];
       this.$dropZone = settings.dropZone;
-      this.$fileInput = settings.fileInput || $element;
       this._handleChange = this.handleChange.bind(this);
       this.$fileInput.on('change', this._handleChange);
 
