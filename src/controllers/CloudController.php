@@ -115,7 +115,7 @@ class CloudController extends Controller
         $selectionCondition = null;
         $element = null;
 
-        if (empty($folderId)) {
+        if ($fieldId) {
             /** @var AssetsField|null $field */
             $field = Craft::$app->getFields()->getFieldById((int)$fieldId);
 

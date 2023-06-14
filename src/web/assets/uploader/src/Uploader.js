@@ -163,7 +163,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
         this.element.dispatchEvent(
           new CustomEvent('fileuploadfail', {
             detail: {
-              message: error.message,
+              message: error?.response?.data?.message,
               filename: file.name,
             },
           })
