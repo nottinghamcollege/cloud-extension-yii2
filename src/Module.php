@@ -129,7 +129,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             );
         }
 
-        if ($app->getRequest()->getIsCpRequest()) {
+        if (Craft::$app->getRequest()->getIsCpRequest()) {
             $app->getView()->registerAssetBundle(UploaderAsset::class);
         }
 
@@ -243,7 +243,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
         $url = (string) $s3Request->getUri();
-        $response->stream = null;
+        $response->clear();
         $response->redirect($url);
     }
 

@@ -5,6 +5,7 @@ namespace craft\cloud\controllers;
 use Craft;
 use craft\cloud\fs\Fs;
 use craft\elements\Asset;
+use craft\elements\conditions\ElementCondition;
 use craft\fields\Assets as AssetsField;
 use craft\helpers\Assets;
 use craft\helpers\Db;
@@ -12,6 +13,7 @@ use craft\i18n\Formatter;
 use craft\web\Controller;
 use DateTime;
 use yii\web\BadRequestHttpException;
+use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
 class CloudController extends Controller
