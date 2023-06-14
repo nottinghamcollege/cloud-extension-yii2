@@ -110,7 +110,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
     },
 
     uploadFile: async function (file) {
-      const formData = Object.assign({}, this.params, {
+      const formData = Object.assign({}, this.formData, {
         filename: file.name,
         lastModified: file.lastModified,
       });
@@ -174,7 +174,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       }
     },
 
-    handleChange: function(event) {
+    handleChange: function (event) {
       this.uploadFiles(event.target.files);
     },
 

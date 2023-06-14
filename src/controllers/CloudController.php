@@ -99,6 +99,8 @@ class CloudController extends Controller
         }
 
         $folderId = (int)$this->request->getBodyParam('folderId') ?: null;
+
+        // TODO: do I need to account for fieldId, since we resolve it in get-url?
         $fieldId = (int)$this->request->getBodyParam('fieldId') ?: null;
 
         if (!$folderId && !$fieldId) {
