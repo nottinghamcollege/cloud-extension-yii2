@@ -218,16 +218,23 @@ class Fs extends FlysystemFs
         }
     }
 
-    public function temporaryUrl(string $path, DateTimeInterface $expiresAt, $config = []): string
+    public function presignedUrl(string $command, string $path, DateTimeInterface $expiresAt, array $config = []): string
     {
         try {
-            $config = $this->addFileMetadataToConfig($config);
-            return $this->filesystem()->temporaryUrl(
-                $path,
+            $commandConfig = $this->addFileMetadataToConfig($config);
+
+            $command = $this->client->getCommand($command, [
+                'Bucket' => $this->getBucketName(),
+                'Key' => $this->prefixPath($path),
+            ] + $commandConfig);
+
+            $request = $this->client->createPresignedRequest(
+                $command,
                 $expiresAt,
-                $config,
             );
-        } catch (FilesystemException $exception) {
+
+            return (string)$request->getUri();
+        } catch (Throwable $exception) {
             throw new FsException($exception->getMessage(), 0, $exception);
         }
     }

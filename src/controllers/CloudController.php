@@ -4,6 +4,7 @@ namespace craft\cloud\controllers;
 
 use Craft;
 use craft\cloud\fs\Fs;
+use craft\controllers\AssetsControllerTrait;
 use craft\elements\Asset;
 use craft\elements\conditions\ElementCondition;
 use craft\events\ReplaceAssetEvent;
@@ -20,6 +21,8 @@ use yii\web\Response;
 
 class CloudController extends Controller
 {
+    use AssetsControllerTrait;
+
     public function actionGetUploadUrl(): Response
     {
         $this->requireAcceptsJson();
@@ -66,15 +69,9 @@ class CloudController extends Controller
         /** @var Fs $fs */
         $fs = $folder->getVolume()->getFs();
 
-        // TODO: add an fs upload and use that
-        $cmd = $fs->getClient()->getCommand('PutObject', [
-            'Bucket' => $fs->getBucketName(),
-            'Key' => $fs->prefixPath($pathInVolume),
-        ]);
-
-        // TODO: use setting
-        $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
-        $url = (string) $s3Request->getUri();
+        // TODO: use setting for expiry
+        // TODO: tagging isn't working
+        $url = $fs->presignedUrl('PutObject', $pathInVolume, new DateTime('+20 minutes'));
 
         return $this->asJson([
             'url' => $url,

@@ -206,7 +206,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
   },
   {
     defaults: {
-      maxFileSize: Craft.maxUploadFileSize,
+      maxFileSize: null,
       createAction: 'cloud/create-asset',
       replaceAction: 'cloud/replace-file',
     },
