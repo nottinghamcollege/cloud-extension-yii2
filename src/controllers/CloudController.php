@@ -171,6 +171,7 @@ class CloudController extends Controller
 
         // In case of error, let user know about it.
         if (!$saved) {
+            // TODO: delete stray file
             $errors = $asset->getFirstErrors();
             return $this->asFailure(implode("\n", $errors));
         }
