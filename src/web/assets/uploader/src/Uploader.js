@@ -150,10 +150,12 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
           lastModified: file.lastModified,
         });
 
-        try {
-          const {width, height} = await this.getImage(file);
+        const image = await this.getImage(file);
+
+        if (image) {
+          const {width, height} = image;
           Object.assign(formData, {width, height});
-        } catch (e) {}
+        }
 
         response = await axios.post(this.settings.url, formData);
         this.element.dispatchEvent(
@@ -179,33 +181,17 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       this.$fileInput.val('');
     },
 
-    getImage: function (file) {
-      return new Promise((resolve, reject) => {
-        if (!file.type.startsWith('image/')) {
-          reject(new Error('File is not an image.'));
-        }
+    getImage: async function (file) {
+      const image = new Image();
 
-        var reader = new FileReader();
+      try {
+        image.src = URL.createObjectURL(file);
+        await image.decode();
+      } catch {
+        return null;
+      }
 
-        reader.addEventListener(
-          'load',
-          (event) => {
-            const image = new Image();
-            image.src = reader.result;
-
-            image.addEventListener('load', (event) => {
-              resolve(event.target);
-            });
-
-            image.addEventListener('error', (event) => {
-              reject(new Error('Error loading image.'));
-            });
-          },
-          false
-        );
-
-        reader.readAsDataURL(file);
-      });
+      return image;
     },
 
     destroy: function () {
