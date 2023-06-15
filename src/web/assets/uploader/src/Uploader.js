@@ -112,7 +112,6 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
     uploadFile: async function (file) {
       const formData = Object.assign({}, this.formData, {
         filename: file.name,
-        lastModified: file.lastModified,
       });
 
       try {
@@ -123,15 +122,6 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
             data: formData,
           }
         );
-
-        Object.assign(formData, response.data, {
-          size: file.size,
-        });
-
-        try {
-          const {width, height} = await this.getImage(file);
-          Object.assign(formData, {width, height});
-        } catch (e) {}
 
         await axios.put(response.data.url, file, {
           headers: {
@@ -154,6 +144,16 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
             );
           },
         });
+
+        Object.assign(formData, response.data, {
+          size: file.size,
+          lastModified: file.lastModified,
+        });
+
+        try {
+          const {width, height} = await this.getImage(file);
+          Object.assign(formData, {width, height});
+        } catch (e) {}
 
         response = await axios.post(this.settings.url, formData);
         this.element.dispatchEvent(
