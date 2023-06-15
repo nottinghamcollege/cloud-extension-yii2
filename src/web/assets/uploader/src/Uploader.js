@@ -187,6 +187,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       try {
         image.src = URL.createObjectURL(file);
         await image.decode();
+        URL.revokeObjectURL(image.src);
       } catch {
         return null;
       }
