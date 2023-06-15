@@ -2,7 +2,7 @@
   "name": "craftcms/cloud",
   "type": "yii2-extension",
   "require": {
-    "craftcms/cms": "4.5.x-dev",
+    "craftcms/cms": "^4.5",
     "yiisoft/yii2-redis": "^2.0",
     "yiisoft/yii2-queue": "^2.3",
     "craftcms/flysystem": "dev-main",
