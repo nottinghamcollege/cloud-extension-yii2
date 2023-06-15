@@ -214,7 +214,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
 );
 
 // Register it!
-Craft.registerAssetUploaderClass(
+Craft.registerUploaderClass(
   'craft\\cloud\\fs\\AssetFs',
   Craft.CloudUploader
 );
