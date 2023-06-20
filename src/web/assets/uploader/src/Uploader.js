@@ -71,7 +71,10 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
           }
         }
 
-        if (file.size > this.settings.maxFileSize) {
+        if (
+          this.settings.maxFileSize &&
+          file.size > this.settings.maxFileSize
+        ) {
           this._rejectedFiles.size.push('“' + file.name + '”');
           valid = false;
         }
