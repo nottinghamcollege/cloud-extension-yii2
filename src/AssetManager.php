@@ -41,9 +41,9 @@ class AssetManager extends \craft\web\AssetManager
         $hash = $this->hash($src);
 
         // TODO: try/catch
-        // if (!$this->fs->directoryExists($hash)) {
+        if (!$this->fs->directoryExists($hash)) {
             $this->fs->uploadDirectory($src, $hash);
-        // }
+        }
 
         // TODO: use getPublicUrl
         $dest = $this->fs->prefixPath($this->hash($src));
