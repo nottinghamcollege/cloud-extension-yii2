@@ -12,7 +12,7 @@ class Helper
 {
     public static function getBuildUrl(string $path = ''): UriInterface
     {
-        return self::getCdnUrl("{environmentId}/builds/{buildId}/${path}");
+        return self::getCdnUrl("{environmentId}/builds/{buildId}/{$path}");
     }
 
     public static function getCdnUrl(string $path = ''): UriInterface
