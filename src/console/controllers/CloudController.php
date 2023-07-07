@@ -12,6 +12,14 @@ use yii\web\AssetBundle;
 
 class CloudController extends Controller
 {
+    public function actionUp(): int
+    {
+        $this->run('/up');
+        $this->run('publish-asset-bundles');
+
+        return ExitCode::OK;
+    }
+
     public function actionPublishAssetBundle(string $className): int
     {
         /** @var AssetBundle $assetBundle */
