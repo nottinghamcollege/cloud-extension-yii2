@@ -15,6 +15,9 @@ class Config extends BaseConfig
     public string $redisUrl = 'tcp://localhost:6379';
     public string $sqsUrl = '';
     public ?string $environmentId = null;
+    public ?string $accessKey = null;
+    public ?string $accessSecret = null;
+    public ?string $accessRegion = null;
     public bool $enableCache = false;
     public bool $enableMutex = false;
     public bool $enableSession = false;

@@ -163,12 +163,11 @@ class Fs extends FlysystemFs
 
     public function createCredentials(): ?Credentials
     {
-        $key = App::env('CRAFT_CLOUD_ACCESS_KEY');
-        $secret = App::env('CRAFT_CLOUD_ACCESS_SECRET');
+        $key = Module::getInstance()->getConfig()->accessKey;
 
         return $key ? new Credentials(
             $key,
-            $secret,
+            Module::getInstance()->getConfig()->accessSecret,
         ) : null;
     }
 
@@ -176,7 +175,7 @@ class Fs extends FlysystemFs
     {
         $config = array_merge(
             [
-                'region' => App::env('AWS_REGION') ?? App::env('CRAFT_CLOUD_ACCESS_REGION'),
+                'region' => App::env('AWS_REGION') ?? Module::getInstance()->getConfig()->accessRegion,
                 'version' => 'latest',
                 'http_handler' => new GuzzleHandler(Craft::createGuzzleClient()),
                 'credentials' => $this->createCredentials(),
