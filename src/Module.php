@@ -76,7 +76,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->set('mutex', [
                 'class' => \craft\mutex\Mutex::class,
                 'mutex' => [
-                    'class' => \craft\cloud\Mutex::class,
+                    'class' => Mutex::class,
                     'redis' => $this->getRedisConfig([
                         'database' => self::REDIS_DATABASE_MUTEX,
                     ]),
