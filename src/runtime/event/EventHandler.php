@@ -36,11 +36,6 @@ class EventHandler implements Handler
             return ['Lambda is warm'];
         }
 
-        // is this a http/API Gateway event?
-        if (isset($event['version'])) {
-            return $this->fpmHandler->handleRequest(new HttpRequestEvent($event), $context)->toApiGatewayFormatV2();
-        }
-
         // is this a sqs event?
         if (isset($event['Records'])) {
             // $sqsEvent = new SqsEvent($event);
@@ -49,10 +44,11 @@ class EventHandler implements Handler
         }
 
         // is this a craft command event?
-        if (isset($event['command'])) { // schedule/run
+        if (isset($event['command'])) {
             return (new CraftCommandEvent($event, $context))->run();
         }
 
-        throw new RuntimeException('Unknown event type');
+        // default to API Gateway v2 events
+        return $this->fpmHandler->handleRequest(new HttpRequestEvent($event), $context)->toApiGatewayFormatV2();
     }
 }
