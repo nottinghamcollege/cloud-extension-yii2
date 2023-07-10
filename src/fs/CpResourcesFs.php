@@ -2,9 +2,15 @@
 
 namespace craft\cloud\fs;
 
-class CpResourcesFs extends Fs
+use Illuminate\Support\Collection;
+
+class CpResourcesFs extends BuildsFs
 {
-    protected ?string $type = 'cpresources';
-    protected ?string $expires = '1 year';
-    public bool $hasUrls = true;
+    public function getSubfolder(): ?string
+    {
+        return Collection::make([
+            parent::getSubfolder(),
+            'cpresources'
+        ])->join('/');
+    }
 }
