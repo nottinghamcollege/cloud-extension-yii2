@@ -62,7 +62,13 @@ class Fs extends FlysystemFs
             return null;
         }
 
-        return Helper::getCdnUrl($this->prefixPath());
+        return $this->createUrl('');
+    }
+
+    public function createUrl(string $path): string
+    {
+        // TODO:: why is this in the Helper and not in this Fs?
+        return Helper::getCdnUrl($this->prefixPath($path));
     }
 
     /**

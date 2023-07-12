@@ -7,7 +7,7 @@ use craft\base\Event;
 use craft\cloud\console\controllers\CloudController as ConsoleController;
 use craft\cloud\controllers\CloudController as WebController;
 use craft\cloud\fs\AssetFs;
-use craft\cloud\fs\CpResourcesFs;
+use craft\cloud\fs\BuildsFs;
 use craft\cloud\fs\StorageFs;
 use craft\cloud\redis\Mutex;
 use craft\cloud\web\assets\uploader\UploaderAsset;
@@ -110,11 +110,12 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         if ($this->getConfig()->enableCdn) {
-            $cpResourcesFs = Craft::createObject(CpResourcesFs::class);
+            $buildsFs = Craft::createObject(BuildsFs::class);
             $app->set('assetManager', [
                 'class' => AssetManager::class,
-                'fs' => $cpResourcesFs,
-                'baseUrl' => $cpResourcesFs->getRootUrl(),
+                'fs' => $buildsFs,
+                'baseUrl' => $buildsFs->getRootUrl(),
+                'basePath' => 'cpresources',
             ]);
 
             $app->set('images', [

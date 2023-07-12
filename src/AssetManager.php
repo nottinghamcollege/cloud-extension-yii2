@@ -4,6 +4,7 @@ namespace craft\cloud;
 
 use Craft;
 use craft\cloud\fs\Fs;
+use League\Uri\Components\Path;
 use yii\base\InvalidArgumentException;
 
 class AssetManager extends \craft\web\AssetManager
@@ -18,10 +19,9 @@ class AssetManager extends \craft\web\AssetManager
      */
     protected function publishFile($src): array
     {
-        $dir = $this->hash($src);
+        $hash = $this->hash($src);
         $fileName = basename($src);
-        $dest = "$dir/$fileName";
-        $prefixedDest = $this->fs->prefixPath($dest);
+        $dest = Path::createFromString("$this->basePath/$hash/$fileName")->withoutEmptySegments();
         $stream = @fopen($src, 'rb');
 
         if (!$stream) {
@@ -30,7 +30,7 @@ class AssetManager extends \craft\web\AssetManager
 
         $this->fs->writeFileFromStream($dest, $stream);
 
-        return [$dest, Helper::getCdnUrl($prefixedDest)];
+        return [$dest, $this->fs->createUrl($dest)];
     }
 
     /**
@@ -39,16 +39,14 @@ class AssetManager extends \craft\web\AssetManager
     protected function publishDirectory($src, $options): array
     {
         $hash = $this->hash($src);
+        $dest = Path::createFromString("$this->basePath/$hash")->withoutEmptySegments();
 
         // TODO: try/catch
-        if (!$this->fs->directoryExists($hash)) {
-            $this->fs->uploadDirectory($src, $hash);
+        if (!$this->fs->directoryExists($dest)) {
+            $this->fs->uploadDirectory($src, $dest);
         }
 
-        // TODO: use getPublicUrl
-        $dest = $this->fs->prefixPath($this->hash($src));
-
-        return [$dest, Helper::getCdnUrl($dest)];
+        return [$dest, $this->fs->createUrl($dest)];
     }
 
     /**
