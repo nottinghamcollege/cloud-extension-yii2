@@ -9,6 +9,7 @@ use craft\cloud\controllers\CloudController as WebController;
 use craft\cloud\fs\AssetFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
+use craft\cloud\redis\Mutex;
 use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
@@ -17,6 +18,7 @@ use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Response;
 use craft\web\View;
+use yii\redis\Connection;
 
 /**
  * @property-read Config $config
@@ -72,6 +74,15 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ]);
         }
 
+        if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
+            $app->set('session', [
+                    'class' => \yii\redis\Session::class,
+                    'redis' => $this->getRedisConfig([
+                        'database' => self::REDIS_DATABASE_SESSION,
+                    ]),
+                ] + App::sessionConfig());
+        }
+
         if ($this->getConfig()->enableMutex) {
             $app->set('mutex', [
                 'class' => \craft\mutex\Mutex::class,
@@ -85,15 +96,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                         : self::MUTEX_EXPIRE_WEB,
                 ],
             ]);
-        }
-
-        if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
-            $app->set('session', [
-                'class' => \yii\redis\Session::class,
-                'redis' => $this->getRedisConfig([
-                    'database' => self::REDIS_DATABASE_SESSION,
-                ]),
-            ] + App::sessionConfig());
         }
 
         // TODO: https://github.com/craftcms/cloud/issues/155
@@ -119,6 +121,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'class' => \craft\services\Images::class,
                 'supportedImageFormats' => ImageTransformer::SUPPORTED_IMAGE_FORMATS,
             ]);
+
+            Craft::$container->set(
+                Connection::class,
+                \craft\cloud\redis\Connection::class,
+            );
 
             /**
              * Currently this is the only reasonable way to change the default transformer

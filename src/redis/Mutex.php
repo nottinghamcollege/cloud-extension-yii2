@@ -1,6 +1,6 @@
 <?php
 
-namespace craft\cloud;
+namespace craft\cloud\redis;
 
 use Yii;
 use yii\mutex\RetryAcquireTrait;
