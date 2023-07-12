@@ -7,7 +7,6 @@ use Aws\Handler\GuzzleV6\GuzzleHandler;
 use Aws\S3\S3Client;
 use Craft;
 use craft\behaviors\EnvAttributeParserBehavior;
-use craft\cloud\Helper;
 use craft\cloud\Module;
 use craft\errors\FsException;
 use craft\flysystem\base\FlysystemFs;
@@ -16,13 +15,14 @@ use craft\helpers\Assets;
 use craft\helpers\DateTimeHelper;
 use DateTime;
 use DateTimeInterface;
-use Illuminate\Support\Collection;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\FilesystemException;
 use League\Flysystem\UnableToCopyFile;
 use League\Flysystem\UnableToCreateDirectory;
 use League\Flysystem\UnableToMoveFile;
 use League\Flysystem\Visibility;
+use League\Uri\Components\HierarchicalPath;
+use League\Uri\Uri;
 use Throwable;
 
 /**
@@ -37,21 +37,9 @@ class Fs extends FlysystemFs
 
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
-    protected ?string $type = null;
     private S3Client $_client;
-    private ?string $_subfolder = null;
-
+    public ?string $subfolder = null;
     public const TAG_PRIVATE = 'private';
-
-    public function getSubfolder(): ?string
-    {
-        return $this->_subfolder;
-    }
-
-    public function setSubfolder(?string $subfolder): void
-    {
-        $this->_subfolder = $subfolder;
-    }
 
     /**
      * @inheritdoc
@@ -67,8 +55,10 @@ class Fs extends FlysystemFs
 
     public function createUrl(string $path): string
     {
-        // TODO:: why is this in the Helper and not in this Fs?
-        return Helper::getCdnUrl($this->prefixPath($path));
+        return Uri::createFromBaseUri(
+            $this->prefixPath($path),
+            Module::getInstance()->getConfig()->getCdnBaseUrl(),
+        );
     }
 
     /**
@@ -90,6 +80,11 @@ class Fs extends FlysystemFs
     public function settingsAttributes(): array
     {
         return array_merge(parent::settingsAttributes(), ['expires']);
+    }
+
+    public function getBasePath(): HierarchicalPath
+    {
+        return HierarchicalPath::createFromString(Module::getInstance()->getConfig()->environmentId);
     }
 
     public function getExpires(): ?string
@@ -163,14 +158,13 @@ class Fs extends FlysystemFs
         ]);
     }
 
-    public function prefixPath(?string $path = null): string
+    public function prefixPath(?string $path = null): HierarchicalPath
     {
-        return Collection::make([
-            Module::getInstance()->getConfig()->environmentId,
-            $this->type,
-            $this->getSubfolder(),
-            $path,
-        ])->filter()->join('/');
+        return HierarchicalPath::createRelativeFromSegments([
+            $this->getBasePath(),
+            $this->subfolder ?? '',
+            $path ?? '',
+        ])->withoutEmptySegments()->withoutTrailingSlash();
     }
 
     public function getBucketName(): string

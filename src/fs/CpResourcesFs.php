@@ -2,15 +2,15 @@
 
 namespace craft\cloud\fs;
 
-use Illuminate\Support\Collection;
+use League\Uri\Components\HierarchicalPath;
 
 class CpResourcesFs extends BuildsFs
 {
-    public function getSubfolder(): ?string
+    public function getBasePath(): HierarchicalPath
     {
-        return Collection::make([
-            parent::getSubfolder(),
-            'cpresources'
-        ])->join('/');
+        return HierarchicalPath::createRelativeFromSegments([
+            parent::getBasePath(),
+            'cpresources',
+        ]);
     }
 }

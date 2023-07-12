@@ -3,15 +3,19 @@
 namespace craft\cloud\fs;
 
 use Craft;
+use League\Uri\Components\HierarchicalPath;
 
 class BuildsFs extends Fs
 {
-    protected ?string $type = 'builds';
     protected ?string $expires = '1 year';
     public bool $hasUrls = true;
 
-    public function getSubfolder(): ?string
+    public function getBasePath(): HierarchicalPath
     {
-        return Craft::$app->getConfig()->getGeneral()->buildId;
+        return HierarchicalPath::createRelativeFromSegments([
+            parent::getBasePath(),
+            'builds',
+            Craft::$app->getConfig()->getGeneral()->buildId,
+        ]);
     }
 }
