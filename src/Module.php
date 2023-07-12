@@ -122,11 +122,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'supportedImageFormats' => ImageTransformer::SUPPORTED_IMAGE_FORMATS,
             ]);
 
-            Craft::$container->set(
-                Connection::class,
-                \craft\cloud\redis\Connection::class,
-            );
-
             /**
              * Currently this is the only reasonable way to change the default transformer
              */
@@ -253,6 +248,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         $urlParts = parse_url($this->getConfig()->redisUrl);
 
         return $config + [
+            'class' => Connection::class,
             'scheme' => $urlParts['scheme'],
             'hostname' => $urlParts['host'],
             'port' => $urlParts['port'],
