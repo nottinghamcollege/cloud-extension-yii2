@@ -34,13 +34,24 @@ use Throwable;
  */
 class Fs extends FlysystemFs
 {
-    public ?string $subfolder = null;
+
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
     protected ?string $type = null;
     private S3Client $_client;
+    private ?string $_subfolder = null;
 
     public const TAG_PRIVATE = 'private';
+
+    public function getSubfolder(): ?string
+    {
+        return $this->_subfolder;
+    }
+
+    public function setSubfolder(?string $subfolder): void
+    {
+        $this->_subfolder = $subfolder;
+    }
 
     /**
      * @inheritdoc
@@ -151,7 +162,7 @@ class Fs extends FlysystemFs
         return Collection::make([
             Module::getInstance()->getConfig()->environmentId,
             $this->type,
-            $this->subfolder,
+            $this->getSubfolder(),
             $path,
         ])->filter()->join('/');
     }
