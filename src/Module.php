@@ -19,6 +19,7 @@ use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Response;
 use craft\web\View;
+use Illuminate\Support\Collection;
 use yii\redis\Connection;
 
 /**
@@ -246,12 +247,25 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     protected function getRedisConfig(array $config = []): array
     {
         $urlParts = parse_url($this->getConfig()->redisUrl);
+        $scheme = $config['scheme'] ?? $urlParts['scheme'] ?? null;
 
-        return $config + [
-            'class' => Connection::class,
-            'scheme' => $urlParts['scheme'],
-            'hostname' => $urlParts['host'],
-            'port' => $urlParts['port'],
-        ];
+        // TODO: move to Connection
+        if ($scheme === 'redis') {
+            $scheme = 'tcp';
+
+            if (!isset($config['database']) && isset($urlParts['path'])) {
+                $config['database'] = (int) trim($urlParts['path'], '/');
+            }
+        }
+
+        return Collection::make($config)
+            ->put('class', Connection::class)
+            ->put('scheme', $scheme)
+            ->put('hostname', $urlParts['host'] ?? null)
+            ->put('port', $urlParts['port'] ?? null)
+            ->put('username', $urlParts['user'] ?? null)
+            ->put('password', $urlParts['pass'] ?? null)
+            ->whereNotNull()
+            ->all();
     }
 }
