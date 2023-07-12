@@ -20,17 +20,6 @@ class AssetManager extends \craft\web\AssetManager
     }
 
     /**
-     * @property-read $basePath
-     * @property-read $baseUrl
-     */
-    public function __construct($config = [])
-    {
-        parent::__construct($config);
-        $this->basePath = '';
-        $this->baseUrl = $this->fs->getRootUrl();
-    }
-
-    /**
      * @inheritDoc
      */
     protected function publishFile($src): array
