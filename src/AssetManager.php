@@ -12,6 +12,13 @@ class AssetManager extends \craft\web\AssetManager
     public Fs $fs;
     private array $_published = [];
 
+    public function __construct($config = [])
+    {
+        parent::__construct($config);
+        $this->basePath = '';
+        $this->baseUrl = $this->fs->getRootUrl();
+    }
+
     /**
      * @property-read $basePath
      * @property-read $baseUrl
