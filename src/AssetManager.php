@@ -4,15 +4,20 @@ namespace craft\cloud;
 
 use Craft;
 use craft\cloud\fs\Fs;
-use League\Uri\Components\Path;
+use League\Uri\Components\HierarchicalPath;
 use yii\base\InvalidArgumentException;
 
 class AssetManager extends \craft\web\AssetManager
 {
     public Fs $fs;
-    public $basePath = '';
-    public $baseUrl = '';
     private array $_published = [];
+
+    public function __construct($config = [])
+    {
+        parent::__construct($config);
+        $this->basePath = '';
+        $this->baseUrl = $this->fs->getRootUrl();
+    }
 
     /**
      * @inheritDoc
@@ -21,7 +26,7 @@ class AssetManager extends \craft\web\AssetManager
     {
         $hash = $this->hash($src);
         $fileName = basename($src);
-        $dest = Path::createFromString("$this->basePath/$hash/$fileName")->withoutEmptySegments();
+        $dest = (string) HierarchicalPath::createFromString("$hash/$fileName");
         $stream = @fopen($src, 'rb');
 
         if (!$stream) {
@@ -39,14 +44,13 @@ class AssetManager extends \craft\web\AssetManager
     protected function publishDirectory($src, $options): array
     {
         $hash = $this->hash($src);
-        $dest = Path::createFromString("$this->basePath/$hash")->withoutEmptySegments();
 
         // TODO: try/catch
-        if (!$this->fs->directoryExists($dest)) {
-            $this->fs->uploadDirectory($src, $dest);
+        if (!$this->fs->directoryExists($hash)) {
+            $this->fs->uploadDirectory($src, $hash);
         }
 
-        return [$dest, $this->fs->createUrl($dest)];
+        return [$hash, $this->fs->createUrl($hash)];
     }
 
     /**

@@ -114,8 +114,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->set('assetManager', [
                 'class' => AssetManager::class,
                 'fs' => $buildsFs,
-                'baseUrl' => $buildsFs->getRootUrl(),
-                'basePath' => 'cpresources',
             ]);
 
             $app->set('images', [
