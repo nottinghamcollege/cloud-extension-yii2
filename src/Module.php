@@ -76,12 +76,12 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
             $app->set('session', [
-                    'class' => \yii\redis\Session::class,
-                    'redis' => [
-                        'class' => redis\Connection::class,
-                        'database' => self::REDIS_DATABASE_SESSION,
-                    ],
-                ] + App::sessionConfig());
+                'class' => \yii\redis\Session::class,
+                'redis' => [
+                    'class' => redis\Connection::class,
+                    'database' => self::REDIS_DATABASE_SESSION,
+                ],
+            ] + App::sessionConfig());
         }
 
         if ($this->getConfig()->enableMutex) {
