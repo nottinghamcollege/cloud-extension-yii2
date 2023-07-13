@@ -18,8 +18,6 @@ use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Response;
 use craft\web\View;
-use Illuminate\Support\Collection;
-use yii\redis\Connection;
 
 /**
  * @property-read Config $config
@@ -68,9 +66,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         if ($this->getConfig()->enableCache) {
             $app->set('cache', [
                 'class' => \yii\redis\Cache::class,
-                'redis' => $this->getRedisConfig([
+                'redis' => [
+                    'class' => redis\Connection::class,
                     'database' => self::REDIS_DATABASE_CACHE,
-                ]),
+                ],
                 'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
             ]);
         }
@@ -78,9 +77,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
             $app->set('session', [
                     'class' => \yii\redis\Session::class,
-                    'redis' => $this->getRedisConfig([
+                    'redis' => [
+                        'class' => redis\Connection::class,
                         'database' => self::REDIS_DATABASE_SESSION,
-                    ]),
+                    ],
                 ] + App::sessionConfig());
         }
 
@@ -89,9 +89,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'class' => \craft\mutex\Mutex::class,
                 'mutex' => [
                     'class' => Mutex::class,
-                    'redis' => $this->getRedisConfig([
+                    'redis' => [
+                        'class' => redis\Connection::class,
                         'database' => self::REDIS_DATABASE_MUTEX,
-                    ]),
+                    ],
                     'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
                         ? self::MUTEX_EXPIRE_CONSOLE
                         : self::MUTEX_EXPIRE_WEB,
@@ -242,30 +243,5 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         $url = (string) $s3Request->getUri();
         $response->clear();
         $response->redirect($url);
-    }
-
-    protected function getRedisConfig(array $config = []): array
-    {
-        $urlParts = parse_url($this->getConfig()->redisUrl);
-        $scheme = $config['scheme'] ?? $urlParts['scheme'] ?? null;
-
-        // TODO: move to Connection
-        if ($scheme === 'redis') {
-            $scheme = 'tcp';
-
-            if (!isset($config['database']) && isset($urlParts['path'])) {
-                $config['database'] = (int) trim($urlParts['path'], '/');
-            }
-        }
-
-        return Collection::make($config)
-            ->put('class', Connection::class)
-            ->put('scheme', $scheme)
-            ->put('hostname', $urlParts['host'] ?? null)
-            ->put('port', $urlParts['port'] ?? null)
-            ->put('username', $urlParts['user'] ?? null)
-            ->put('password', $urlParts['pass'] ?? null)
-            ->whereNotNull()
-            ->all();
     }
 }
