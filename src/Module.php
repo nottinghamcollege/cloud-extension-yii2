@@ -7,7 +7,6 @@ use craft\base\Event;
 use craft\cloud\console\controllers\CloudController as ConsoleController;
 use craft\cloud\controllers\CloudController as WebController;
 use craft\cloud\fs\AssetFs;
-use craft\cloud\fs\BuildsFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
 use craft\cloud\redis\Mutex;
@@ -101,12 +100,13 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         // TODO: https://github.com/craftcms/cloud/issues/155
-        if ($this->getConfig()->enableQueue) {
+        if ($this->getConfig()->enableQueue && $this->getConfig()->sqsUrl) {
             $app->set('queue', [
                 'class' => \craft\queue\Queue::class,
                 'proxyQueue' => [
-                    'class' => \yii\queue\sqs\Queue::class,
+                    'class' => Queue::class,
                     'url' => $this->getConfig()->sqsUrl,
+                    'region' => $this->getConfig()->getRegion(),
                 ],
             ]);
         }

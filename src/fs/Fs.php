@@ -186,7 +186,7 @@ class Fs extends FlysystemFs
     {
         $config = array_merge(
             [
-                'region' => App::env('AWS_REGION') ?? Module::getInstance()->getConfig()->accessRegion,
+                'region' => Module::getInstance()->getConfig()->getRegion(),
                 'version' => 'latest',
                 'http_handler' => new GuzzleHandler(Craft::createGuzzleClient()),
                 'credentials' => $this->createCredentials(),

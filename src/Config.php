@@ -3,6 +3,7 @@
 namespace craft\cloud;
 
 use craft\config\BaseConfig;
+use craft\helpers\App;
 use craft\helpers\StringHelper;
 
 /**
@@ -13,11 +14,11 @@ class Config extends BaseConfig
     public array $s3ClientOptions = [];
     public string $cdnBaseUrl = 'https://cdn.craft.cloud';
     public string $redisUrl = 'tcp://localhost:6379';
-    public string $sqsUrl = '';
+    public ?string $sqsUrl = null;
     public ?string $environmentId = null;
     public ?string $accessKey = null;
     public ?string $accessSecret = null;
-    public ?string $accessRegion = null;
+    public ?string $region = null;
     public bool $enableCache = false;
     public bool $enableMutex = false;
     public bool $enableSession = false;
@@ -50,6 +51,11 @@ class Config extends BaseConfig
 
             return $this;
         }
+    }
+
+    public function getRegion(): string
+    {
+        return $this->region ?? App::env('AWS_REGION');
     }
 
     public function getCdnBaseUrl(): string
