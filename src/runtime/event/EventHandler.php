@@ -6,9 +6,11 @@ use Bref\Context\Context;
 use Bref\Event\Handler;
 use Bref\Event\Http\HttpRequestEvent;
 use Bref\Event\InvalidLambdaEvent;
+use Bref\Event\Sqs\SqsEvent;
 use Bref\FpmRuntime\FastCgi\FastCgiCommunicationFailed;
 use Bref\FpmRuntime\FastCgi\Timeout;
 use Bref\FpmRuntime\FpmHandler;
+use JsonException;
 use RuntimeException;
 
 class EventHandler implements Handler
@@ -24,7 +26,7 @@ class EventHandler implements Handler
      * @throws InvalidLambdaEvent
      * @throws Timeout
      * @throws FastCgiCommunicationFailed
-     * @throws \JsonException
+     * @throws JsonException
      */
     public function handle(mixed $event, Context $context)
     {
@@ -38,9 +40,14 @@ class EventHandler implements Handler
 
         // is this a sqs event?
         if (isset($event['Records'])) {
-            // $sqsEvent = new SqsEvent($event);
-            // TODO(jasonmccallister): implement SQS handler to process the queue events
-            throw new RuntimeException('SQS events are not yet supported');
+            foreach ((new SqsEvent($event))->getRecords() as $record) {
+                try {
+                    (new QueueExecCommand($record, $context))->handle();
+                } catch (RuntimeException $e) {
+                    // echo the exception to the output but continue processing the other records
+                    echo $e->getMessage();
+                }
+            }
         }
 
         // is this a craft command event?
