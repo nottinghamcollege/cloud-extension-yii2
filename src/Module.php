@@ -119,10 +119,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'fs' => $cpResourcesFs,
             ]);
 
-            $app->set('images', [
-                'class' => \craft\services\Images::class,
-                'supportedImageFormats' => ImageTransformer::SUPPORTED_IMAGE_FORMATS,
-            ]);
+            Craft::$app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
 
             /**
              * Currently this is the only reasonable way to change the default transformer
