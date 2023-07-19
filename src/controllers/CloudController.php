@@ -23,6 +23,14 @@ class CloudController extends Controller
 {
     use AssetsControllerTrait;
 
+    protected array|bool|int $allowAnonymous = ['debug'];
+
+    public function actionDebug(): Response
+    {
+        $success = phpinfo();
+        return $success ? $this->asSuccess() :  $this->asFailure();
+    }
+
     public function actionGetUploadUrl(): Response
     {
         $this->requireAcceptsJson();
