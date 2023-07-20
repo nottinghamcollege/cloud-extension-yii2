@@ -45,6 +45,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // Set instance early so our dependencies can use it
         self::setInstance($this);
 
+        // Craft::setAlias('@cloud', __DIR__);
+        // Craft::setAlias('@craft/cloud', __DIR__);
+        // Craft::setAlias('@craft\\cloud', __DIR__);
+
         $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
             ? 'craft\\cloud\\console\\controllers'
             : 'craft\\cloud\\controllers';

@@ -70,4 +70,11 @@ class CloudController extends Controller
 
         return ExitCode::OK;
     }
+
+    public function actionExecJob(int $jobId): int
+    {
+        $jobFound = Craft::$app->getQueue()->executeJob($jobId);
+
+        return $jobFound ? ExitCode::OK : ExitCode::UNSPECIFIED_ERROR;
+    }
 }

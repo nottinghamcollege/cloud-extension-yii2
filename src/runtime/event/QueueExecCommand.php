@@ -21,13 +21,17 @@ class QueueExecCommand
 
     public function handle(): array
     {
-        $content = json_decode($this->record->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $body = json_decode($this->record->getBody(), false, flags: JSON_THROW_ON_ERROR);
+        $jobId = $body->jobId ?? null;
+        $attempt = $this->record->getApproximateReceiveCount();
+        $messageAttributes = $this->record->getMessageAttributes();
+        $ttr = (int) $messageAttributes['TTR']['StringValue'];
 
-        if (!isset($content['id'])) {
-            throw new Exception('The SQS message does not contain an ID.');
+        if (!$jobId || !$ttr || !$attempt) {
+            throw new Exception('The SQS message does not contain a valid queue job.');
         }
 
-        $command = sprintf("/opt/bin/php /var/task/craft queue/exec %s 2>&1", $content['id']);
+        $command = sprintf("/opt/bin/php /var/task/craft cloud/exec-job %s 2>&1", $jobId);
 
         $timeout = max(1, $this->context->getRemainingTimeInMillis() / 1000 - 1);
 
