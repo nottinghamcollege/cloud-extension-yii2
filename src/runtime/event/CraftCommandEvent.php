@@ -28,14 +28,16 @@ class CraftCommandEvent
             'LAMBDA_INVOCATION_CONTEXT' => json_encode($this->context, JSON_THROW_ON_ERROR),
         ], null, $timeout);
 
-        $process->run(function($type, $buffer): void {
+        $process->run(function ($type, $buffer): void {
             echo $buffer;
         });
 
         $exitCode = $process->getExitCode();
-
         if ($exitCode > 0) {
-            throw new Exception('The command exited with a non-zero status code: ' . $exitCode);
+            return [
+                'exitCode' => $exitCode,
+                'output' => $process->getErrorOutput(),
+            ];
         }
 
         return [
