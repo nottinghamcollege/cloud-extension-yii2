@@ -36,7 +36,7 @@ class CraftCommandEvent
         if ($exitCode > 0) {
             return [
                 'exitCode' => $exitCode,
-                'output' => $process->getErrorOutput(),
+                'output' => $process->getErrorOutput() ?: $process->getOutput(),
             ];
         }
 
