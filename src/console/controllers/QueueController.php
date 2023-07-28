@@ -1,6 +1,6 @@
 <?php
 
-namespace craft\cloud\console\controllers\queue;
+namespace craft\cloud\console\controllers;
 
 use Craft;
 use craft\console\Controller;

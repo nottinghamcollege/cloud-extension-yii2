@@ -2,6 +2,7 @@
 
 namespace craft\cloud\redis;
 
+use Craft;
 use Yii;
 use yii\mutex\RetryAcquireTrait;
 
@@ -9,7 +10,21 @@ class Mutex extends \yii\redis\Mutex
 {
     use RetryAcquireTrait;
 
+    public const EXPIRE_WEB = 30;
+    public const EXPIRE_CONSOLE = 900;
+
     protected array $_lockValues = [];
+
+    public function __construct($config = [])
+    {
+        $config += [
+            'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
+                ? self::EXPIRE_CONSOLE
+                : self::EXPIRE_WEB,
+        ];
+
+        parent::__construct($config);
+    }
 
     protected function acquireLock($name, $timeout = 0): bool
     {

@@ -4,11 +4,11 @@ namespace craft\cloud;
 
 use Craft;
 use craft\base\Event;
-use craft\cloud\console\controllers\CloudController as ConsoleController;
-use craft\cloud\controllers\CloudController as WebController;
 use craft\cloud\fs\AssetFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
+use craft\cloud\fs\TmpFs;
+use craft\cloud\redis\Connection as RedisConnection;
 use craft\cloud\redis\Mutex;
 use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\events\RegisterComponentTypesEvent;
@@ -25,12 +25,6 @@ use craft\web\View;
  */
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 {
-    public const REDIS_DATABASE_CACHE = 0;
-    public const REDIS_DATABASE_SESSION = 1;
-    public const REDIS_DATABASE_MUTEX = 2;
-    public const MUTEX_EXPIRE_WEB = 30;
-    public const MUTEX_EXPIRE_CONSOLE = 900;
-
     private Config $_config;
 
     /**
@@ -45,10 +39,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // Set instance early so our dependencies can use it
         self::setInstance($this);
 
-        // Craft::setAlias('@cloud', __DIR__);
-        // Craft::setAlias('@craft/cloud', __DIR__);
-        // Craft::setAlias('@craft\\cloud', __DIR__);
-
         $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
             ? 'craft\\cloud\\console\\controllers'
             : 'craft\\cloud\\controllers';
@@ -61,18 +51,15 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
      */
     public function bootstrap($app): void
     {
-        $app->controllerMap[$this->id] = [
-            'class' => Craft::$app->getRequest()->getIsConsoleRequest()
-                ? ConsoleController::class
-                : WebController::class,
-        ];
+        // Required for controllers to be found
+        $app->setModule($this->id, $this);
 
         if ($this->getConfig()->enableCache) {
             $app->set('cache', [
                 'class' => \yii\redis\Cache::class,
                 'redis' => [
-                    'class' => redis\Connection::class,
-                    'database' => self::REDIS_DATABASE_CACHE,
+                    'class' => RedisConnection::class,
+                    'database' => RedisConnection::DATABASE_CACHE
                 ],
                 'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
             ]);
@@ -82,8 +69,8 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->set('session', [
                 'class' => \yii\redis\Session::class,
                 'redis' => [
-                    'class' => redis\Connection::class,
-                    'database' => self::REDIS_DATABASE_SESSION,
+                    'class' => RedisConnection::class,
+                    'database' => RedisConnection::DATABASE_SESSION,
                 ],
             ] + App::sessionConfig());
         }
@@ -94,17 +81,13 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'mutex' => [
                     'class' => Mutex::class,
                     'redis' => [
-                        'class' => redis\Connection::class,
-                        'database' => self::REDIS_DATABASE_MUTEX,
+                        'class' => RedisConnection::class,
+                        'database' => RedisConnection::DATABASE_MUTEX,
                     ],
-                    'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
-                        ? self::MUTEX_EXPIRE_CONSOLE
-                        : self::MUTEX_EXPIRE_WEB,
                 ],
             ]);
         }
 
-        // TODO: https://github.com/craftcms/cloud/issues/155
         if ($this->getConfig()->enableQueue && $this->getConfig()->sqsUrl) {
             $app->set('queue', [
                 'class' => \craft\queue\Queue::class,
@@ -117,10 +100,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         if ($this->getConfig()->enableCdn) {
-            $cpResourcesFs = Craft::createObject(CpResourcesFs::class);
             $app->set('assetManager', [
                 'class' => AssetManager::class,
-                'fs' => $cpResourcesFs,
+                'fs' => Craft::createObject(CpResourcesFs::class),
             ]);
 
             Craft::$app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
@@ -141,10 +123,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         if ($this->getConfig()->enableTmpFs) {
             Craft::$container->set(
                 \craft\fs\Temp::class,
-                [
-                    'class' => StorageFs::class,
-                    'subfolder' => 'tmp',
-                ],
+                TmpFs::class,
             );
         }
 
@@ -222,10 +201,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             return;
         }
 
-        /** @var StorageFs $fs */
+        /** @var TmpFs $fs */
         $fs = Craft::createObject([
-            'class' => StorageFs::class,
-            'subfolder' => 'tmp',
+            'class' => TmpFs::class,
         ]);
         $stream = $response->stream[0];
         $path = uniqid('binary', true);
@@ -233,7 +211,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // TODO: set expiry
         $fs->writeFileFromStream($path, $stream);
 
-        // TODO: use \League\Flysystem\AwsS3V3\AwsS3V3Adapter::temporaryUrl
+        // TODO: use \League\Flysystem\AwsS3V3\AwsS3V3Adapter::temporaryUrl?
         $cmd = $fs->getClient()->getCommand('GetObject', [
             'Bucket' => $fs->getBucketName(),
             'Key' => $fs->prefixPath($path),
