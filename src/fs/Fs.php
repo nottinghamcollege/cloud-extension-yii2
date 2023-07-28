@@ -169,7 +169,7 @@ class Fs extends FlysystemFs
 
     public function getBucketName(): string
     {
-        return Craft::$app->id;
+        return Module::getInstance()->getConfig()->projectId;
     }
 
     public function createCredentials(): ?Credentials
