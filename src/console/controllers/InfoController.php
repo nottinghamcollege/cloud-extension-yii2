@@ -19,12 +19,14 @@ class InfoController extends Controller
             'App ID',
             'Environment ID',
             'Build ID',
+            'PHP_BINARY',
         ], [
             [
                 "$packageName:$packageVersion",
                 Craft::$app->id,
                 Module::getInstance()->getConfig()->environmentId,
                 Craft::$app->getConfig()->getGeneral()->buildId,
+                PHP_BINARY,
             ],
         ]);
         return ExitCode::OK;

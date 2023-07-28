@@ -56,13 +56,14 @@ class AssetBundlesController extends Controller
             ->keys()
             ->filter(fn($className) => str_contains($className, '\\assets\\') || preg_match('/Asset(Bundle)?$/', $className))
             ->mapWithKeys(function(string $className) {
-                $process = new Process([
-                    PHP_BINARY,
-                    $this->request->getScriptFile(),
-                    'cloud/asset-bundles/publish-bundle',
-                    $className,
-                ]);
-
+                // $process = new Process([
+                //     PHP_BINARY,
+                //     $this->request->getScriptFile(),
+                //     'cloud/asset-bundles/publish-bundle',
+                //     $className,
+                // ]);
+                $craftCommand = "cloud/asset-bundles/publish-bundle $className";
+                $process = Process::fromShellCommandline(sprintf("/opt/bin/php /var/task/craft %s 2>&1", $craftCommand));
                 $process->run();
 
                 $output = $process->isSuccessful()
