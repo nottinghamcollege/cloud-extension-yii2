@@ -62,22 +62,30 @@ class AssetBundlesController extends Controller
                     'cloud/asset-bundles/publish-bundle',
                     $className,
                 ]);
-                $process->start();
 
-                return [$className => $process];
-            })
-            ->each(function(Process $process, string $className) {
-                while ($process->isRunning()) {
-                    sleep(1);
-                    continue;
-                }
+                $process->run();
 
                 $output = $process->isSuccessful()
                     ? $process->getOutput()
                     : $process->getErrorOutput();
 
                 $this->stdout($output);
+
+                return [$className => $process];
             });
+
+            // ->each(function(Process $process, string $className) {
+            //     while ($process->isRunning()) {
+            //         sleep(1);
+            //         continue;
+            //     }
+            //
+            //     $output = $process->isSuccessful()
+            //         ? $process->getOutput()
+            //         : $process->getErrorOutput();
+            //
+            //     $this->stdout($output);
+            // });
 
         return ExitCode::OK;
     }
