@@ -20,16 +20,15 @@ class CraftCommandEvent
 
     public function run(): array
     {
-        $craftCommand = $this->event['command'];
+        $craftCommand = escapeshellcmd($this->event['command']);
         $command = sprintf("/opt/bin/php /var/task/craft %s 2>&1", $craftCommand);
-
         $timeout = max(1, $this->context->getRemainingTimeInMillis() / 1000 - 1);
 
         $process = Process::fromShellCommandline($command, null, [
             'LAMBDA_INVOCATION_CONTEXT' => json_encode($this->context, JSON_THROW_ON_ERROR),
         ], null, $timeout);
 
-        echo "Running Craft command: $craftCommand";
+        echo "Running Craft command: $craftCommand\n";
 
         try {
             $process->mustRun(function ($type, $buffer): void {
@@ -42,7 +41,7 @@ class CraftCommandEvent
             ];
         }
 
-        echo "Finished Craft command: $craftCommand";
+        echo "Finished Craft command: $craftCommand\n";
 
         return [
             'exitCode' => $process->getExitCode(),

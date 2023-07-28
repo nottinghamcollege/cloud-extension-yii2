@@ -16,11 +16,13 @@ class InfoController extends Controller
 
         $this->table([
             'Extension',
+            'App ID',
             'Environment ID',
             'Build ID',
         ], [
             [
                 "$packageName:$packageVersion",
+                Craft::$app->id,
                 Module::getInstance()->getConfig()->environmentId,
                 Craft::$app->getConfig()->getGeneral()->buildId,
             ],
