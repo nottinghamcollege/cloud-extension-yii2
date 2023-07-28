@@ -3,7 +3,7 @@
 namespace craft\cloud\runtime\event;
 
 use Bref\Context\Context;
-use Exception;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
 class CraftCommandEvent
@@ -20,7 +20,8 @@ class CraftCommandEvent
 
     public function run(): array
     {
-        $command = sprintf("/opt/bin/php /var/task/craft %s 2>&1", $this->event['command']);
+        $craftCommand = $this->event['command'];
+        $command = sprintf("/opt/bin/php /var/task/craft %s 2>&1", $craftCommand);
 
         $timeout = max(1, $this->context->getRemainingTimeInMillis() / 1000 - 1);
 
@@ -28,20 +29,23 @@ class CraftCommandEvent
             'LAMBDA_INVOCATION_CONTEXT' => json_encode($this->context, JSON_THROW_ON_ERROR),
         ], null, $timeout);
 
-        $process->run(function ($type, $buffer): void {
-            echo $buffer;
-        });
+        echo "Running Craft command: $craftCommand";
 
-        $exitCode = $process->getExitCode();
-        if ($exitCode > 0) {
+        try {
+            $process->mustRun(function ($type, $buffer): void {
+                echo $buffer;
+            });
+        } catch(ProcessFailedException $e) {
             return [
-                'exitCode' => $exitCode,
-                'output' => $process->getErrorOutput() ?: $process->getOutput(),
+                'exitCode' => $e->getProcess()->getExitCode(),
+                'output' => $e->getMessage(),
             ];
         }
 
+        echo "Finished Craft command: $craftCommand";
+
         return [
-            'exitCode' => $exitCode, // will always be 0
+            'exitCode' => $process->getExitCode(),
             'output' => $process->getOutput(),
         ];
     }
