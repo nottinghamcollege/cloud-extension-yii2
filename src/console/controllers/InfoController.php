@@ -19,14 +19,12 @@ class InfoController extends Controller
             'App ID',
             'Environment ID',
             'Build ID',
-            'scriptFile',
         ], [
             [
                 "$packageName:$packageVersion",
                 Craft::$app->id,
                 Module::getInstance()->getConfig()->environmentId,
                 Craft::$app->getConfig()->getGeneral()->buildId,
-                $this->request->getScriptFile(),
             ],
         ]);
         return ExitCode::OK;
