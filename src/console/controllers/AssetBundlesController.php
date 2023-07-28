@@ -7,23 +7,32 @@ use craft\console\Controller;
 use craft\helpers\Console;
 use Illuminate\Support\Collection;
 use Symfony\Component\Process\Process;
+use Throwable;
+use yii\console\Exception;
 use yii\console\ExitCode;
 use yii\web\AssetBundle;
 
-class CloudController extends Controller
+class AssetBundlesController extends Controller
 {
-    public function actionUp(): int
-    {
-        $this->run('/up');
-        $this->run('publish-asset-bundles');
-
-        return ExitCode::OK;
-    }
-
-    public function actionPublishAssetBundle(string $className): int
+    public function actionPublishBundle(string $className): int
     {
         /** @var AssetBundle $assetBundle */
-        $assetBundle = Craft::createObject($className);
+        try {
+            $assetBundle = Craft::createObject($className);
+
+            if (!is_subclass_of($className, AssetBundle::class)) {
+                throw new Exception();
+            }
+        } catch(Throwable $e) {
+            $this->stderr(sprintf(
+                'Skipping “%s”',
+                $className,
+                AssetBundle::class,
+            ), Console::FG_RED);
+            $this->stderr(PHP_EOL);
+
+            return ExitCode::USAGE;
+        }
 
         if (!is_subclass_of($className, AssetBundle::class)) {
             $this->stderr(sprintf('“%s” must be a subclass of “%s”.', $className, AssetBundle::class), Console::FG_RED);
@@ -39,7 +48,7 @@ class CloudController extends Controller
         return ExitCode::OK;
     }
 
-    public function actionPublishAssetBundles(): int
+    public function actionPublish(): int
     {
         $classMap = require(Craft::getAlias('@vendor/composer/autoload_classmap.php'));
 
@@ -50,7 +59,7 @@ class CloudController extends Controller
                 $process = new Process([
                     PHP_BINARY,
                     $this->request->getScriptFile(),
-                    'cloud/publish-asset-bundle',
+                    'cloud/asset-bundles/publish-bundle',
                     $className,
                 ]);
                 $process->start();
@@ -63,18 +72,13 @@ class CloudController extends Controller
                     continue;
                 }
 
-                if ($process->isSuccessful()) {
-                    $this->stdout($process->getOutput());
-                }
+                $output = $process->isSuccessful()
+                    ? $process->getOutput()
+                    : $process->getErrorOutput();
+
+                $this->stdout($output);
             });
 
         return ExitCode::OK;
-    }
-
-    public function actionExecJob(int $jobId): int
-    {
-        $jobFound = Craft::$app->getQueue()->executeJob($jobId);
-
-        return $jobFound ? ExitCode::OK : ExitCode::UNSPECIFIED_ERROR;
     }
 }
