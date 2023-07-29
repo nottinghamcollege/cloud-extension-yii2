@@ -4,7 +4,7 @@ namespace craft\cloud\fs;
 
 use League\Uri\Components\HierarchicalPath;
 
-class AssetFs extends Fs
+class AssetsFs extends Fs
 {
     /**
      * @inheritDoc

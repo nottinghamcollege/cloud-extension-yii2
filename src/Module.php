@@ -4,7 +4,7 @@ namespace craft\cloud;
 
 use Craft;
 use craft\base\Event;
-use craft\cloud\fs\AssetFs;
+use craft\cloud\fs\AssetsFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
 use craft\cloud\fs\TmpFs;
@@ -171,7 +171,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             FsService::class,
             FsService::EVENT_REGISTER_FILESYSTEM_TYPES,
             static function(RegisterComponentTypesEvent $event) {
-                $event->types[] = AssetFs::class;
+                $event->types[] = AssetsFs::class;
             }
         );
 

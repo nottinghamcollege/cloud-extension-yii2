@@ -84,7 +84,7 @@ class Fs extends FlysystemFs
 
     public function getBasePath(): HierarchicalPath
     {
-        return HierarchicalPath::createFromString(Module::getInstance()->getConfig()->environmentId);
+        return HierarchicalPath::createFromString(Module::getInstance()->getConfig()->environmentId ?: '');
     }
 
     public function getExpires(): ?string

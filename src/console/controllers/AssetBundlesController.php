@@ -63,8 +63,7 @@ class AssetBundlesController extends Controller
                     $className,
                     '2>&1',
                 ]);
-                // $craftCommand = "cloud/asset-bundles/publish-bundle \"$className\"";
-                // $process = Process::fromShellCommandline(sprintf("/opt/bin/php /var/task/craft %s 2>&1", $craftCommand));
+
                 $process->run();
 
                 $output = $process->isSuccessful()
