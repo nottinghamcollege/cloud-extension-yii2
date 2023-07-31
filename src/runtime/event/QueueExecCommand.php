@@ -31,7 +31,7 @@ class QueueExecCommand
             throw new Exception('The SQS message does not contain a valid queue job.');
         }
 
-        $command = sprintf("/opt/bin/php /var/task/craft cloud/exec-job %s 2>&1", $jobId);
+        $command = sprintf("/opt/bin/php /var/task/craft cloud/queue/exec %s 2>&1", $jobId);
 
         $timeout = max(1, $this->context->getRemainingTimeInMillis() / 1000 - 1);
 
