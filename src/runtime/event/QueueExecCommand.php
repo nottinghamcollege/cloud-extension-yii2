@@ -5,6 +5,7 @@ namespace craft\cloud\runtime\event;
 use Bref\Context\Context;
 use Bref\Event\Sqs\SqsRecord;
 use Exception;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Process;
 
 class QueueExecCommand
@@ -39,18 +40,23 @@ class QueueExecCommand
             'LAMBDA_INVOCATION_CONTEXT' => json_encode($this->context, JSON_THROW_ON_ERROR),
         ], null, $timeout);
 
-        $process->run(function ($type, $buffer): void {
-            echo $buffer;
-        });
+        echo "Running Craft command: $craftCommand\n";
 
-        $exitCode = $process->getExitCode();
-
-        if ($exitCode > 0) {
-            throw new Exception('The command exited with a non-zero status code: ' . $exitCode);
+        try {
+            $process->mustRun(function ($type, $buffer): void {
+                echo $buffer;
+            });
+        } catch(ProcessFailedException $e) {
+            return [
+                'exitCode' => $e->getProcess()->getExitCode(),
+                'output' => $e->getMessage(),
+            ];
         }
 
+        echo "Finished Craft command: $craftCommand\n";
+
         return [
-            'exitCode' => $exitCode, // will always be 0
+            'exitCode' => $process->getExitCode(),
             'output' => $process->getOutput(),
         ];
     }
