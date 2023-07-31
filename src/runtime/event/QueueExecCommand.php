@@ -20,7 +20,7 @@ class QueueExecCommand
         $this->context = $context;
     }
 
-    public function handle(): array
+    public function handle(): void
     {
         $body = json_decode($this->record->getBody(), false, flags: JSON_THROW_ON_ERROR);
         $jobId = $body->jobId ?? null;
@@ -40,24 +40,18 @@ class QueueExecCommand
             'LAMBDA_INVOCATION_CONTEXT' => json_encode($this->context, JSON_THROW_ON_ERROR),
         ], null, $timeout);
 
-        echo "Running Craft command: $craftCommand\n";
+        echo "Running Craft queue command: $command\n";
 
         try {
             $process->mustRun(function ($type, $buffer): void {
                 echo $buffer;
             });
         } catch(ProcessFailedException $e) {
-            return [
-                'exitCode' => $e->getProcess()->getExitCode(),
-                'output' => $e->getMessage(),
-            ];
+            echo $e->getMessage();
+
+            return;
         }
 
-        echo "Finished Craft command: $craftCommand\n";
-
-        return [
-            'exitCode' => $process->getExitCode(),
-            'output' => $process->getOutput(),
-        ];
+        echo "Finished Craft queue command: $command\n";
     }
 }
