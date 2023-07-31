@@ -48,6 +48,8 @@ class EventHandler implements Handler
                     echo $e->getMessage();
                 }
             }
+
+            return null;
         }
 
         // is this a craft command event?
