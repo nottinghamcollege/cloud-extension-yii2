@@ -12,6 +12,7 @@ use Bref\FpmRuntime\FastCgi\Timeout;
 use Bref\FpmRuntime\FpmHandler;
 use JsonException;
 use RuntimeException;
+use Throwable;
 
 class EventHandler implements Handler
 {
@@ -43,7 +44,7 @@ class EventHandler implements Handler
             foreach ((new SqsEvent($event))->getRecords() as $record) {
                 try {
                     (new QueueExecCommand($record, $context))->handle();
-                } catch (RuntimeException $e) {
+                } catch (Throwable $e) {
                     // echo the exception to the output but continue processing the other records
                     echo $e->getMessage();
                 }
