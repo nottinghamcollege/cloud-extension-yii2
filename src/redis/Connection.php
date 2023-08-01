@@ -7,16 +7,15 @@ use League\Uri\UriString;
 
 class Connection extends \yii\redis\Connection
 {
-    public const DATABASE_CACHE = 0;
-    public const DATABASE_SESSION = 1;
-    public const DATABASE_MUTEX = 2;
-
     public ?string $url = null;
 
-    public function init(): void
+    public function __construct($config = [])
     {
-        $this->url = $this->url ?? Module::getInstance()->getConfig()->redisUrl;
-        parent::init();
+        $config += [
+            'url' => Module::getInstance()->getConfig()->redisUrl,
+        ];
+
+        parent::__construct($config);
     }
 
     public function open(): void

@@ -5,6 +5,7 @@ namespace craft\cloud\redis;
 use Craft;
 use Yii;
 use yii\mutex\RetryAcquireTrait;
+use craft\cloud\Module;
 
 class Mutex extends \yii\redis\Mutex
 {
@@ -18,6 +19,11 @@ class Mutex extends \yii\redis\Mutex
     public function __construct($config = [])
     {
         $config += [
+            'redis' => [
+                'class' => Connection::class,
+                'database' => 2,
+            ],
+            'keyPrefix' => sprintf('mutex.%s.', Module::getInstance()->getConfig()->environmentId),
             'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
                 ? self::EXPIRE_CONSOLE
                 : self::EXPIRE_WEB,
