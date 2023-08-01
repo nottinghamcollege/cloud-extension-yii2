@@ -8,6 +8,7 @@ use craft\cloud\fs\AssetsFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
 use craft\cloud\fs\TmpFs;
+use craft\cloud\queue\Queue;
 use craft\cloud\redis\Connection as RedisConnection;
 use craft\cloud\redis\Mutex;
 use craft\cloud\web\assets\uploader\UploaderAsset;
