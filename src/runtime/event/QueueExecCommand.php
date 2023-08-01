@@ -24,15 +24,8 @@ class QueueExecCommand
     {
         $body = json_decode($this->record->getBody(), false, flags: JSON_THROW_ON_ERROR);
         $jobId = $body->jobId ?? null;
-        $attempt = $this->record->getApproximateReceiveCount();
-        $messageAttributes = $this->record->getMessageAttributes();
 
-        echo "MESSAGE ATTRIBUTES:\n";
-        echo json_encode($this->record->getMessageAttributes());
-
-        $ttr = (int) $messageAttributes['TTR'];
-
-        if (!$jobId || !$ttr || !$attempt) {
+        if (!$jobId) {
             throw new Exception('The SQS message does not contain a valid queue job.');
         }
 
