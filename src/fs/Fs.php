@@ -167,7 +167,7 @@ class Fs extends FlysystemFs
         ])->withoutEmptySegments()->withoutTrailingSlash();
     }
 
-    public function getBucketName(): string
+    public function getBucketName(): ?string
     {
         return Module::getInstance()->getConfig()->projectId;
     }
