@@ -54,11 +54,9 @@ class AssetBundlesController extends Controller
 
         Collection::make($classMap)
             ->keys()
-            ->filter(fn($className) =>
-                str_contains($className, '\\assets\\') ||
-                preg_match('/\\\assetbundles?\\\/', $className) ||
-                preg_match('/Asset(Bundle)?$/', $className)
-            )
+            ->filter(function ($className): bool|int {
+                return preg_match('/(?:\\assets\\|assetbundles?|Asset(Bundle)?$)/', $className);
+            })
             ->mapWithKeys(function(string $className) {
                 $process = new Process([
                     PHP_BINARY,
