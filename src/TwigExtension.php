@@ -4,16 +4,22 @@ namespace craft\cloud;
 
 use Illuminate\Support\Collection;
 use Twig\Extension\AbstractExtension;
+use Twig\Extension\GlobalsInterface;
 use Twig\TwigFunction;
 
-class TwigExtension extends AbstractExtension
+class TwigExtension extends AbstractExtension implements GlobalsInterface
 {
+    public function getGlobals(): array
+    {
+        return [
+            'isCraftCloud' => Helper::isCraftCloud(),
+        ];
+    }
+
     public function getFunctions(): array
     {
-        return Collection::make(get_class_methods(Helper::class))
-            ->map(function ($methodName): TwigFunction {
-                return new TwigFunction($methodName, [Helper::class, $methodName]);
-            })
-            ->all();
+        return [
+            new TwigFunction('artifactUrl', [Helper::class, 'artifactUrl']),
+        ];
     }
 }
