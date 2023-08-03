@@ -56,6 +56,8 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         // Required for controllers to be found
         $app->setModule($this->id, $this);
 
+        $app->getView()->registerTwigExtension(new TwigExtension());
+
         if ($this->getConfig()->enableCache) {
             $app->set('cache', Cache::class);
         }

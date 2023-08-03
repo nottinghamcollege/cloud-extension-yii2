@@ -2,11 +2,8 @@
 
 namespace craft\cloud;
 
-use Craft;
+use craft\cloud\fs\BuildArtifactsFs;
 use craft\helpers\App;
-use League\Uri\Contracts\UriInterface;
-use League\Uri\Uri;
-use League\Uri\UriTemplate;
 
 class Helper
 {
@@ -19,8 +16,8 @@ class Helper
         return (bool)App::env('AWS_LAMBDA_RUNTIME_API') || App::env('LAMBDA_TASK_ROOT');
     }
 
-    public static function collapseSlashes(string $path): string
+    public static function artifactUrl(string $path): string
     {
-        return preg_replace('#/{2,}#', '/', $path);
+        return (new BuildArtifactsFs())->createUrl($path);
     }
 }
