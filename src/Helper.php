@@ -2,8 +2,10 @@
 
 namespace craft\cloud;
 
+use Craft;
 use craft\cloud\fs\BuildArtifactsFs;
 use craft\helpers\App;
+use craft\helpers\ConfigHelper;
 
 class Helper
 {
@@ -19,5 +21,14 @@ class Helper
     public static function artifactUrl(string $path): string
     {
         return (new BuildArtifactsFs())->createUrl($path);
+    }
+
+    public static function setMemoryLimit(int|string $limit, int|string $offset = 0): int|float
+    {
+        $memoryLimit = ConfigHelper::sizeInBytes($limit) - ConfigHelper::sizeInBytes($offset);
+        Craft::$app->getConfig()->getGeneral()->phpMaxMemoryLimit($memoryLimit);
+        Craft::info("phpMaxMemoryLimit set to $memoryLimit");
+
+        return $memoryLimit;
     }
 }
