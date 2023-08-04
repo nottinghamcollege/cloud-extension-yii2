@@ -18,6 +18,7 @@ use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
+use craft\web\Application;
 use craft\web\Response;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
@@ -51,9 +52,12 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
     /**
      * @inheritDoc
+     * @var \craft\web\Application|\craft\console\Application $app
      */
     public function bootstrap($app): void
     {
+        Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
+
         // Required for controllers to be found
         $app->setModule($this->id, $this);
 
