@@ -58,17 +58,16 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         /** @var \craft\web\Application|\craft\console\Application $app */
         Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
 
-        $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
-            ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
-            ->all();
-
         // Required for controllers to be found
         $app->setModule($this->id, $this);
 
         $app->getView()->registerTwigExtension(new TwigExtension());
 
-        if (!$app->getRequest()->getIsConsoleRequest()) {
+        if ($app->getRequest()->getIsCpRequest()) {
             $app->getView()->registerAssetBundle(UploaderAsset::class);
+        }
+
+        if (!$app->getRequest()->getIsConsoleRequest()) {
             $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
                 ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
                 ->all();
