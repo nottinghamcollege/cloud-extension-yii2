@@ -22,6 +22,7 @@ use craft\web\Application;
 use craft\web\Response;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
+use Illuminate\Support\Collection;
 
 /**
  * @property-read Config $config
@@ -57,6 +58,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     public function bootstrap($app): void
     {
         Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
+
+        $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
+            ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
+            ->all();
 
         // Required for controllers to be found
         $app->setModule($this->id, $this);
