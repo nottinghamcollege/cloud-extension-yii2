@@ -187,7 +187,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             }
         );
 
-        if (!$this->getConfig()->allowBinaryResponses) {
+        if (!$this->getConfig()->allowBinaryResponses && Craft::$app->getRequest()->getIsCpRequest()) {
             Event::once(
                 Response::class,
                 \yii\web\Response::EVENT_BEFORE_SEND,
