@@ -43,7 +43,8 @@ class ImageTransformer extends Component implements ImageTransformerInterface
 
     public function buildTransformParams(ImageTransform $imageTransform): array
     {
-        //        'anim',
+
+//        'anim',
 //        'background',
 //        'blur',
 //        'border',
@@ -79,10 +80,10 @@ class ImageTransformer extends Component implements ImageTransformerInterface
 
         Craft::info("Signing transform: “{$data}”");
 
-        return hash_hmac(
+        return base64_encode(hash_hmac(
             'sha256',
             $data,
             Module::getInstance()->getConfig()->cdnSigningKey,
-        );
+        ));
     }
 }
