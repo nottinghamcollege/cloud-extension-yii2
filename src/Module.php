@@ -16,6 +16,7 @@ use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
+use craft\log\Dispatcher;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Response;
@@ -56,7 +57,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     public function bootstrap($app): void
     {
         /** @var \craft\web\Application|\craft\console\Application $app */
-        Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
 
         // Required for controllers to be found
         $app->setModule($this->id, $this);
@@ -67,10 +67,24 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->getView()->registerAssetBundle(UploaderAsset::class);
         }
 
-        if (!$app->getRequest()->getIsConsoleRequest()) {
-            $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
-                ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
-                ->all();
+        if (Helper::isCraftCloud()) {
+
+            // Set Craft memory limit to just below PHP's limit
+            Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
+
+            if (!$app->getRequest()->getIsConsoleRequest()) {
+                $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
+                    ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
+                    ->all();
+            }
+
+            /** @var Dispatcher $dispatcher */
+            $dispatcher = $app->getLog();
+
+            // Force JSON
+            $dispatcher->monologTargetConfig = [
+                'allowLineBreaks' => false,
+            ];
         }
 
         if ($this->getConfig()->enableCache) {
