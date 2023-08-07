@@ -10,6 +10,7 @@ use craft\elements\Asset;
 use craft\helpers\App;
 use craft\helpers\UrlHelper;
 use craft\models\ImageTransform;
+use Illuminate\Support\Collection;
 
 /**
  * TODO: ImageEditorTransformerInterface
@@ -63,12 +64,12 @@ class ImageTransformer extends Component implements ImageTransformerInterface
 //        'trim',
 //        'width',
 
-        return [
+        return Collection::make([
             'width' => $imageTransform->width,
             'height' => $imageTransform->height,
             'quality' => $imageTransform->quality,
             'format' => $imageTransform->format,
-        ];
+        ])->whereNotNull()->all();
     }
 
     public function sign(string $path, $params): string
