@@ -2,6 +2,7 @@
 
 namespace craft\cloud;
 
+use Craft;
 use craft\base\Component;
 use craft\base\imagetransforms\ImageEditorTransformerInterface;
 use craft\base\imagetransforms\ImageTransformerInterface;
@@ -74,6 +75,8 @@ class ImageTransformer extends Component implements ImageTransformerInterface
     {
         $paramString = http_build_query($params);
         $data = "$path#?$paramString";
+
+        Craft::info("Signing transform: “{$data}”");
 
         return hash_hmac(
             'sha256',
