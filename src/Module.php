@@ -63,8 +63,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $app->getView()->registerTwigExtension(new TwigExtension());
 
-        if (!$app->getRequest()->getIsConsoleRequest()) {
+        if ($app->getRequest()->getIsCpRequest()) {
             $app->getView()->registerAssetBundle(UploaderAsset::class);
+        }
+
+        if (!$app->getRequest()->getIsConsoleRequest()) {
             $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
                 ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
                 ->all();
