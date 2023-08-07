@@ -4,6 +4,7 @@ namespace craft\cloud;
 
 use Craft;
 use craft\cloud\fs\BuildArtifactsFs;
+use craft\cloud\fs\CpResourcesFs;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
 
@@ -18,9 +19,14 @@ class Helper
         return (bool)App::env('AWS_LAMBDA_RUNTIME_API') || App::env('LAMBDA_TASK_ROOT');
     }
 
-    public static function artifactUrl(string $path): string
+    public static function artifactUrl(string $path = ''): string
     {
         return (new BuildArtifactsFs())->createUrl($path);
+    }
+
+    public static function cpResourcesUrl(string $path = ''): string
+    {
+        return (new CpResourcesFs())->createUrl($path);
     }
 
     public static function setMemoryLimit(int|string $limit, int|string $offset = 0): int|float

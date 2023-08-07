@@ -117,7 +117,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'fs' => Craft::createObject(CpResourcesFs::class),
             ]);
 
-            Craft::$app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
+            $app->getConfig()->getGeneral()->resourceBaseUrl(
+                Helper::cpResourcesUrl(),
+            );
+
+            $app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
 
             /**
              * Currently this is the only reasonable way to change the default transformer
