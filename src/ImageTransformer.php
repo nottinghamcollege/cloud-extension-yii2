@@ -82,7 +82,7 @@ class ImageTransformer extends Component implements ImageTransformerInterface
         return hash_hmac(
             'sha256',
             $data,
-            App::env('CRAFT_CLOUD_ASSET_SIGNING_KEY')
+            Module::getInstance()->getConfig()->cdnSigningKey,
         );
     }
 }
