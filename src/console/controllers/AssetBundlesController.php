@@ -56,7 +56,7 @@ class AssetBundlesController extends Controller
             ->keys()
             ->filter(function ($className): bool|int {
                 // TODO: event
-                return preg_match('/(?:\\assets\\|assetbundles?|Asset(Bundle)?$)/', $className);
+                return preg_match('/(\\\assets\\\|assetbundles?|Asset(Bundle)?$)/', $className);
             })
             ->mapWithKeys(function(string $className) {
                 $process = new Process([
