@@ -52,6 +52,11 @@ class AssetBundlesController extends Controller
     {
         $classMap = require(Craft::getAlias('@vendor/composer/autoload_classmap.php'));
 
+
+        $this->stdout('Publishing asset bundles ...');
+        $this->stdout(PHP_EOL);
+
+        // TODO: run in parallel
         Collection::make($classMap)
             ->keys()
             ->filter(function ($className): bool|int {
@@ -73,23 +78,13 @@ class AssetBundlesController extends Controller
                     ? $process->getOutput()
                     : $process->getErrorOutput();
 
-                $this->stdout($output);
+                $this->stdout("    - $output");
 
                 return [$className => $process];
             });
 
-            // ->each(function(Process $process, string $className) {
-            //     while ($process->isRunning()) {
-            //         sleep(1);
-            //         continue;
-            //     }
-            //
-            //     $output = $process->isSuccessful()
-            //         ? $process->getOutput()
-            //         : $process->getErrorOutput();
-            //
-            //     $this->stdout($output);
-            // });
+        $this->stdout('Done publishing asset bundles.');
+        $this->stdout(PHP_EOL);
 
         return ExitCode::OK;
     }
