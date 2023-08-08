@@ -24,7 +24,7 @@ class Helper
         return (new BuildArtifactsFs())->createUrl($path);
     }
 
-    public static function cpResourcesUrl(string $path = ''): string
+    public static function cpResourceUrl(string $path = ''): string
     {
         return (new CpResourcesFs())->createUrl($path);
     }

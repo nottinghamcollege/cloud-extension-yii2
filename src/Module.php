@@ -114,7 +114,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ]);
 
             $app->getConfig()->getGeneral()->resourceBaseUrl(
-                Helper::cpResourcesUrl(),
+                Helper::cpResourceUrl(),
             );
 
             $app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
