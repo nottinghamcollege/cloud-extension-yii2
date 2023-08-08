@@ -63,10 +63,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $app->getView()->registerTwigExtension(new TwigExtension());
 
-        if ($app->getRequest()->getIsCpRequest()) {
-            $app->getView()->registerAssetBundle(UploaderAsset::class);
-        }
-
         if (Helper::isCraftCloud()) {
 
             // Set Craft memory limit to just below PHP's limit
@@ -152,6 +148,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                     'dataPath' => 'debug',
                 ],
             );
+        }
+
+        // Must be after setting assetManager
+        if ($app->getRequest()->getIsCpRequest()) {
+            $app->getView()->registerAssetBundle(UploaderAsset::class);
         }
     }
 
