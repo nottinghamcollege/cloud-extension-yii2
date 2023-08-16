@@ -55,7 +55,7 @@ class Config extends BaseConfig
         }
     }
 
-    public function getRegion(): string
+    public function getRegion(): ?string
     {
         return $this->region ?? App::env('AWS_REGION');
     }
