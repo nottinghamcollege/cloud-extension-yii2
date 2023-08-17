@@ -91,7 +91,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         if ($this->getConfig()->enableCache) {
             $app->set('cache', [
                 'class' => DbCache::class,
-                'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
+                'defaultDuration' => 86400,
             ]);
         }
 
