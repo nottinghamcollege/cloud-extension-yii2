@@ -10,9 +10,6 @@ use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
 use craft\cloud\fs\TmpFs;
 use craft\cloud\queue\Queue;
-use craft\cloud\redis\Cache;
-use craft\cloud\redis\Mutex;
-use craft\cloud\redis\Session;
 use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
@@ -24,7 +21,6 @@ use craft\web\Response;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
-use yii\mutex\DbMutex;
 use yii\mutex\MysqlMutex;
 use yii\mutex\PgsqlMutex;
 use yii\web\DbSession;
@@ -91,11 +87,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         if ($this->getConfig()->enableCache) {
             $app->set('cache', [
                 'class' => DbCache::class,
-                'defaultDuration' => 86400,
+                'defaultDuration' => $app->getConfig()->getGeneral()->cacheDuration,
             ]);
         }
 
-        if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
+        if ($this->getConfig()->enableSession && !$app->getRequest()->getIsConsoleRequest()) {
             $app->set('session', [
                 'class' => DbSession::class,
                 'sessionTable' => \craft\db\Table::PHPSESSIONS,
