@@ -4,6 +4,7 @@ namespace craft\cloud;
 
 use Craft;
 use craft\base\Event;
+use craft\cache\DbCache;
 use craft\cloud\fs\AssetsFs;
 use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\fs\StorageFs;
@@ -23,6 +24,10 @@ use craft\web\Response;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
+use yii\mutex\DbMutex;
+use yii\mutex\MysqlMutex;
+use yii\mutex\PgsqlMutex;
+use yii\web\DbSession;
 
 /**
  * @property-read Config $config
@@ -84,19 +89,25 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         if ($this->getConfig()->enableCache) {
-            $app->set('cache', Cache::class);
+            $app->set('cache', [
+                'class' => DbCache::class,
+                'defaultDuration' => 86400,
+            ]);
         }
 
         if ($this->getConfig()->enableSession && !Craft::$app->getRequest()->getIsConsoleRequest()) {
             $app->set('session', [
-                'class' => Session::class
+                'class' => DbSession::class,
+                'sessionTable' => \craft\db\Table::PHPSESSIONS,
             ] + App::sessionConfig());
         }
 
         if ($this->getConfig()->enableMutex) {
             $app->set('mutex', [
                 'class' => \craft\mutex\Mutex::class,
-                'mutex' => Mutex::class,
+                'mutex' => $app->getDb()->getDriverName() === 'pgsql'
+                    ? PgsqlMutex::class
+                    : MysqlMutex::class,
             ]);
         }
 
