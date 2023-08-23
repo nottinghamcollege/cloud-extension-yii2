@@ -173,7 +173,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         /** @var Config $config */
         $config = is_array($fileConfig)
-            ? Craft::createObject(Config::class, $fileConfig)
+            ? Craft::createObject(['class' => Config::class] + $fileConfig)
             : $fileConfig;
 
         $this->_config = Craft::configure($config, App::envConfig(Config::class, 'CRAFT_CLOUD_'));
