@@ -11,6 +11,7 @@ use craft\cloud\fs\StorageFs;
 use craft\cloud\fs\TmpFs;
 use craft\cloud\queue\Queue;
 use craft\cloud\web\assets\uploader\UploaderAsset;
+use craft\db\Table;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\helpers\App;
@@ -84,17 +85,22 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ];
         }
 
-        if ($this->getConfig()->enableCache) {
+        // cache table is created on craft cloud/up
+        if ($this->getConfig()->enableCache && $app->getDb()->tableExists(Table::CACHE)) {
             $app->set('cache', [
                 'class' => DbCache::class,
                 'defaultDuration' => $app->getConfig()->getGeneral()->cacheDuration,
             ]);
         }
 
-        if ($this->getConfig()->enableSession && !$app->getRequest()->getIsConsoleRequest()) {
+        if (
+            $this->getConfig()->enableSession &&
+            !$app->getRequest()->getIsConsoleRequest() &&
+            $app->getDb()->tableExists(Table::PHPSESSIONS)
+        ) {
             $app->set('session', [
                 'class' => DbSession::class,
-                'sessionTable' => \craft\db\Table::PHPSESSIONS,
+                'sessionTable' => Table::PHPSESSIONS,
             ] + App::sessionConfig());
         }
 
