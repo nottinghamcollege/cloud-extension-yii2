@@ -8,9 +8,9 @@ use yii\console\Exception;
 
 class TestJob extends BaseJob
 {
-    public int $timeout = 0;
-    public bool $throw = false;
     public string $message = '';
+    public bool $throw = false;
+    public int $timeout = 0;
 
     public function execute($queue): void
     {
