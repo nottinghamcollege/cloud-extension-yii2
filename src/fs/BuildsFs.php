@@ -15,7 +15,7 @@ class BuildsFs extends Fs
         return HierarchicalPath::createRelativeFromSegments([
             parent::getBasePath(),
             'builds',
-            Craft::$app->getConfig()->getGeneral()->buildId,
+            Craft::$app->getConfig()->getGeneral()->buildId ?? '',
         ]);
     }
 }
