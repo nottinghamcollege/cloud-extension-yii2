@@ -41,9 +41,12 @@ class CliHandler implements Handler
             echo $e->getMessage();
         }
 
+        echo "process errorOutput\n";
+        echo $process->getErrorOutput();
+
         return [
             'exitCode' => $exitCode ?? $process->getExitCode(),
-            'output' => $process->getOutput(),
+            'output' => $process->getErrorOutput() . $process->getOutput(),
         ];
     }
 }
