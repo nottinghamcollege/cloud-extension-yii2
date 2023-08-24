@@ -36,6 +36,9 @@ class CliHandler implements Handler
             });
         } catch (ProcessTimedOutException $e) {
             $exitCode = self::EXIT_CODE_TIMEOUT;
+            echo "Process timed out. Commands are limited to 15 minutes.";
+        } catch (\Throwable $e) {
+            echo $e->getMessage();
         }
 
         return [
