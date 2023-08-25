@@ -15,18 +15,22 @@ class AssetBundlesController extends Controller
 {
     public function actionPublishBundle(string $className): int
     {
-        $this->do("Publishing “{$className}”", function() use ($className) {
-            $rc = new ReflectionClass($className);
+        try {
+            $this->do("Publishing “{$className}”", function() use ($className) {
+                $rc = new ReflectionClass($className);
 
-            if (!$rc->isSubclassOf(AssetBundle::class) || !$rc->isInstantiable()) {
-                throw new Exception('Not a valid asset bundle.');
-            }
+                if (!$rc->isSubclassOf(AssetBundle::class) || !$rc->isInstantiable()) {
+                    throw new Exception('Not a valid asset bundle.');
+                }
 
-            /** @var AssetBundle $assetBundle */
-            $assetBundle = Craft::createObject($className);
-            $assetManager = Craft::$app->getAssetManager();
-            $assetBundle->publish($assetManager);
-        });
+                /** @var AssetBundle $assetBundle */
+                $assetBundle = Craft::createObject($className);
+                $assetManager = Craft::$app->getAssetManager();
+                $assetBundle->publish($assetManager);
+            });
+        } catch (\Throwable $e) {
+            // `do` prints the error, so nothing else to do here.
+        }
 
         return ExitCode::OK;
     }
