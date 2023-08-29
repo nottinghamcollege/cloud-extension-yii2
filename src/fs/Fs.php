@@ -7,7 +7,6 @@ use Aws\Handler\GuzzleV6\GuzzleHandler;
 use Aws\S3\S3Client;
 use Craft;
 use craft\behaviors\EnvAttributeParserBehavior;
-use craft\cloud\Helper;
 use craft\cloud\Module;
 use craft\errors\FsException;
 use craft\flysystem\base\FlysystemFs;
@@ -71,7 +70,7 @@ class Fs extends FlysystemFs
      */
     public function getRootPath(): string
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             return $this->localFs->getRootPath();
         }
 
@@ -82,7 +81,7 @@ class Fs extends FlysystemFs
 
     public function createUrl(string $path): string
     {
-        $baseUrl = Helper::isCraftCloud()
+        $baseUrl = Module::getInstance()->getConfig()->enableCdn
             ? Module::getInstance()->getConfig()->getCdnBaseUrl()
             : $this->localFs->getRootUrl();
 
@@ -232,12 +231,12 @@ class Fs extends FlysystemFs
         return Visibility::PRIVATE;
     }
 
-    public function uploadDirectory(string $path, string $destPath, $config = [])
+    public function uploadDirectory(string $path, string $destPath, $config = []): void
     {
         try {
             $config = $this->addFileMetadataToConfig($config);
 
-            return $this->getClient()->uploadDirectory(
+            $this->getClient()->uploadDirectory(
                 $path,
                 $this->getBucketName(),
                 $this->prefixPath($destPath),
@@ -250,8 +249,8 @@ class Fs extends FlysystemFs
 
     public function presignedUrl(string $command, string $path, DateTimeInterface $expiresAt, array $config = []): string
     {
-        if (!Helper::isCraftCloud()) {
-            throw new BadRequestHttpException('');
+        if (!Module::getInstance()->getConfig()->enableCdn) {
+            throw new BadRequestHttpException();
         }
 
         try {
@@ -280,7 +279,7 @@ class Fs extends FlysystemFs
      */
     public function copyFile(string $path, string $newPath): void
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             $this->localFs->copyFile($path, $newPath);
             return;
         }
@@ -300,7 +299,7 @@ class Fs extends FlysystemFs
      */
     public function renameFile(string $path, string $newPath): void
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             $this->localFs->renameFile($path, $newPath);
             return;
         }
@@ -320,7 +319,7 @@ class Fs extends FlysystemFs
      */
     public function createDirectory(string $path, array $config = []): void
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             $this->localFs->createDirectory($path, $config);
             return;
         }
@@ -338,7 +337,7 @@ class Fs extends FlysystemFs
      */
     public function getFileList(string $directory = '', bool $recursive = true): Generator
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             return $this->localFs->getFileList($directory, $recursive);
         }
 
@@ -350,7 +349,7 @@ class Fs extends FlysystemFs
      */
     public function getFileSize(string $uri): int
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             return $this->localFs->getFileSize($uri);
         }
 
@@ -362,7 +361,7 @@ class Fs extends FlysystemFs
      */
     public function getDateModified(string $uri): int
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             return $this->localFs->getDateModified($uri);
         }
 
@@ -375,7 +374,7 @@ class Fs extends FlysystemFs
      */
     public function write(string $path, string $contents, array $config = []): void
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             $this->localFs->write($path, $contents, $config);
             return;
         }
@@ -388,7 +387,7 @@ class Fs extends FlysystemFs
      */
     public function read(string $path): string
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             return $this->localFs->read($path);
         }
 
@@ -400,7 +399,7 @@ class Fs extends FlysystemFs
      */
     public function writeFileFromStream(string $path, $stream, array $config = []): void
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             $this->localFs->writeFileFromStream($path, $stream, $config);
             return;
         }
@@ -413,7 +412,7 @@ class Fs extends FlysystemFs
      */
     public function fileExists(string $path): bool
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             return $this->localFs->fileExists($path);
         }
 
@@ -425,7 +424,7 @@ class Fs extends FlysystemFs
      */
     public function deleteFile(string $path): void
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             $this->localFs->deleteFile($path);
             return;
         }
@@ -438,7 +437,7 @@ class Fs extends FlysystemFs
      */
     public function getFileStream(string $uriPath)
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             return $this->localFs->getFileStream($uriPath);
         }
 
@@ -450,7 +449,7 @@ class Fs extends FlysystemFs
      */
     public function directoryExists(string $path): bool
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             return $this->localFs->directoryExists($path);
         }
 
@@ -462,7 +461,7 @@ class Fs extends FlysystemFs
      */
     public function deleteDirectory(string $path): void
     {
-        if (!Helper::isCraftCloud()) {
+        if (!Module::getInstance()->getConfig()->enableCdn) {
             $this->localFs->deleteDirectory($path);
             return;
         }
