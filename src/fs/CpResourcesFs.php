@@ -6,10 +6,10 @@ use League\Uri\Components\HierarchicalPath;
 
 class CpResourcesFs extends BuildsFs
 {
-    public function getBasePath(): HierarchicalPath
+    public function getRootPath(): string
     {
         return HierarchicalPath::createRelativeFromSegments([
-            parent::getBasePath(),
+            parent::getRootPath(),
             'cpresources',
         ]);
     }

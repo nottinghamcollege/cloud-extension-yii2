@@ -3,6 +3,7 @@
 namespace craft\cloud\web\assets\uploader;
 
 use Craft;
+use craft\cloud\Helper;
 use craft\helpers\ConfigHelper;
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
@@ -27,6 +28,10 @@ class UploaderAsset extends AssetBundle
 
     public function registerAssetFiles($view): void
     {
+        if (!Helper::isCraftCloud()) {
+            return;
+        }
+
         parent::registerAssetFiles($view);
 
         $maxFileSize = ConfigHelper::sizeInBytes(Craft::$app->getConfig()->getGeneral()->maxUploadFileSize);

@@ -9,10 +9,10 @@ class StorageFs extends Fs
 {
     public bool $hasUrls = false;
 
-    public function getBasePath(): HierarchicalPath
+    public function getRootPath(): string
     {
         return HierarchicalPath::createRelativeFromSegments([
-            parent::getBasePath(),
+            parent::getRootPath(),
             'storage',
         ]);
     }

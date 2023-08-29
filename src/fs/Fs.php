@@ -7,14 +7,16 @@ use Aws\Handler\GuzzleV6\GuzzleHandler;
 use Aws\S3\S3Client;
 use Craft;
 use craft\behaviors\EnvAttributeParserBehavior;
+use craft\cloud\Helper;
 use craft\cloud\Module;
 use craft\errors\FsException;
 use craft\flysystem\base\FlysystemFs;
-use craft\helpers\App;
+use craft\fs\Local;
 use craft\helpers\Assets;
 use craft\helpers\DateTimeHelper;
 use DateTime;
 use DateTimeInterface;
+use Generator;
 use League\Flysystem\AwsS3V3\AwsS3V3Adapter;
 use League\Flysystem\FilesystemException;
 use League\Flysystem\UnableToCopyFile;
@@ -24,22 +26,33 @@ use League\Flysystem\Visibility;
 use League\Uri\Components\HierarchicalPath;
 use League\Uri\Uri;
 use Throwable;
+use yii\web\BadRequestHttpException;
 
 /**
  *
  * @property-read string $bucketName
  * @property-read string $prefix
- * @property-read S3Client $client
  * @property-read ?string $settingsHtml
  */
 class Fs extends FlysystemFs
 {
-
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
-    private S3Client $_client;
+    protected Local $localFs;
+    protected S3Client $client;
     public ?string $subfolder = null;
-    public const TAG_PRIVATE = 'private';
+
+    public function init(): void
+    {
+        parent::init();
+
+        $this->localFs = Craft::createObject([
+            'class' => Local::class,
+            'hasUrls' => $this->hasUrls,
+            'url' => $this->hasUrls ? '@web/cloud-fs' : null,
+            'path' => '@webroot/cloud-fs',
+        ]);
+    }
 
     /**
      * @inheritdoc
@@ -53,11 +66,29 @@ class Fs extends FlysystemFs
         return $this->createUrl('');
     }
 
+    /**
+     * @inheritDoc
+     */
+    public function getRootPath(): string
+    {
+        if (!Helper::isCraftCloud()) {
+            return $this->localFs->getRootPath();
+        }
+
+        return HierarchicalPath::createFromString(
+            Module::getInstance()->getConfig()->environmentId
+        )->withTrailingSlash();
+    }
+
     public function createUrl(string $path): string
     {
+        $baseUrl = Helper::isCraftCloud()
+            ? Module::getInstance()->getConfig()->getCdnBaseUrl()
+            : $this->localFs->getRootUrl();
+
         return Uri::createFromBaseUri(
             $this->prefixPath($path),
-            Module::getInstance()->getConfig()->getCdnBaseUrl(),
+            $baseUrl,
         );
     }
 
@@ -80,11 +111,6 @@ class Fs extends FlysystemFs
     public function settingsAttributes(): array
     {
         return array_merge(parent::settingsAttributes(), ['expires']);
-    }
-
-    public function getBasePath(): HierarchicalPath
-    {
-        return HierarchicalPath::createFromString(Module::getInstance()->getConfig()->environmentId ?: '');
     }
 
     public function getExpires(): ?string
@@ -121,18 +147,12 @@ class Fs extends FlysystemFs
         );
     }
 
-    /**
-     * @inheritDoc
-     */
     protected function invalidateCdnPath(string $path): bool
     {
         // TODO: cloudflare
         return false;
     }
 
-    /**
-     * @inheritdoc
-     */
     protected function addFileMetadataToConfig(array $config): array
     {
         if (!empty($this->getExpires()) && DateTimeHelper::isValidIntervalString($this->getExpires())) {
@@ -144,7 +164,7 @@ class Fs extends FlysystemFs
         }
 
         if (!$this->hasUrls) {
-            $config['Tagging'] = self::TAG_PRIVATE;
+            $config['Tagging'] = Visibility::PRIVATE;
         }
 
         return parent::addFileMetadataToConfig($config);
@@ -158,10 +178,10 @@ class Fs extends FlysystemFs
         ]);
     }
 
-    public function prefixPath(?string $path = null): HierarchicalPath
+    public function prefixPath(?string $path = null): string
     {
         return HierarchicalPath::createRelativeFromSegments([
-            $this->getBasePath(),
+            $this->getRootPath(),
             $this->subfolder ?? '',
             $path ?? '',
         ])->withoutEmptySegments()->withoutTrailingSlash();
@@ -200,11 +220,11 @@ class Fs extends FlysystemFs
 
     public function getClient(): S3Client
     {
-        if (!isset($this->_client)) {
-            $this->_client = $this->createClient();
+        if (!isset($this->client)) {
+            $this->client = $this->createClient();
         }
 
-        return $this->_client;
+        return $this->client;
     }
 
     protected function visibility(): string
@@ -230,13 +250,17 @@ class Fs extends FlysystemFs
 
     public function presignedUrl(string $command, string $path, DateTimeInterface $expiresAt, array $config = []): string
     {
+        if (!Helper::isCraftCloud()) {
+            throw new BadRequestHttpException('');
+        }
+
         try {
             $commandConfig = $this->addFileMetadataToConfig($config);
 
             $command = $this->client->getCommand($command, [
-                'Bucket' => $this->getBucketName(),
-                'Key' => $this->prefixPath($path),
-            ] + $commandConfig);
+                    'Bucket' => $this->getBucketName(),
+                    'Key' => $this->prefixPath($path),
+                ] + $commandConfig);
 
             $request = $this->client->createPresignedRequest(
                 $command,
@@ -250,47 +274,199 @@ class Fs extends FlysystemFs
     }
 
     /**
+     * @inheritdoc
      * Duping parent to add config…
-     * See https://github.com/craftcms/flysystem/pull/9
+     * @see https://github.com/craftcms/flysystem/pull/9
      */
     public function copyFile(string $path, string $newPath): void
     {
+        if (!Helper::isCraftCloud()) {
+            $this->localFs->copyFile($path, $newPath);
+            return;
+        }
+
         try {
             $config = $this->addFileMetadataToConfig([]);
             $this->filesystem()->copy($path, $newPath, $config);
-        } catch (FilesystemException | UnableToCopyFile $exception) {
+        } catch (FilesystemException|UnableToCopyFile $exception) {
             throw new FsException($exception->getMessage(), 0, $exception);
         }
     }
 
     /**
-     * Duping parent methods to add config…
-     * See https://github.com/craftcms/flysystem/pull/9
-     */
-
-    /**
      * @inheritdoc
+     * Duping parent method to add config…
+     * @see https://github.com/craftcms/flysystem/pull/9
      */
     public function renameFile(string $path, string $newPath): void
     {
+        if (!Helper::isCraftCloud()) {
+            $this->localFs->renameFile($path, $newPath);
+            return;
+        }
+
         try {
             $config = $this->addFileMetadataToConfig([]);
             $this->filesystem()->move($path, $newPath, $config);
-        } catch (FilesystemException | UnableToMoveFile $exception) {
+        } catch (FilesystemException|UnableToMoveFile $exception) {
             throw new FsException($exception->getMessage(), 0, $exception);
         }
     }
 
     /**
      * @inheritdoc
+     * Duping parent method to add config…
+     * @see https://github.com/craftcms/flysystem/pull/9
      */
     public function createDirectory(string $path, array $config = []): void
     {
+        if (!Helper::isCraftCloud()) {
+            $this->localFs->createDirectory($path, $config);
+            return;
+        }
+
         try {
             $config = $this->addFileMetadataToConfig([]);
             $this->filesystem()->createDirectory($path, $config);
-        } catch (FilesystemException | UnableToCreateDirectory $exception) {
+        } catch (FilesystemException|UnableToCreateDirectory $exception) {
             throw new FsException($exception->getMessage(), 0, $exception);
         }
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getFileList(string $directory = '', bool $recursive = true): Generator
+    {
+        if (!Helper::isCraftCloud()) {
+            return $this->localFs->getFileList($directory, $recursive);
+        }
+
+        return parent::getFileList($directory, $recursive);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getFileSize(string $uri): int
+    {
+        if (!Helper::isCraftCloud()) {
+            return $this->localFs->getFileSize($uri);
+        }
+
+        return parent::getFileSize($uri);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getDateModified(string $uri): int
+    {
+        if (!Helper::isCraftCloud()) {
+            return $this->localFs->getDateModified($uri);
+        }
+
+        return parent::getDateModified($uri);
+    }
+
+
+    /**
+     * @inheritDoc
+     */
+    public function write(string $path, string $contents, array $config = []): void
+    {
+        if (!Helper::isCraftCloud()) {
+            $this->localFs->write($path, $contents, $config);
+            return;
+        }
+
+        parent::write($path, $contents, $config);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function read(string $path): string
+    {
+        if (!Helper::isCraftCloud()) {
+            return $this->localFs->read($path);
+        }
+
+        return parent::read($path);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function writeFileFromStream(string $path, $stream, array $config = []): void
+    {
+        if (!Helper::isCraftCloud()) {
+            $this->localFs->writeFileFromStream($path, $stream, $config);
+            return;
+        }
+
+        parent::writeFileFromStream($path, $stream, $config);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function fileExists(string $path): bool
+    {
+        if (!Helper::isCraftCloud()) {
+            return $this->localFs->fileExists($path);
+        }
+
+        return parent::fileExists($path);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function deleteFile(string $path): void
+    {
+        if (!Helper::isCraftCloud()) {
+            $this->localFs->deleteFile($path);
+            return;
+        }
+
+        parent::deleteFile($path);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function getFileStream(string $uriPath)
+    {
+        if (!Helper::isCraftCloud()) {
+            return $this->localFs->getFileStream($uriPath);
+        }
+
+        return parent::getFileStream($uriPath);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function directoryExists(string $path): bool
+    {
+        if (!Helper::isCraftCloud()) {
+            return $this->localFs->directoryExists($path);
+        }
+
+        return parent::directoryExists($path);
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public function deleteDirectory(string $path): void
+    {
+        if (!Helper::isCraftCloud()) {
+            $this->localFs->deleteDirectory($path);
+            return;
+        }
+
+        parent::deleteDirectory($path);
     }
 }

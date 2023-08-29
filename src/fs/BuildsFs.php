@@ -10,10 +10,10 @@ class BuildsFs extends Fs
     protected ?string $expires = '1 year';
     public bool $hasUrls = true;
 
-    public function getBasePath(): HierarchicalPath
+    public function getRootPath(): string
     {
         return HierarchicalPath::createRelativeFromSegments([
-            parent::getBasePath(),
+            parent::getRootPath(),
             'builds',
             Craft::$app->getConfig()->getGeneral()->buildId ?? '',
         ]);
