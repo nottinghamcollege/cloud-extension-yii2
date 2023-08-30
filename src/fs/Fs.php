@@ -37,20 +37,34 @@ class Fs extends FlysystemFs
 {
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
-    protected Local $localFs;
+    protected ?Local $localFs = null;
     protected S3Client $client;
     public ?string $subfolder = null;
+    public ?string $localFsUrl = null;
+    public ?string $localFsPath = null;
 
     public function init(): void
     {
-        parent::init();
+        if ($this->localFsPath) {
+            $this->localFs = Craft::createObject([
+                'class' => Local::class,
+                'hasUrls' => $this->hasUrls,
+                'path' => $this->localFsPath,
+                'url' => $this->hasUrls ? $this->localFsUrl : null,
+            ]);
+        }
 
-        $this->localFs = Craft::createObject([
-            'class' => Local::class,
-            'hasUrls' => $this->hasUrls,
-            'url' => $this->hasUrls ? '@web/cloud-fs' : null,
-            'path' => '@webroot/cloud-fs',
-        ]);
+        parent::init();
+    }
+
+    public function getLocalFs(): ?Local
+    {
+        return $this->localFs;
+    }
+
+    protected function useLocalFs(): bool
+    {
+        return $this->localFs && !Module::getInstance()->getConfig()->enableCdn;
     }
 
     /**
@@ -62,7 +76,11 @@ class Fs extends FlysystemFs
             return null;
         }
 
-        return $this->createUrl('');
+        try {
+            return $this->createUrl('');
+        } catch(FsException $e) {
+            return null;
+        }
     }
 
     /**
@@ -70,7 +88,7 @@ class Fs extends FlysystemFs
      */
     public function getRootPath(): string
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             return $this->localFs->getRootPath();
         }
 
@@ -83,7 +101,11 @@ class Fs extends FlysystemFs
     {
         $baseUrl = Module::getInstance()->getConfig()->enableCdn
             ? Module::getInstance()->getConfig()->getCdnBaseUrl()
-            : $this->localFs->getRootUrl();
+            : $this->localFs?->getRootUrl();
+
+        if (!$baseUrl) {
+            throw new FsException('Filesystem is not configured with a valid base path.');
+        }
 
         return Uri::createFromBaseUri(
             $this->prefixPath($path),
@@ -249,7 +271,7 @@ class Fs extends FlysystemFs
 
     public function presignedUrl(string $command, string $path, DateTimeInterface $expiresAt, array $config = []): string
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             throw new BadRequestHttpException();
         }
 
@@ -279,7 +301,7 @@ class Fs extends FlysystemFs
      */
     public function copyFile(string $path, string $newPath): void
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             $this->localFs->copyFile($path, $newPath);
             return;
         }
@@ -299,7 +321,7 @@ class Fs extends FlysystemFs
      */
     public function renameFile(string $path, string $newPath): void
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             $this->localFs->renameFile($path, $newPath);
             return;
         }
@@ -319,7 +341,7 @@ class Fs extends FlysystemFs
      */
     public function createDirectory(string $path, array $config = []): void
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             $this->localFs->createDirectory($path, $config);
             return;
         }
@@ -337,7 +359,7 @@ class Fs extends FlysystemFs
      */
     public function getFileList(string $directory = '', bool $recursive = true): Generator
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             return $this->localFs->getFileList($directory, $recursive);
         }
 
@@ -349,7 +371,7 @@ class Fs extends FlysystemFs
      */
     public function getFileSize(string $uri): int
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             return $this->localFs->getFileSize($uri);
         }
 
@@ -361,7 +383,7 @@ class Fs extends FlysystemFs
      */
     public function getDateModified(string $uri): int
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             return $this->localFs->getDateModified($uri);
         }
 
@@ -374,7 +396,7 @@ class Fs extends FlysystemFs
      */
     public function write(string $path, string $contents, array $config = []): void
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             $this->localFs->write($path, $contents, $config);
             return;
         }
@@ -387,7 +409,7 @@ class Fs extends FlysystemFs
      */
     public function read(string $path): string
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             return $this->localFs->read($path);
         }
 
@@ -399,7 +421,7 @@ class Fs extends FlysystemFs
      */
     public function writeFileFromStream(string $path, $stream, array $config = []): void
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             $this->localFs->writeFileFromStream($path, $stream, $config);
             return;
         }
@@ -412,7 +434,7 @@ class Fs extends FlysystemFs
      */
     public function fileExists(string $path): bool
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             return $this->localFs->fileExists($path);
         }
 
@@ -424,7 +446,7 @@ class Fs extends FlysystemFs
      */
     public function deleteFile(string $path): void
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             $this->localFs->deleteFile($path);
             return;
         }
@@ -437,7 +459,7 @@ class Fs extends FlysystemFs
      */
     public function getFileStream(string $uriPath)
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             return $this->localFs->getFileStream($uriPath);
         }
 
@@ -449,7 +471,7 @@ class Fs extends FlysystemFs
      */
     public function directoryExists(string $path): bool
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             return $this->localFs->directoryExists($path);
         }
 
@@ -461,7 +483,7 @@ class Fs extends FlysystemFs
      */
     public function deleteDirectory(string $path): void
     {
-        if (!Module::getInstance()->getConfig()->enableCdn) {
+        if ($this->useLocalFs()) {
             $this->localFs->deleteDirectory($path);
             return;
         }

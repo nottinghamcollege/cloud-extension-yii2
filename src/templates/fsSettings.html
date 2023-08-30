@@ -40,6 +40,56 @@
 
 {{ forms.field({
     label: "Cache Duration"|t,
-    instructions: "The Cache-Control duration set on assets in this filesystem.",
+    instructions: 'The Cache-Control duration set on assets in this filesystem.',
     id: 'cacheDuration',
+    tip: 'Caching files for one year is recommended for optimal performance. <a class="go" href="https://ashton.codes/set-cache-control-max-age-1-year/">Read more</a>',
 }, cacheDurationInput) }}
+
+<hr />
+
+<h2>Local Filesystem Fallback</h2>
+
+{% if not craft.cloud.getConfig().enableCdn %}
+    <div class="readable">
+        <blockquote class="note tip">
+            <p>
+                When running outside of Craft Cloud, this filesystem falls back to your local disk for storage.
+                {{ tag('a', {
+                    href: 'https://craftcms.com/knowledge-base/cloud-module',
+                    class: 'go',
+                    text: 'Learn more'|t('app'),
+                }) }}
+            </p>
+        </blockquote>
+    </div>
+{% endif %}
+
+{{ forms.autosuggestField({
+    label: "Base Path"|t('app'),
+    instructions: "The base folder path that should be used as the root of the filesystem."|t('app'),
+    id: 'local-fs-path',
+    class: 'ltr',
+    name: 'localFsPath',
+    suggestEnvVars: true,
+    suggestAliases: true,
+    value: fs.localFs.path ?? null,
+    errors: fs.localFs.getErrors('path') ?? null,
+    required: false,
+    placeholder: "/path/to/folder"|t('app')
+}) }}
+
+<div id="url-field" class="{% if not fs.hasUrls %}hidden{% endif %}">
+    {{ forms.autosuggestField({
+        label: "Base URL"|t('app'),
+        instructions: "The base URL to the files in this filesystem."|t('app'),
+        id: 'local-fs-url',
+        class: ['ltr', 'fs-url'],
+        name: 'localFsUrl',
+        suggestEnvVars: true,
+        suggestAliases: true,
+        value: fs.localFs.url ?? null,
+        errors: fs.localFs.getErrors('url') ?? null,
+        required: false,
+        placeholder: "//example.com/path/to/folder"
+    }) }}
+</fieldset>
