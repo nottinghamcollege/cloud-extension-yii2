@@ -28,6 +28,7 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                     'command' => "cloud/queue/exec {$jobId}"
                 ] , $context);
             } catch (Throwable $e) {
+                echo "Marking SQS record as failed.";
                 $this->markAsFailed($record);
             }
         }

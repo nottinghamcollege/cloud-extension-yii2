@@ -33,7 +33,7 @@ class QueueController extends Controller
 
     public function actionExec(string $jobId): int
     {
-        $this->do('Executing job', function() use ($jobId) {
+        $this->do("Executing job #$jobId", function() use ($jobId) {
             /** @var Queue $queue */
             $queue = Craft::$app->getQueue();
             $jobFound = $queue->executeJob($jobId);
