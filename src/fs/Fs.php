@@ -39,7 +39,7 @@ class Fs extends FlysystemFs
     protected ?string $expires = null;
     protected ?Local $localFs = null;
     protected S3Client $client;
-    public ?string $subfolder = null;
+    public ?string $subpath = null;
     public ?string $localFsUrl = null;
     public ?string $localFsPath = null;
 
@@ -122,7 +122,7 @@ class Fs extends FlysystemFs
         $behaviors['parser'] = [
             'class' => EnvAttributeParserBehavior::class,
             'attributes' => [
-                'subfolder',
+                'subpath',
             ],
         ];
 
@@ -203,7 +203,7 @@ class Fs extends FlysystemFs
     {
         return HierarchicalPath::createRelativeFromSegments([
             $this->getRootPath(),
-            $this->subfolder ?? '',
+            $this->subpath ?? '',
             $path ?? '',
         ])->withoutEmptySegments()->withoutTrailingSlash();
     }

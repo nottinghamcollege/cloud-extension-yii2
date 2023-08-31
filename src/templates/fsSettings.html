@@ -1,15 +1,15 @@
 {% import "_includes/forms" as forms %}
 
 {{ forms.autosuggestField({
-    label: "Subfolder"|t('cloud'),
-    instructions: "Where assets should be stored on the filesystem."|t('cloud'),
-    id: 'subfolder',
+    label: "Subpath"|t('cloud'),
+    instructions: "An optional subpath where assets should be stored within the filesystem."|t('cloud'),
+    id: 'subpath',
     class: 'ltr',
-    name: 'subfolder',
+    name: 'subpath',
     suggestEnvVars: true,
-    value: fs.subfolder,
-    errors: fs.getErrors('subfolder'),
-    placeholder: "path/to/subfolder"|t('cloud')
+    value: fs.subpath,
+    errors: fs.getErrors('subpath'),
+    placeholder: "path/to/subpath"|t('cloud')
 }) }}
 
 <hr />
