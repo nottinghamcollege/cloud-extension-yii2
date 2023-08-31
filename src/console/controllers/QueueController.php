@@ -5,9 +5,7 @@ namespace craft\cloud\console\controllers;
 use Craft;
 use craft\cloud\queue\TestJob;
 use craft\console\Controller;
-use craft\helpers\ConfigHelper;
 use craft\queue\Queue;
-use craft\web\twig\variables\Paginate;
 use yii\console\Exception;
 use yii\console\ExitCode;
 
@@ -16,16 +14,18 @@ class QueueController extends Controller
     public string $message = '';
     public bool $run = false;
     public bool $throw = false;
-    public int|string $timeout = 0;
+    public int $seconds = 0;
+    public int $count = 1;
 
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), match($actionID) {
-            'push-test-job' => [
+            'test-job' => [
                 'message',
                 'run',
                 'throw',
-                'timeout',
+                'seconds',
+                'count',
             ],
             default => [],
         });
@@ -46,21 +46,23 @@ class QueueController extends Controller
         return ExitCode::OK;
     }
 
-    public function actionPushTestJob(): int
+    public function actionTestJob(): int
     {
-        $job = new TestJob([
-            'message' => $this->message,
-            'throw' => $this->throw,
-            'timeout' => ConfigHelper::durationInSeconds($this->timeout),
-        ]);
+        for ($i = 0; $i < $this->count; $i++) {
+            $job = new TestJob([
+                'message' => $this->message,
+                'throw' => $this->throw,
+                'seconds' => $this->seconds,
+            ]);
 
-        $this->do('Pushing test job', function() use($job) {
-            $jobId = Craft::$app->getQueue()->push($job);
+            $this->do('Pushing test job', function() use($job) {
+                $jobId = Craft::$app->getQueue()->push($job);
 
-            if ($this->run) {
-                $this->do('Running test job', fn() => $this->actionExec($jobId));
-            }
-        });
+                if ($this->run) {
+                    $this->do('Running test job', fn() => $this->actionExec($jobId));
+                }
+            });
+        }
 
         return ExitCode::OK;
     }
