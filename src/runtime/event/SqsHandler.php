@@ -12,6 +12,8 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
     public function handleSqs(SqsEvent $event, Context $context): void
     {
         foreach ($event->getRecords() as $record) {
+            echo "Handling SQS message: #{$record->getMessageId()}";
+
             try {
                 $body = json_decode(
                     $record->getBody(),
