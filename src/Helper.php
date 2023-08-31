@@ -20,21 +20,21 @@ class Helper
         return (bool)App::env('AWS_LAMBDA_RUNTIME_API') || App::env('LAMBDA_TASK_ROOT');
     }
 
-    public static function artifactUrl(string $path = '', $fallback = null): string
+    public static function artifactUrl(string $path = '', ?string $fallback = null): ?string
     {
         try {
             return (new BuildArtifactsFs())->createUrl($path);
         } catch(FsException $e) {
-            return Craft::getAlias($fallback);
+            return $fallback === null ? null : Craft::getAlias($fallback);
         }
     }
 
-    public static function cpResourceUrl(string $path = '', $fallback = null): string
+    public static function cpResourceUrl(string $path = '', ?string $fallback = null): ?string
     {
         try {
             return (new CpResourcesFs())->createUrl($path);
         } catch (FsException $e) {
-            return Craft::getAlias($fallback);
+            return $fallback === null ? null : Craft::getAlias($fallback);
         }
     }
 
