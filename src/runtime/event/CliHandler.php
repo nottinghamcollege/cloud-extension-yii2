@@ -30,17 +30,18 @@ class CliHandler implements Handler
         ], null, $timeout);
 
         try {
-            echo "Running command: $command";
+            echo "Running command: “{$command}”";
 
             /** @throws ProcessTimedOutException|ProcessFailedException */
             $process->mustRun(function($type, $buffer): void {
                 echo $buffer;
             });
 
-            echo "Finished command : $command";
+            echo "Finished command: “{$command}”";
         } catch (ProcessTimedOutException $e) {
             $exitCode = self::EXIT_CODE_TIMEOUT;
-            echo "Process timed out. Commands are limited to 15 minutes.";
+            echo "Process timed out for command “{$command}”.\n";
+            echo 'Commands are limited to 15 minutes.';
         } catch (\Throwable $e) {
             echo $e->getMessage();
         }
