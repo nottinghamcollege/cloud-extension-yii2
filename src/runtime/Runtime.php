@@ -8,6 +8,11 @@ use Bref\Runtime\LambdaRuntime;
 use craft\cloud\runtime\event\EventHandler;
 use Throwable;
 
+/**
+ * Runtime logging & error handling:
+ * - echo: to Cloudwatch
+ * - throw: to Cloudwatch as invocation error
+ */
 class Runtime
 {
     public static function run(): void

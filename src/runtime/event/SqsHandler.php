@@ -13,6 +13,7 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
     {
         foreach ($event->getRecords() as $record) {
             echo "Handling SQS message: #{$record->getMessageId()}";
+            $jobId = null;
 
             try {
                 $body = json_decode(
@@ -34,7 +35,8 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
             } catch (Throwable $e) {
                 echo "Marking SQS record as failed:\n";
                 echo "Message: #{$record->getMessageId()}\n";
-                echo "Job: #$jobId";
+                echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
+
                 $this->markAsFailed($record);
             }
         }

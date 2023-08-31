@@ -45,6 +45,7 @@ class CliHandler implements Handler
             echo $e->getMessage();
         }
 
+        // 'output' is equivalent to stdout/stderr
         return [
             'exitCode' => $exitCode ?? $process->getExitCode(),
             'output' => $process->getErrorOutput() . $process->getOutput(),
