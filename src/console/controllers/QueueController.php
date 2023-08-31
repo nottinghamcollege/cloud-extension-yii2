@@ -11,11 +11,30 @@ use yii\console\ExitCode;
 
 class QueueController extends Controller
 {
-    public string $message = '';
-    public bool $run = false;
-    public bool $throw = false;
-    public int $seconds = 0;
+    /**
+     * The number of jobs to push to the queue
+     */
     public int $count = 1;
+
+    /**
+     * The amount of time each job should sleep for
+     */
+    public int $seconds = 0;
+
+    /**
+     * Whether to run the job immediately
+     */
+    public bool $run = false;
+
+    /**
+     * Whether the job should throw an exception
+     */
+    public bool $throw = false;
+
+    /**
+     * The exception message, when self::$throw is `true`
+     */
+    public string $message = '';
 
     public function options($actionID): array
     {
