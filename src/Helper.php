@@ -20,22 +20,18 @@ class Helper
         return (bool)App::env('AWS_LAMBDA_RUNTIME_API') || App::env('LAMBDA_TASK_ROOT');
     }
 
-    public static function artifactUrl(string $path = '', ?string $fallback = null): ?string
+    public static function artifactUrl(string $path = ''): ?string
     {
-        try {
-            return (new BuildArtifactsFs())->createUrl($path);
-        } catch(FsException $e) {
-            return $fallback === null ? null : Craft::getAlias($fallback);
-        }
+        return Module::getInstance()->getConfig()->enableCdn
+            ? (new BuildArtifactsFs())->createUrl($path)
+            : null;
     }
 
-    public static function cpResourceUrl(string $path = '', ?string $fallback = null): ?string
+    public static function cpResourceUrl(string $path = ''): ?string
     {
-        try {
-            return (new CpResourcesFs())->createUrl($path);
-        } catch (FsException $e) {
-            return $fallback === null ? null : Craft::getAlias($fallback);
-        }
+        return Module::getInstance()->getConfig()->enableCdn
+            ? (new CpResourcesFs())->createUrl($path)
+            : null;
     }
 
     public static function setMemoryLimit(int|string $limit, int|string $offset = 0): int|float
