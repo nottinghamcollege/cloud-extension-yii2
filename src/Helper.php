@@ -37,7 +37,7 @@ class Helper
     public static function setMemoryLimit(int|string $limit, int|string $offset = 0): int|float
     {
         $memoryLimit = ConfigHelper::sizeInBytes($limit) - ConfigHelper::sizeInBytes($offset);
-        Craft::$app->getConfig()->getGeneral()->phpMaxMemoryLimit($memoryLimit);
+        Craft::$app->getConfig()->getGeneral()->phpMaxMemoryLimit((string) $memoryLimit);
         Craft::info("phpMaxMemoryLimit set to $memoryLimit");
 
         return $memoryLimit;
