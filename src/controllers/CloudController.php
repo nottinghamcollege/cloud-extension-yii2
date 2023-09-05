@@ -102,7 +102,9 @@ class CloudController extends Controller
         $height = $this->request->getBodyParam('height');
         $elementsService = Craft::$app->getElements();
         $lastModifiedMs = (int) $this->request->getBodyParam('lastModified');
-        $dateModified = $lastModifiedMs ? DateTime::createFromFormat('U', (int)($lastModifiedMs / 1000)) : new DateTime();
+        $dateModified = $lastModifiedMs
+            ? DateTime::createFromFormat('U', (string)($lastModifiedMs / 1000))
+            : new DateTime();
 
         if (!$filename) {
             throw new BadRequestHttpException('No file was uploaded');
