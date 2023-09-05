@@ -28,7 +28,7 @@ class CloudController extends Controller
     public function actionDebug(): Response
     {
         $success = phpinfo();
-        return $success ? $this->asSuccess() :  $this->asFailure();
+        return $success ? $this->asSuccess() : $this->asFailure();
     }
 
     public function actionGetUploadUrl(): Response

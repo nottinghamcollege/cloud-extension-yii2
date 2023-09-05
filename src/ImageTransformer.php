@@ -7,7 +7,6 @@ use craft\base\Component;
 use craft\base\imagetransforms\ImageEditorTransformerInterface;
 use craft\base\imagetransforms\ImageTransformerInterface;
 use craft\elements\Asset;
-use craft\helpers\App;
 use craft\helpers\UrlHelper;
 use craft\models\ImageTransform;
 use Illuminate\Support\Collection;

@@ -5,7 +5,6 @@ namespace craft\cloud;
 use Craft;
 use craft\cloud\fs\BuildArtifactsFs;
 use craft\cloud\fs\CpResourcesFs;
-use craft\errors\FsException;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
 

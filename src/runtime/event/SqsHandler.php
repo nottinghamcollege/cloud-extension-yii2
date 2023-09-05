@@ -30,7 +30,7 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                 echo "Executing job: #$jobId";
 
                 (new CliHandler())->handle([
-                    'command' => "cloud/queue/exec {$jobId}"
+                    'command' => "cloud/queue/exec {$jobId}",
                 ] , $context);
             } catch (Throwable $e) {
                 echo "Marking SQS record as failed:\n";

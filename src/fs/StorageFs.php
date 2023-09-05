@@ -3,7 +3,6 @@
 namespace craft\cloud\fs;
 
 use League\Uri\Components\HierarchicalPath;
-use League\Uri\Contracts\PathInterface;
 
 class StorageFs extends Fs
 {

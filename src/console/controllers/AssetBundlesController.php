@@ -4,7 +4,6 @@ namespace craft\cloud\console\controllers;
 
 use Craft;
 use craft\cloud\AssetBundlePublisher;
-use craft\cloud\queue\PublishAssetBundleJob;
 use craft\console\Controller;
 use ReflectionClass;
 use yii\console\Exception;

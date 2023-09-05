@@ -104,7 +104,7 @@ class Fs extends FlysystemFs
 
         try {
             return $this->createUrl('');
-        } catch(FsException $e) {
+        } catch (FsException $e) {
             return null;
         }
     }

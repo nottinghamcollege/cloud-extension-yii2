@@ -94,7 +94,7 @@ class AssetBundlePublisher extends BaseObject
 
         return Collection::make($classMap)
             ->keys()
-            ->filter(function ($className): bool {
+            ->filter(function($className): bool {
                 if (
                     preg_match('/^craft\\\(elements|fieldlayoutelements|gql|records)/', $className) ||
                     preg_match('/^yii\\\web\\\AssetBundle/', $className)

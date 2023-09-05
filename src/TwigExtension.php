@@ -2,7 +2,6 @@
 
 namespace craft\cloud;
 
-use Illuminate\Support\Collection;
 use Twig\Extension\AbstractExtension;
 use Twig\Extension\GlobalsInterface;
 use Twig\TwigFunction;

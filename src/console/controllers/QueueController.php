@@ -38,7 +38,7 @@ class QueueController extends Controller
 
     public function options($actionID): array
     {
-        return array_merge(parent::options($actionID), match($actionID) {
+        return array_merge(parent::options($actionID), match ($actionID) {
             'test-job' => [
                 'message',
                 'run',
@@ -74,7 +74,7 @@ class QueueController extends Controller
                 'seconds' => $this->seconds,
             ]);
 
-            $this->do('Pushing test job', function() use($job) {
+            $this->do('Pushing test job', function() use ($job) {
                 $jobId = Craft::$app->getQueue()->push($job);
 
                 if ($this->run) {
