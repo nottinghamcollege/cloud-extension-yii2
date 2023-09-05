@@ -35,6 +35,7 @@ use yii\web\BadRequestHttpException;
  */
 class Fs extends FlysystemFs
 {
+    protected static bool $showHasUrlSetting = false;
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
     protected ?Local $localFs = null;

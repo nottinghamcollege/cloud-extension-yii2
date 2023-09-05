@@ -1,5 +1,12 @@
 {% import "_includes/forms" as forms %}
 
+{{ forms.lightswitchField({
+    label: 'Files in this filesystem have public URLs'|t('app'),
+    name: 'hasUrls',
+    on:   fs.hasUrls,
+    toggle: 'local-fs-url-field',
+}) }}
+
 {{ forms.autosuggestField({
     label: "Subpath"|t('cloud'),
     instructions: "An optional subpath where assets should be stored within the filesystem."|t('cloud'),
@@ -47,13 +54,13 @@
 
 <hr />
 
-<h2>Local Filesystem Fallback</h2>
+<h2>Local Filesystem</h2>
 
 {% if not craft.cloud.getConfig().enableCdn %}
     <div class="readable">
         <blockquote class="note tip">
             <p>
-                When running outside of Craft Cloud, this filesystem falls back to your local disk for storage.
+                When running outside of Craft Cloud, this filesystem will fall back to your local disk for storage.
                 {{ tag('a', {
                     href: 'https://craftcms.com/knowledge-base/cloud-module',
                     class: 'go',
@@ -78,7 +85,7 @@
     placeholder: "/path/to/folder"|t('app')
 }) }}
 
-<div id="url-field" class="{% if not fs.hasUrls %}hidden{% endif %}">
+<div id="local-fs-url-field" class="{% if not fs.hasUrls %}hidden{% endif %}">
     {{ forms.autosuggestField({
         label: "Base URL"|t('app'),
         instructions: "The base URL to the files in this filesystem."|t('app'),
@@ -89,7 +96,7 @@
         suggestAliases: true,
         value: fs.localFs.url ?? null,
         errors: fs.localFs.getErrors('url') ?? null,
-        required: false,
+        required: true,
         placeholder: "//example.com/path/to/folder"
     }) }}
-</fieldset>
+</div>
