@@ -1,12 +1,5 @@
 {% import "_includes/forms" as forms %}
 
-{{ forms.lightswitchField({
-    label: 'Files in this filesystem have public URLs'|t('app'),
-    name: 'hasUrls',
-    on:   fs.hasUrls,
-    toggle: 'local-fs-url-field',
-}) }}
-
 {{ forms.autosuggestField({
     label: "Subpath"|t('cloud'),
     instructions: "An optional subpath where assets should be stored within the filesystem."|t('cloud'),
@@ -18,8 +11,6 @@
     errors: fs.getErrors('subpath'),
     placeholder: "path/to/subpath"|t('cloud')
 }) }}
-
-<hr />
 
 {% set cacheDurationInput %}
     {% set expires = fs.expires ? fs.expires|split(' ') : null %}
@@ -49,7 +40,7 @@
     label: "Cache Duration"|t,
     instructions: 'The Cache-Control duration set on assets in this filesystem.',
     id: 'cacheDuration',
-    tip: 'Caching files for one year is recommended for optimal performance. <a class="go" href="https://ashton.codes/set-cache-control-max-age-1-year/">Read more</a>',
+    tip: 'Caching files for one year is recommended for optimal performance. <a class="go" href="https://craftcms.com/knowledge-base/choosing-a-cache-duration-for-assets">Read more</a>',
 }, cacheDurationInput) }}
 
 <hr />
@@ -79,13 +70,14 @@
     name: 'localFsPath',
     suggestEnvVars: true,
     suggestAliases: true,
-    value: fs.localFs.path ?? null,
-    errors: fs.localFs.getErrors('path') ?? null,
-    required: false,
-    placeholder: "/path/to/folder"|t('app')
+    value: fs.localFsPath ?? null,
+    errors: fs.getErrors('localFsPath') ?? null,
+    required: true,
+    placeholder: "/path/to/folder"|t('app'),
+    tip: "You can include tags that output filesystem properties, such as {ex}."|t('app', { ex: '<code>{handle}</code>' })
 }) }}
 
-<div id="local-fs-url-field" class="{% if not fs.hasUrls %}hidden{% endif %}">
+<div id="local-fs-url-field">
     {{ forms.autosuggestField({
         label: "Base URL"|t('app'),
         instructions: "The base URL to the files in this filesystem."|t('app'),
@@ -94,9 +86,10 @@
         name: 'localFsUrl',
         suggestEnvVars: true,
         suggestAliases: true,
-        value: fs.localFs.url ?? null,
-        errors: fs.localFs.getErrors('url') ?? null,
+        value: fs.localFsUrl ?? null,
+        errors: fs.getErrors('localFsUrl') ?? null,
         required: true,
-        placeholder: "//example.com/path/to/folder"
+        placeholder: "//example.com/path/to/folder",
+        tip: "You can include tags that output filesystem properties, such as {ex}."|t('app', { ex: '<code>{handle}</code>' })
     }) }}
 </div>

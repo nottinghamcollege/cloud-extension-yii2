@@ -35,27 +35,52 @@ use yii\web\BadRequestHttpException;
  */
 class Fs extends FlysystemFs
 {
-    protected static bool $showHasUrlSetting = false;
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
     protected ?Local $localFs = null;
     protected S3Client $client;
     public ?string $subpath = null;
-    public ?string $localFsUrl = null;
-    public ?string $localFsPath = null;
+    public ?string $localFsPath = '@webroot/craft-cloud/{handle}';
+    public ?string $localFsUrl = '@web/craft-cloud/{handle}';
 
     public function init(): void
     {
-        if ($this->localFsPath) {
-            $this->localFs = Craft::createObject([
-                'class' => Local::class,
-                'hasUrls' => $this->hasUrls,
-                'path' => $this->localFsPath,
-                'url' => $this->hasUrls ? $this->localFsUrl : null,
-            ]);
-        }
+        $this->localFs = Craft::createObject([
+            'class' => Local::class,
+            'hasUrls' => $this->hasUrls,
+            'path' => $this->localFsPath
+                ? Craft::$app->getView()->renderObjectTemplate($this->localFsPath, $this)
+                : null,
+            'url' => $this->hasUrls && $this->localFsUrl
+                ? Craft::$app->getView()->renderObjectTemplate($this->localFsUrl, $this)
+                : null,
+        ]);
 
         parent::init();
+    }
+
+    protected function defineRules(): array
+    {
+        $rules = parent::defineRules();
+
+        if ($this->hasUrls) {
+            $rules[] = ['localFsUrl', 'required'];
+        }
+
+        return $rules;
+    }
+
+    public function beforeValidate(): bool
+    {
+        if (!$this->localFs->validate(['path', 'url'])) {
+            $this->addErrors([
+                'localFsPath' => $this->localFs->getErrors('path'),
+                'localFsUrl' => $this->localFs->getErrors('url'),
+            ]);
+            return false;
+        }
+
+        return parent::beforeValidate();
     }
 
     public function getLocalFs(): ?Local
@@ -84,20 +109,6 @@ class Fs extends FlysystemFs
         }
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function getRootPath(): string
-    {
-        if ($this->useLocalFs()) {
-            return $this->localFs->getRootPath();
-        }
-
-        return HierarchicalPath::createFromString(
-            Module::getInstance()->getConfig()->environmentId
-        )->withTrailingSlash();
-    }
-
     public function createUrl(string $path): string
     {
         $baseUrl = Module::getInstance()->getConfig()->enableCdn
@@ -124,6 +135,8 @@ class Fs extends FlysystemFs
             'class' => EnvAttributeParserBehavior::class,
             'attributes' => [
                 'subpath',
+                'localFsPath',
+                'localFsUrl',
             ],
         ];
 
@@ -132,7 +145,9 @@ class Fs extends FlysystemFs
 
     public function settingsAttributes(): array
     {
-        return array_merge(parent::settingsAttributes(), ['expires']);
+        return array_merge(parent::settingsAttributes(), [
+            'expires',
+        ]);
     }
 
     public function getExpires(): ?string
@@ -202,11 +217,18 @@ class Fs extends FlysystemFs
 
     public function prefixPath(?string $path = null): string
     {
-        return HierarchicalPath::createRelativeFromSegments([
-            $this->getRootPath(),
+        $segments = [
             $this->subpath ?? '',
             $path ?? '',
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        ];
+
+        if (Module::getInstance()->getConfig()->enableCdn) {
+            array_unshift($segments, Module::getInstance()->getConfig()->environmentId);
+        }
+
+        return HierarchicalPath::createRelativeFromSegments($segments)
+            ->withoutEmptySegments()
+            ->withoutTrailingSlash();
     }
 
     public function getBucketName(): ?string
