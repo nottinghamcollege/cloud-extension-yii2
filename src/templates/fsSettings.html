@@ -96,7 +96,8 @@
 </div>
 
 {% js %}
-    const $urlField = $(document.getElementsByName('types[craft\\cloud\\fs\\AssetsFs][hasUrls]')).parent('button')
+    const $urlField = $(document.getElementsByName('types[craft\\cloud\\fs\\AssetsFs][hasUrls]'))
+        .parent('button')
         .addClass('fieldtoggle')
         .data({target: '#types-craft-cloud-fs-AssetsFs-local-fs-url-field'});
     new Craft.FieldToggle($urlField);
