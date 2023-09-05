@@ -77,7 +77,8 @@
     tip: "You can include tags that output filesystem properties, such as {ex}."|t('app', { ex: '<code>{handle}</code>' })
 }) }}
 
-<div id="local-fs-url-field">
+
+<div id="local-fs-url-field" class="{% if not fs.hasUrls %}hidden{% endif %}">
     {{ forms.autosuggestField({
         label: "Base URL"|t('app'),
         instructions: "The base URL to the files in this filesystem."|t('app'),
@@ -93,3 +94,10 @@
         tip: "You can include tags that output filesystem properties, such as {ex}."|t('app', { ex: '<code>{handle}</code>' })
     }) }}
 </div>
+
+{% js %}
+    const $urlField = $(document.getElementsByName('types[craft\\cloud\\fs\\AssetsFs][hasUrls]')).parent('button')
+        .addClass('fieldtoggle')
+        .data({target: '#types-craft-cloud-fs-AssetsFs-local-fs-url-field'});
+    new Craft.FieldToggle($urlField);
+{% endjs %}
