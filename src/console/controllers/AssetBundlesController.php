@@ -12,6 +12,18 @@ use yii\web\AssetBundle;
 
 class AssetBundlesController extends Controller
 {
+    public bool $quiet = false;
+
+    public function options($actionID): array
+    {
+        return array_merge(parent::options($actionID), match ($actionID) {
+            'publish-bundle' => [
+                'quiet',
+            ],
+            default => [],
+        });
+    }
+
     public function actionPublishBundle(string $className): int
     {
         try {
@@ -28,7 +40,9 @@ class AssetBundlesController extends Controller
                 $assetBundle->publish($assetManager);
             });
         } catch (\Throwable $e) {
-            // `do` prints the error, so nothing else to do here.
+            if (!$this->quiet) {
+                throw $e;
+            }
         }
 
         return ExitCode::OK;
