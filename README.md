@@ -6,12 +6,12 @@ Welcome to [**Craft Cloud**](https://craft.cloud/)!
 
 This repository contains source code for the `craftcms/cloud` Composer package, which is required to run a Craft project on our first-party hosting platform, Craft Cloud.
 
-When installed, the extension automatically [bootstraps](https://www.yiiframework.com/doc/guide/2.0/en/runtime-bootstrapping) itself and makes necessary application configuration changes for the detected environment:
+When installed, the extension automatically [bootstraps](https://www.yiiframework.com/doc/guide/2.0/en/runtime-bootstrapping) itself and makes necessary [application configuration](https://craftcms.com/docs/4.x/config/app.html) changes for the detected environment:
 
-- **Cloud:** There’s no infrastructure settings to worry about—database, queue, cache, and session configuration is handled for you.
-- **Local development:** The module lets Craft run normally, in your favorite [development environment](https://craftcms.com/docs/4.x/installation.html).
+- :cloud_with_lightning: **Cloud:** There’s no infrastructure settings to worry about—database, queue, cache, and session configuration is handled for you.
+- :computer: **Local development:** Craft runs normally, in your favorite [development environment](https://craftcms.com/docs/4.x/installation.html).
 
-:sparkles: To learn more about Cloud, check out our website—or dive right in with [Craft Console](https://console.craftcms.com/cloud).
+:sparkles: To learn more about Cloud, check out [our website](https://craftcms.com/cloud)—or dive right in with [Craft Console](https://console.craftcms.com/cloud). Interested in everything the extension does to get your app ready for Cloud? Read our [Cloud module deep-dive](https://craftcms.com/knowledge-base/cloud-module), in the knowledge base.
 
 ## Installation
 
