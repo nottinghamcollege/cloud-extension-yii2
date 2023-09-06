@@ -13,7 +13,6 @@ class Config extends BaseConfig
 {
     public array $s3ClientOptions = [];
     public string $cdnBaseUrl = 'https://cdn.craft.cloud';
-    public string $redisUrl = 'tcp://localhost:6379';
     public ?string $sqsUrl = null;
     public ?string $projectId = null;
     public ?string $environmentId = null;
