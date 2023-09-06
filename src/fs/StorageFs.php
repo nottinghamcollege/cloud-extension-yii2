@@ -8,11 +8,11 @@ class StorageFs extends Fs
 {
     public bool $hasUrls = false;
 
-    public function getRootPath(): string
+    public function prefixPath(string $path = ''): string
     {
-        return HierarchicalPath::createRelativeFromSegments([
-            parent::getRootPath(),
+        return parent::prefixPath(HierarchicalPath::createRelativeFromSegments([
             'storage',
-        ]);
+            $path,
+        ]));
     }
 }

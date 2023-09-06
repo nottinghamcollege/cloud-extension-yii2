@@ -215,17 +215,15 @@ class Fs extends FlysystemFs
         ]);
     }
 
-    public function prefixPath(?string $path = null): string
+    public function prefixPath(string $path = ''): string
     {
         $segments = [
+            Module::getInstance()->getConfig()->enableCdn
+                ? Module::getInstance()->getConfig()->environmentId
+                : '',
             $this->subpath ?? '',
-            $path ?? '',
+            $path,
         ];
-
-        if (Module::getInstance()->getConfig()->enableCdn) {
-            array_unshift($segments, Module::getInstance()->getConfig()->environmentId);
-        }
-
         return HierarchicalPath::createRelativeFromSegments($segments)
             ->withoutEmptySegments()
             ->withoutTrailingSlash();
