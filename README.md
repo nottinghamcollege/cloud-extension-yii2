@@ -1,4 +1,4 @@
-<a href="https://craftcms.com/cloud" rel="noopener" target="_blank" title="Craft Cloud"><img src="https://github.com/craftcms/.github/raw/main/profile/product-icons/craft-cloud.svg" alt="Craft Cloud icon" width="65"></a>
+<a href="https://craftcms.com/cloud" rel="noopener" target="_blank" title="Craft Cloud"><img src="https://raw.githubusercontent.com/craftcms/.github/v3/profile/product-icons/craft-cloud.svg" alt="Craft Cloud icon" width="65"></a>
 
 # Craft Cloud Extension
 
