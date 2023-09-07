@@ -88,13 +88,13 @@ class Fs extends FlysystemFs
         }
 
         try {
-            return $this->createUrl('');
+            return $this->createUrl();
         } catch (FsException $e) {
             return null;
         }
     }
 
-    public function createUrl(string $path): string
+    public function createUrl(string $path = ''): string
     {
         $baseUrl = Module::getInstance()->getConfig()->enableCdn
             ? Module::getInstance()->getConfig()->getCdnBaseUrl()
@@ -215,7 +215,7 @@ class Fs extends FlysystemFs
     {
         $segments = [
             Module::getInstance()->getConfig()->enableCdn
-                ? Module::getInstance()->getConfig()->environmentId
+                ? Module::getInstance()->getConfig()->environmentId ?? ''
                 : '',
             $this->subpath ?? '',
             $path,
