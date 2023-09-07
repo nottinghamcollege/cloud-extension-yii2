@@ -42,29 +42,19 @@ class Fs extends FlysystemFs
     public ?string $subpath = null;
     public ?string $localFsPath = '@webroot/craft-cloud/{handle}';
     public ?string $localFsUrl = '@web/craft-cloud/{handle}';
+    public ?string $url = '__URL__';
 
     protected function defineRules(): array
     {
         $rules = parent::defineRules();
-
-        if ($this->hasUrls) {
-            $rules[] = ['localFsUrl', 'required'];
-        }
+        $rules[] = [['localFsPath'], 'required'];
+        $rules[] = [
+            'localFsUrl',
+            'required',
+            'when' => fn(self $fs) => $fs->hasUrls
+        ];
 
         return $rules;
-    }
-
-    public function beforeValidate(): bool
-    {
-        if (!$this->getLocalFs()->validate(['path', 'url'])) {
-            $this->addErrors([
-                'localFsPath' => $this->getLocalFs()->getErrors('path'),
-                'localFsUrl' => $this->getLocalFs()->getErrors('url'),
-            ]);
-            return false;
-        }
-
-        return parent::beforeValidate();
     }
 
     public function getLocalFs(): Local
