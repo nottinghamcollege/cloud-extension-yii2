@@ -101,13 +101,24 @@ class Fs extends FlysystemFs
             : $this->getLocalFs()->getRootUrl();
 
         if (!$baseUrl) {
-            throw new FsException('Filesystem is not configured with a valid base path.');
+            throw new FsException('Filesystem is not configured with a valid base URL.');
         }
 
         return Uri::createFromBaseUri(
             $this->prefixPath($path),
             $baseUrl,
         );
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function attributeLabels(): array
+    {
+        return [
+            'localFsPath' => Craft::t('app', 'Base Path'),
+            'localFsUrl' => Craft::t('app', 'Base URL'),
+        ];
     }
 
     /**
