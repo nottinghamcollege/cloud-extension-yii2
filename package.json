@@ -18,5 +18,8 @@
     "check-prettier": "prettier --check .",
     "fix-prettier": "prettier --write .",
     "prepare": "husky install"
+  },
+  "engines": {
+    "node": "^18"
   }
 }
