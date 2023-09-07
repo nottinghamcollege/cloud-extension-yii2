@@ -51,7 +51,7 @@ class Fs extends FlysystemFs
         $rules[] = [
             'localFsUrl',
             'required',
-            'when' => fn(self $fs) => $fs->hasUrls
+            'when' => fn(self $fs) => $fs->hasUrls,
         ];
 
         return $rules;
