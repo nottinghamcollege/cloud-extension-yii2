@@ -139,6 +139,9 @@ class Fs extends FlysystemFs
         return $behaviors;
     }
 
+    /**
+     * @inheritDoc
+     */
     public function settingsAttributes(): array
     {
         return array_merge(parent::settingsAttributes(), [
