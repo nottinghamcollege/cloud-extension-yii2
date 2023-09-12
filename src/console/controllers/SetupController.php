@@ -9,6 +9,9 @@ class SetupController extends Controller
 {
     public function actionIndex(): int
     {
+        $this->run('/setup/php-session-table');
+        $this->run('/setup/db-cache-table');
+
         // TODO: link to docs, etc
         $this->run('info/index');
         return ExitCode::OK;
