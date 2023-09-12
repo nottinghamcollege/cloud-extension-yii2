@@ -44,6 +44,9 @@ class Fs extends FlysystemFs
     public ?string $localFsUrl = '@web/craft-cloud/{handle}';
     public ?string $url = '__URL__';
 
+    /**
+     * @inheritDoc
+     */
     protected function defineRules(): array
     {
         $rules = parent::defineRules();
@@ -57,7 +60,7 @@ class Fs extends FlysystemFs
         return $rules;
     }
 
-    public function getLocalFs(): Local
+    protected function getLocalFs(): Local
     {
         $this->localFs = $this->localFs ?? Craft::createObject([
             'class' => Local::class,
@@ -159,7 +162,7 @@ class Fs extends FlysystemFs
         $this->expires = is_array($expires) ? $this->normalizeExpires($expires) : $expires;
     }
 
-    public function normalizeExpires(array $expires): ?string
+    protected function normalizeExpires(array $expires): ?string
     {
         $amount = (int)$expires['amount'];
         $period = $expires['period'];
@@ -183,12 +186,18 @@ class Fs extends FlysystemFs
         );
     }
 
+    /**
+     * @inheritDoc
+     */
     protected function invalidateCdnPath(string $path): bool
     {
         // TODO: cloudflare
         return false;
     }
 
+    /**
+     * @inheritDoc
+     */
     protected function addFileMetadataToConfig(array $config): array
     {
         if (!empty($this->getExpires()) && DateTimeHelper::isValidIntervalString($this->getExpires())) {
@@ -206,6 +215,9 @@ class Fs extends FlysystemFs
         return parent::addFileMetadataToConfig($config);
     }
 
+    /**
+     * @inheritDoc
+     */
     public function getSettingsHtml(): ?string
     {
         return Craft::$app->getView()->renderTemplate('cloud/fsSettings', [
@@ -214,18 +226,26 @@ class Fs extends FlysystemFs
         ]);
     }
 
-    public function prefixPath(string $path = ''): string
+    protected function getPrefix(): string
     {
         $segments = [
             Module::getInstance()->getConfig()->enableCdn
                 ? Module::getInstance()->getConfig()->environmentId ?? ''
                 : '',
-            $this->subpath ?? '',
-            $path,
         ];
+
         return HierarchicalPath::createRelativeFromSegments($segments)
             ->withoutEmptySegments()
             ->withoutTrailingSlash();
+    }
+
+    public function prefixPath(string $path = ''): string
+    {
+        return HierarchicalPath::createRelativeFromSegments([
+            $this->getPrefix(),
+            $this->subpath ?? '',
+            $path,
+        ])->withoutEmptySegments()->withoutTrailingSlash();
     }
 
     public function getBucketName(): ?string
@@ -268,6 +288,10 @@ class Fs extends FlysystemFs
         return $this->client;
     }
 
+    /**
+     * @inheritDoc
+     * All s3 objects are non-public
+     */
     protected function visibility(): string
     {
         return Visibility::PRIVATE;
@@ -299,9 +323,9 @@ class Fs extends FlysystemFs
             $commandConfig = $this->addFileMetadataToConfig($config);
 
             $command = $this->client->getCommand($command, [
-                    'Bucket' => $this->getBucketName(),
-                    'Key' => $this->prefixPath($path),
-                ] + $commandConfig);
+                'Bucket' => $this->getBucketName(),
+                'Key' => $this->prefixPath($path),
+            ] + $commandConfig);
 
             $request = $this->client->createPresignedRequest(
                 $command,

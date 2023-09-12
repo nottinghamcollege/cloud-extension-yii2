@@ -10,13 +10,13 @@ class BuildsFs extends Fs
     protected ?string $expires = '1 year';
     public bool $hasUrls = true;
 
-    public function prefixPath(string $path = ''): string
+    // TODO: default to $CRAFT_CLOUD_BUILD_ID?
+    public function getPrefix(): string
     {
-        // TODO: default ot $CRAFT_CLOUD_BUILD_ID
-        return parent::prefixPath(HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::createRelativeFromSegments([
+            parent::getPrefix(),
             'builds',
             Craft::$app->getConfig()->getGeneral()->buildId ?? '',
-            $path,
-        ]));
+        ])->withoutEmptySegments()->withoutTrailingSlash();
     }
 }

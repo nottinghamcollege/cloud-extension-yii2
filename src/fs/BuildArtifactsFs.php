@@ -6,11 +6,11 @@ use League\Uri\Components\HierarchicalPath;
 
 class BuildArtifactsFs extends BuildsFs
 {
-    public function prefixPath(string $path = ''): string
+    public function getPrefix(): string
     {
-        return parent::prefixPath(HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::createRelativeFromSegments([
+            parent::getPrefix(),
             'artifacts',
-            $path,
-        ]));
+        ])->withoutEmptySegments()->withoutTrailingSlash();
     }
 }
