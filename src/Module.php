@@ -69,11 +69,14 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             // Set Craft memory limit to just below PHP's limit
             Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
 
+            // TODO: make this a behavior instead?
             $app->set('response', [
                 'class' => \craft\cloud\web\Response::class,
             ]);
 
             if (!$app->getRequest()->getIsConsoleRequest()) {
+                Craft::setAlias('@web', $app->getRequest()->getHostInfo());
+
                 $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
                     ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
                     ->all();
