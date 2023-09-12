@@ -4,6 +4,7 @@ namespace craft\cloud;
 
 use Craft;
 use craft\base\Component;
+use craft\base\Image;
 use craft\base\imagetransforms\ImageEditorTransformerInterface;
 use craft\base\imagetransforms\ImageTransformerInterface;
 use craft\elements\Asset;
@@ -18,10 +19,12 @@ class ImageTransformer extends Component implements ImageTransformerInterface
 {
     public const SIGNING_PARAM = 's';
     public const SUPPORTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'gif', 'png', 'avif'];
+    protected Asset $asset;
 
     public function getTransformUrl(Asset $asset, ImageTransform $imageTransform, bool $immediately): string
     {
-        $assetUrl = $asset->getUrl();
+        $this->asset = $asset;
+        $assetUrl = $this->asset->getUrl();
 
         if (!$assetUrl) {
             return '';
@@ -42,34 +45,52 @@ class ImageTransformer extends Component implements ImageTransformerInterface
 
     public function buildTransformParams(ImageTransform $imageTransform): array
     {
-
-//        'anim',
-//        'background',
-//        'blur',
-//        'border',
-//        'brightness',
-//        'compression',
-//        'contrast',
-//        'dpr',
-//        'fit',
-//        'format',
-//        'gamma',
-//        'gravity',
-//        'height',
-//        'metadata',
-//        'onerror',
-//        'quality',
-//        'rotate',
-//        'sharpen',
-//        'trim',
-//        'width',
-
         return Collection::make([
             'width' => $imageTransform->width,
             'height' => $imageTransform->height,
             'quality' => $imageTransform->quality,
-            'format' => $imageTransform->format,
+            'format' => $this->getFormatValue($imageTransform),
+            'fit' => $this->getFitValue($imageTransform),
+            'background' => $this->getBackgroundValue($imageTransform),
+            'gravity' => $this->getGravityValue(),
         ])->whereNotNull()->all();
+    }
+
+
+    protected function getGravityValue(): ?string
+    {
+        return $this->asset->getHasFocalPoint()
+            ? $this->asset->getFocalPoint()
+            : null;
+    }
+
+    protected function getBackgroundValue(ImageTransform $imageTransform): ?string
+    {
+        return $imageTransform->mode === 'letterbox'
+            ? $imageTransform->fill ?? '#FFFFFF'
+            : null;
+    }
+
+    protected function getFitValue(ImageTransform $imageTransform): string
+    {
+        return match($imageTransform->mode) {
+            'fit' => $imageTransform->upscale ? 'contain' : 'scale-down',
+            'stretch' => 'cover',
+            'letterbox' => 'pad',
+            default => 'crop',
+        };
+    }
+
+    protected function getFormatValue(ImageTransform $imageTransform): string
+    {
+        if ($imageTransform->format === 'jpg' && $imageTransform->interlace === 'none') {
+            return 'baseline-jpeg';
+        }
+
+        return match($imageTransform->format) {
+            'jpg' => 'jpeg',
+            default => $imageTransform->format ?? 'auto',
+        };
     }
 
     public function sign(string $path, $params): string
