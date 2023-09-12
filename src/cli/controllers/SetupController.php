@@ -1,6 +1,6 @@
 <?php
 
-namespace craft\cloud\console\controllers;
+namespace craft\cloud\cli\controllers;
 
 use craft\console\Controller;
 use yii\console\ExitCode;

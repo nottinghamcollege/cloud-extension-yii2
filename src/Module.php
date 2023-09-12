@@ -18,7 +18,6 @@ use craft\helpers\App;
 use craft\log\Dispatcher;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
-use craft\web\Response;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
@@ -47,7 +46,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         self::setInstance($this);
 
         $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
-            ? 'craft\\cloud\\console\\controllers'
+            ? 'craft\\cloud\\cli\\controllers'
             : 'craft\\cloud\\controllers';
 
         $this->registerEventHandlers();
@@ -69,6 +68,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
             // Set Craft memory limit to just below PHP's limit
             Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
+
+            $app->set('response', [
+                'class' => \craft\cloud\web\Response::class,
+            ]);
 
             if (!$app->getRequest()->getIsConsoleRequest()) {
                 $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
@@ -222,45 +225,5 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 $craftVariable->set('cloud', Module::class);
             }
         );
-
-        if (!$this->getConfig()->allowBinaryResponses && Craft::$app->getRequest()->getIsCpRequest()) {
-            Event::once(
-                Response::class,
-                \yii\web\Response::EVENT_BEFORE_SEND,
-                [$this, 'handleBeforeSend']
-            );
-        }
-    }
-
-    public function handleBeforeSend(\yii\base\Event $event): void
-    {
-        /** @var Response $response */
-        $response = $event->sender;
-
-        if (!$response->stream) {
-            return;
-        }
-
-        /** @var TmpFs $fs */
-        $fs = Craft::createObject([
-            'class' => TmpFs::class,
-        ]);
-        $stream = $response->stream[0];
-        $path = uniqid('binary', true);
-
-        // TODO: set expiry
-        $fs->writeFileFromStream($path, $stream);
-
-        // TODO: use \League\Flysystem\AwsS3V3\AwsS3V3Adapter::temporaryUrl?
-        $cmd = $fs->getClient()->getCommand('GetObject', [
-            'Bucket' => $fs->getBucketName(),
-            'Key' => $fs->prefixPath($path),
-            'ResponseContentDisposition' => $response->getHeaders()->get('content-disposition'),
-        ]);
-
-        $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
-        $url = (string) $s3Request->getUri();
-        $response->clear();
-        $response->redirect($url);
     }
 }

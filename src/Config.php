@@ -27,7 +27,7 @@ class Config extends BaseConfig
     public bool $enableCdn = false;
     public bool $enableDebug = false;
     public bool $enableTmpFs = false;
-    public bool $allowBinaryResponses = true;
+    public bool $preventBinaryResponse = false;
 
     public function init(): void
     {
@@ -39,7 +39,7 @@ class Config extends BaseConfig
             $this->enableCdn = true;
             $this->enableDebug = true;
             $this->enableTmpFs = true;
-            $this->allowBinaryResponses = false;
+            $this->preventBinaryResponse = true;
         }
 
         parent::init();

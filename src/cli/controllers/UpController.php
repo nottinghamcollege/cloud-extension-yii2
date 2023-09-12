@@ -1,6 +1,6 @@
 <?php
 
-namespace craft\cloud\console\controllers;
+namespace craft\cloud\cli\controllers;
 
 use Craft;
 use craft\console\Controller;
