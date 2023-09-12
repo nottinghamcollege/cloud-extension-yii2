@@ -4,7 +4,6 @@ namespace craft\cloud;
 
 use Craft;
 use craft\base\Component;
-use craft\base\Image;
 use craft\base\imagetransforms\ImageEditorTransformerInterface;
 use craft\base\imagetransforms\ImageTransformerInterface;
 use craft\elements\Asset;
@@ -73,7 +72,7 @@ class ImageTransformer extends Component implements ImageTransformerInterface
 
     protected function getFitValue(ImageTransform $imageTransform): string
     {
-        return match($imageTransform->mode) {
+        return match ($imageTransform->mode) {
             'fit' => $imageTransform->upscale ? 'contain' : 'scale-down',
             'stretch' => 'cover',
             'letterbox' => 'pad',
@@ -87,7 +86,7 @@ class ImageTransformer extends Component implements ImageTransformerInterface
             return 'baseline-jpeg';
         }
 
-        return match($imageTransform->format) {
+        return match ($imageTransform->format) {
             'jpg' => 'jpeg',
             default => $imageTransform->format ?? 'auto',
         };
