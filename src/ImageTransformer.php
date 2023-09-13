@@ -20,12 +20,13 @@ class ImageTransformer extends Component implements ImageTransformerInterface
     public const SIGNING_PARAM = 's';
     public const SUPPORTED_IMAGE_FORMATS = ['jpg', 'jpeg', 'gif', 'png', 'avif'];
     protected Asset $asset;
+    protected string $assetUrl;
 
     public function getTransformUrl(Asset $asset, ImageTransform $imageTransform, bool $immediately): string
     {
         $this->asset = $asset;
         $fs = $asset->getVolume()->getTransformFs();
-        $assetUrl = $this->asset->getUrl();
+        $this->assetUrl = $this->assetUrl ?? $this->asset->getUrl();
         $mimeType = $asset->getMimeType();
 
         if (!$fs->hasUrls) {
@@ -41,12 +42,12 @@ class ImageTransformer extends Component implements ImageTransformerInterface
         }
 
         $transformParams = $this->buildTransformParams($imageTransform);
-        $path = parse_url($assetUrl, PHP_URL_PATH);
+        $path = parse_url($this->assetUrl, PHP_URL_PATH);
         $params = $transformParams + [
             self::SIGNING_PARAM => $this->sign($path, $transformParams),
         ];
 
-        return UrlHelper::urlWithParams($assetUrl, $params);
+        return UrlHelper::urlWithParams($this->assetUrl, $params);
     }
 
     public function invalidateAssetTransforms(Asset $asset): void
