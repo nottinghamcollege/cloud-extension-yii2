@@ -145,6 +145,12 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 \craft\imagetransforms\ImageTransformer::class,
                 ImageTransformer::class,
             );
+
+            // TODO: this is to ensure PHP never transforms. Test this.
+            Craft::$container->set(
+                \craft\imagetransforms\FallbackTransformer::class,
+                ImageTransformer::class,
+            );
         }
 
         if ($this->getConfig()->enableTmpFs) {
