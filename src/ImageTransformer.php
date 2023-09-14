@@ -7,6 +7,8 @@ use craft\base\Component;
 use craft\base\imagetransforms\ImageTransformerInterface;
 use craft\elements\Asset;
 use craft\errors\ImageTransformException;
+use craft\helpers\Assets;
+use craft\helpers\Html;
 use craft\helpers\UrlHelper;
 use craft\models\ImageTransform;
 use Illuminate\Support\Collection;
@@ -25,7 +27,7 @@ class ImageTransformer extends Component implements ImageTransformerInterface
     {
         $this->asset = $asset;
         $fs = $asset->getVolume()->getTransformFs();
-        $assetUrl = $this->asset->getUrl();
+        $assetUrl = Html::encodeSpaces(Assets::generateUrl($fs, $this->asset));
         $mimeType = $asset->getMimeType();
 
         if (!$fs->hasUrls) {
