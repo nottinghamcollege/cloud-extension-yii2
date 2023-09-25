@@ -12,15 +12,19 @@ use craft\cloud\fs\TmpFs;
 use craft\cloud\queue\Queue;
 use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\db\Table;
+use craft\events\InvalidateElementCachesEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
+use craft\events\TemplateEvent;
 use craft\helpers\App;
 use craft\log\Dispatcher;
+use craft\services\Elements;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
+use yii\caching\TagDependency;
 use yii\mutex\MysqlMutex;
 use yii\mutex\PgsqlMutex;
 use yii\web\DbSession;
@@ -233,6 +237,24 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 $craftVariable = $e->sender;
                 $craftVariable->set('cloud', Module::class);
             }
+        );
+
+        Event::on(
+            View::class,
+            View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
+            StaticCaching::handleBeforeRenderPageTemplate(...),
+        );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_INVALIDATE_CACHES,
+            StaticCaching::handleInvalidateCaches(...),
+        );
+
+        Event::on(
+            View::class,
+            View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
+            StaticCaching::handleAfterRenderPageTemplate(...),
         );
     }
 }
