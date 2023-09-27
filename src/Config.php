@@ -16,6 +16,7 @@ class Config extends BaseConfig
     public ?string $sqsUrl = null;
     public ?string $projectId = null;
     public ?string $environmentId = null;
+    public ?string $buildId = null;
     public ?string $accessKey = null;
     public ?string $accessSecret = null;
     public ?string $region = null;

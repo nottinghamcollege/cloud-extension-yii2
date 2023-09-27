@@ -24,7 +24,7 @@ class InfoController extends Controller
                 "$packageName:$packageVersion",
                 Craft::$app->id,
                 Module::getInstance()->getConfig()->environmentId,
-                Craft::$app->getConfig()->getGeneral()->buildId,
+                Module::getInstance()->getConfig()->buildId,
             ],
         ]);
         return ExitCode::OK;
