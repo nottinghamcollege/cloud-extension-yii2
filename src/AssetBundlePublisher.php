@@ -79,6 +79,7 @@ class AssetBundlePublisher extends BaseObject
                 Craft::$app->getRequest()->getScriptFile(),
                 'cloud/asset-bundles/publish-bundle',
                 $className,
+                '--quiet',
                 '2>&1',
             ])
         );

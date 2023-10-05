@@ -14,11 +14,11 @@ class AssetsFs extends Fs
         return 'Craft Cloud';
     }
 
-    public function getRootPath(): string
+    public function getPrefix(): string
     {
         return HierarchicalPath::createRelativeFromSegments([
-            parent::getRootPath(),
+            parent::getPrefix(),
             'assets',
-        ]);
+        ])->withoutEmptySegments()->withoutTrailingSlash();
     }
 }

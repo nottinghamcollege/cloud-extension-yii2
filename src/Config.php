@@ -13,10 +13,10 @@ class Config extends BaseConfig
 {
     public array $s3ClientOptions = [];
     public string $cdnBaseUrl = 'https://cdn.craft.cloud';
-    public string $redisUrl = 'tcp://localhost:6379';
     public ?string $sqsUrl = null;
     public ?string $projectId = null;
     public ?string $environmentId = null;
+    public ?string $buildId = null;
     public ?string $accessKey = null;
     public ?string $accessSecret = null;
     public ?string $region = null;
@@ -28,7 +28,7 @@ class Config extends BaseConfig
     public bool $enableCdn = false;
     public bool $enableDebug = false;
     public bool $enableTmpFs = false;
-    public bool $allowBinaryResponses = true;
+    public bool $preventBinaryResponse = false;
 
     public function init(): void
     {
@@ -40,7 +40,7 @@ class Config extends BaseConfig
             $this->enableCdn = true;
             $this->enableDebug = true;
             $this->enableTmpFs = true;
-            $this->allowBinaryResponses = false;
+            $this->preventBinaryResponse = true;
         }
 
         parent::init();

@@ -47,20 +47,18 @@
 
 <h2>Local Filesystem</h2>
 
-{% if not craft.cloud.getConfig().enableCdn %}
-    <div class="readable">
-        <blockquote class="note tip">
-            <p>
-                When running outside of Craft Cloud, this filesystem will fall back to your local disk for storage.
-                {{ tag('a', {
-                    href: 'https://craftcms.com/knowledge-base/cloud-filesystem',
-                    class: 'go',
-                    text: 'Learn more'|t('app'),
-                }) }}
-            </p>
-        </blockquote>
-    </div>
-{% endif %}
+<div class="readable">
+    <blockquote class="note tip">
+        <p>
+            When running outside of Craft Cloud, this filesystem will fall back to your local disk for storage.
+            {{ tag('a', {
+                href: 'https://craftcms.com/knowledge-base/cloud-filesystem',
+                class: 'go',
+                text: 'Learn more'|t('app'),
+            }) }}
+        </p>
+    </blockquote>
+</div>
 
 {{ forms.autosuggestField({
     label: "Base Path"|t('app'),

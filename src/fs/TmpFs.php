@@ -6,11 +6,11 @@ use League\Uri\Components\HierarchicalPath;
 
 class TmpFs extends StorageFs
 {
-    public function getRootPath(): string
+    public function getPrefix(): string
     {
         return HierarchicalPath::createRelativeFromSegments([
-            parent::getRootPath(),
+            parent::getPrefix(),
             'tmp',
-        ]);
+        ])->withoutEmptySegments()->withoutTrailingSlash();
     }
 }
