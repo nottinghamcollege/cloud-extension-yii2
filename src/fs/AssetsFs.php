@@ -6,6 +6,9 @@ use League\Uri\Components\HierarchicalPath;
 
 class AssetsFs extends Fs
 {
+    public ?string $localFsPath = '@webroot/craft-cloud/{handle}';
+    public ?string $localFsUrl = '@web/craft-cloud/{handle}';
+
     /**
      * @inheritDoc
      */

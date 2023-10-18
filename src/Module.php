@@ -132,10 +132,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'fs' => Craft::createObject(CpResourcesFs::class),
             ]);
 
-            $app->getConfig()->getGeneral()->resourceBaseUrl(
-                Helper::cpResourceUrl(),
-            );
-
             $app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
 
             /**

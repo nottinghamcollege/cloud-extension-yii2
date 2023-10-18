@@ -4,7 +4,6 @@ namespace craft\cloud;
 
 use craft\config\BaseConfig;
 use craft\helpers\App;
-use craft\helpers\StringHelper;
 
 /**
  * @method array s3ClientOptions(array $options)
@@ -58,10 +57,5 @@ class Config extends BaseConfig
     public function getRegion(): ?string
     {
         return $this->region ?? App::env('AWS_REGION');
-    }
-
-    public function getCdnBaseUrl(): string
-    {
-        return StringHelper::ensureRight($this->cdnBaseUrl, '/');
     }
 }

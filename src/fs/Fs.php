@@ -33,15 +33,15 @@ use yii\web\BadRequestHttpException;
  * @property-read string $prefix
  * @property-read ?string $settingsHtml
  */
-class Fs extends FlysystemFs
+abstract class Fs extends FlysystemFs
 {
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
     protected ?Local $localFs = null;
     protected S3Client $client;
     public ?string $subpath = null;
-    public ?string $localFsPath = '@webroot/craft-cloud/{handle}';
-    public ?string $localFsUrl = '@web/craft-cloud/{handle}';
+    public ?string $localFsPath = null;
+    public ?string $localFsUrl = null;
     public ?string $url = '__URL__';
 
     /**
@@ -100,7 +100,7 @@ class Fs extends FlysystemFs
     public function createUrl(string $path = ''): string
     {
         $baseUrl = Module::getInstance()->getConfig()->enableCdn
-            ? Module::getInstance()->getConfig()->getCdnBaseUrl()
+            ? Module::getInstance()->getConfig()->cdnBaseUrl
             : $this->getLocalFs()->getRootUrl();
 
         if (!$baseUrl) {
