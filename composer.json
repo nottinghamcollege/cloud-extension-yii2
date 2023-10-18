@@ -4,7 +4,7 @@
   "name": "craftcms/cloud",
   "type": "yii2-extension",
   "require": {
-    "craftcms/cms": "^4.5",
+    "craftcms/cms": "^4.5 || ^5",
     "yiisoft/yii2-queue": "^2.3",
     "craftcms/flysystem": "^1.0.0",
     "league/uri": "^6.7",
