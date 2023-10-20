@@ -13,6 +13,7 @@ use craft\flysystem\base\FlysystemFs;
 use craft\fs\Local;
 use craft\helpers\Assets;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\StringHelper;
 use DateTime;
 use DateTimeInterface;
 use Generator;
@@ -109,7 +110,7 @@ abstract class Fs extends FlysystemFs
 
         return Uri::createFromBaseUri(
             $this->prefixPath($path),
-            $baseUrl,
+            StringHelper::ensureRight($baseUrl, '/'),
         );
     }
 
