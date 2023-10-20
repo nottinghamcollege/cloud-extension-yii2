@@ -33,10 +33,6 @@ The extension provides two new [Twig functions](https://craftcms.com/docs/4.x/de
 
 Generates a URL to a resource that was uploaded to the CDN during the build and deployment process.
 
-#### `cpResourceUrl()`
-
-Builds a URL for control panel resources. Not typically necessary outside of the native asset publishing loop, but provided in case an existing application makes use of `craft\web\AssetManager::publish()`, directly.
-
 #### `isCraftCloud`
 
 `true` when the app detects it is running on Cloud infrastructure, `false` otherwise.
@@ -48,23 +44,17 @@ Most configuration is handled directly by the Cloud infrastructure, through [env
 > [!NOTE]
 > Some local development features (like asset synchronization) may require defining environment-specific credentials with `accessKey`, `accessSecret`, `region`, `projectId`, and `environmentId`.
 
-Option | Type | Description
---- | --- | ---
-`accessKey` | `string` | AWS access key, used for communicating with storage APIs.
-`accessSecret` | `string` | AWS access secret, used in conjunction with the `accessKey`.
-`allowBinaryResponses` | `bool` | When disabled, Craft will upload binary response data to S3, then issue a redirect.
-`cdnBaseUrl` | `string` | Used when building URLs to [assets](#filesystem) and other build [artifacts](#artifacturl).
-`cdnSigningKey` | `string` | A secret value used to protect transform URLs against abuse.
-`enableCache` | `bool` | Uses the database for cache data.
-`enableCdn` | `bool` | Replaces the default asset manager component with one that publishes to a persistent filesystem.
-`enableDebug` | `bool` | Stores debugging artifacts in a persistent filesystem.
-`enableMutex` | `bool` | Replaces the default file-based mutex component with the appropriate database driver.
-`enableQueue` | `bool` | Replaces the default queue component with a preconfigured SQS-backed driver.
-`enableSession` | `bool` | Uses the database for storing sessions.
-`enableTmpFs` | `bool` | Use the extension-provided temporary filesystem instead of Craft’s default.
-`environmentId` | `string` | 
-`projectId` | `string` | 
-`redisUrl` | `string` | 
-`region` | `string` | The app region.
-`s3ClientOptions` | `array` | Additional settings to pass to the `Aws\S3\S3Client` instance when accessing storage APIs.
-`sqsUrl` | `string` | With `enableQueue`, determines how Craft communicates with the underlying queue provider.
+| Option            | Type     | Description                                                                                 |
+| ----------------- | -------- | ------------------------------------------------------------------------------------------- |
+| `accessKey`       | `string` | AWS access key, used for communicating with storage APIs.                                   |
+| `accessSecret`    | `string` | AWS access secret, used in conjunction with the `accessKey`.                                |
+| `cdnBaseUrl`      | `string` | Used when building URLs to [assets](#filesystem) and other build [artifacts](#artifacturl). |
+| `cdnSigningKey`   | `string` | A secret value used to protect transform URLs against abuse.                                |
+| `enableCache`     | `bool`   | Uses the database for cache data.                                                           |
+| `useCloudFs`      | `bool`   |                                                                                             |
+| `environmentId`   | `string` |                                                                                             |
+| `projectId`       | `string` |                                                                                             |
+| `redisUrl`        | `string` |                                                                                             |
+| `region`          | `string` | The app region.                                                                             |
+| `s3ClientOptions` | `array`  | Additional settings to pass to the `Aws\S3\S3Client` instance when accessing storage APIs.  |
+| `sqsUrl`          | `string` | With `enableQueue`, determines how Craft communicates with the underlying queue provider.   |

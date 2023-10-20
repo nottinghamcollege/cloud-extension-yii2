@@ -78,7 +78,7 @@ abstract class Fs extends FlysystemFs
 
     protected function useLocalFs(): bool
     {
-        return !Module::getInstance()->getConfig()->enableCdn;
+        return !Module::getInstance()->getConfig()->getUseCloudFs();
     }
 
     /**
@@ -99,7 +99,7 @@ abstract class Fs extends FlysystemFs
 
     public function createUrl(string $path = ''): string
     {
-        $baseUrl = Module::getInstance()->getConfig()->enableCdn
+        $baseUrl = Module::getInstance()->getConfig()->getUseCloudFs()
             ? Module::getInstance()->getConfig()->cdnBaseUrl
             : $this->getLocalFs()->getRootUrl();
 
@@ -229,7 +229,7 @@ abstract class Fs extends FlysystemFs
     protected function getPrefix(): string
     {
         $segments = [
-            Module::getInstance()->getConfig()->enableCdn
+            Module::getInstance()->getConfig()->getUseCloudFs()
                 ? Module::getInstance()->getConfig()->environmentId ?? ''
                 : '',
         ];

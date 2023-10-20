@@ -20,30 +20,7 @@ class Config extends BaseConfig
     public ?string $accessSecret = null;
     public ?string $region = null;
     public ?string $cdnSigningKey = null;
-    public bool $enableCache = false;
-    public bool $enableMutex = false;
-    public bool $enableSession = false;
-    public bool $enableQueue = false;
-    public bool $enableCdn = false;
-    public bool $enableDebug = false;
-    public bool $enableTmpFs = false;
-    public bool $preventBinaryResponse = false;
-
-    public function init(): void
-    {
-        if (Helper::isCraftCloud()) {
-            $this->enableCache = true;
-            $this->enableMutex = true;
-            $this->enableSession = true;
-            $this->enableQueue = true;
-            $this->enableCdn = true;
-            $this->enableDebug = true;
-            $this->enableTmpFs = true;
-            $this->preventBinaryResponse = true;
-        }
-
-        parent::init();
-    }
+    public bool $useCloudFs = true;
 
     public function __call($name, $params)
     {
@@ -52,6 +29,11 @@ class Config extends BaseConfig
 
             return $this;
         }
+    }
+
+    public function getUseCloudFs(): bool
+    {
+        return $this->useCloudFs || Helper::isCraftCloud();
     }
 
     public function getRegion(): ?string

@@ -4,7 +4,7 @@ namespace craft\cloud\web;
 
 use Craft;
 use craft\cloud\fs\TmpFs;
-use craft\cloud\Module;
+use craft\cloud\Helper;
 use yii\web\ServerErrorHttpException;
 
 class Response extends \craft\web\Response
@@ -17,7 +17,7 @@ class Response extends \craft\web\Response
         if (
             $this->stream &&
             Craft::$app->getRequest()->getIsCpRequest() &&
-            Module::getInstance()->getConfig()->preventBinaryResponse
+            Helper::isCraftCloud()
         ) {
             $this->serveBinaryFromS3();
         }
