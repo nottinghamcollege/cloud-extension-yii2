@@ -72,7 +72,7 @@
     errors: fs.getErrors('localFsPath') ?? null,
     required: true,
     placeholder: "/path/to/folder"|t('app'),
-    tip: "You can include tags that output filesystem properties, such as {ex}."|t('app', { ex: '<code>{handle}</code>' })
+    tip: "You can include tags that output filesystem properties, such as `{ex}`. The **Subpath** setting is appended to this path."|t('app', { ex: '{handle}' })
 }) }}
 
 
@@ -89,7 +89,7 @@
         errors: fs.getErrors('localFsUrl') ?? null,
         required: true,
         placeholder: "//example.com/path/to/folder",
-        tip: "You can include tags that output filesystem properties, such as {ex}."|t('app', { ex: '<code>{handle}</code>' })
+        tip: "You can include tags that output filesystem properties, such as `{ex}`. The **Subpath** setting is appended to this URL."|t('app', { ex: '{handle}' })
     }) }}
 </div>
 
