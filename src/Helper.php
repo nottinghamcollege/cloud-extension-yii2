@@ -3,9 +3,19 @@
 namespace craft\cloud;
 
 use Craft;
+use craft\cache\DbCache;
 use craft\cloud\fs\BuildArtifactsFs;
+use craft\cloud\fs\CpResourcesFs;
+use craft\cloud\Helper as CloudHelper;
+use craft\cloud\queue\Queue;
+use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
+use craft\mutex\Mutex;
+use craft\queue\Queue as CraftQueue;
+use yii\mutex\MysqlMutex;
+use yii\mutex\PgsqlMutex;
+use yii\web\DbSession;
 
 class Helper
 {
@@ -32,18 +42,51 @@ class Helper
         return $memoryLimit;
     }
 
-    public static function getComponents(): array
+    public static function modifyConfig(array &$config, string $appType): void
     {
-        if (!Helper::isCraftCloud()) {
-            return [];
+        if (!CloudHelper::isCraftCloud()) {
+            return;
         }
 
-        $components = [
-            'response' => [
+        if ($appType === 'web') {
+            $config['components']['session'] = function() {
+                return Craft::createObject([
+                        'class' => DbSession::class,
+                        'sessionTable' => Table::PHPSESSIONS,
+                    ] + App::sessionConfig());
+            };
+
+            // TODO: make this a behavior instead?
+            // load Craft's config
+            $config['components']['response'] = [
                 'class' => \craft\cloud\web\Response::class,
-            ],
+            ];
+        }
+
+        $config['components']['mutex'] = function() {
+            return Craft::createObject([
+                'class' => Mutex::class,
+                'mutex' => Craft::$app->getDb()->getDriverName() === 'pgsql'
+                    ? PgsqlMutex::class
+                    : MysqlMutex::class,
+            ]);
+        };
+
+        $config['components']['cache'] = function() {
+            return Craft::createObject([
+                'class' => DbCache::class,
+                'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
+            ]);
+        };
+
+        $config['components']['queue'] = [
+            'class' => CraftQueue::class,
+            'proxyQueue' => Queue::class,
         ];
 
-        return $components;
+        $config['components']['assetManager'] = [
+            'class' => AssetManager::class,
+            'fs' => Craft::createObject(CpResourcesFs::class),
+        ];
     }
 }

@@ -27,7 +27,7 @@
       "craft\\cloud\\": "src/"
     },
     "files": [
-      "src/bootstrap.php"
+      "autoload.php"
     ]
   },
   "config": {

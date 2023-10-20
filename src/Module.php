@@ -70,9 +70,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
 
             // TODO: make this a behavior instead?
-            $app->set('response', [
-                'class' => \craft\cloud\web\Response::class,
-            ]);
+            // $app->set('response', [
+            //     'class' => \craft\cloud\web\Response::class,
+            // ]);
 
             if (!$app->getRequest()->getIsConsoleRequest()) {
                 Craft::setAlias('@web', $app->getRequest()->getHostInfo());
@@ -92,45 +92,45 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         }
 
         // cache table is created on craft cloud/up
-        if ($this->getConfig()->enableCache && $app->getDb()->tableExists(Table::CACHE)) {
-            $app->set('cache', [
-                'class' => DbCache::class,
-                'defaultDuration' => $app->getConfig()->getGeneral()->cacheDuration,
-            ]);
-        }
+        // if ($this->getConfig()->enableCache && $app->getDb()->tableExists(Table::CACHE)) {
+        //     $app->set('cache', [
+        //         'class' => DbCache::class,
+        //         'defaultDuration' => $app->getConfig()->getGeneral()->cacheDuration,
+        //     ]);
+        // }
 
-        if (
-            $this->getConfig()->enableSession &&
-            !$app->getRequest()->getIsConsoleRequest() &&
-            $app->getDb()->tableExists(Table::PHPSESSIONS)
-        ) {
-            $app->set('session', [
-                'class' => DbSession::class,
-                'sessionTable' => Table::PHPSESSIONS,
-            ] + App::sessionConfig());
-        }
+        // if (
+        //     $this->getConfig()->enableSession &&
+        //     !$app->getRequest()->getIsConsoleRequest() &&
+        //     $app->getDb()->tableExists(Table::PHPSESSIONS)
+        // ) {
+        //     $app->set('session', [
+        //         'class' => DbSession::class,
+        //         'sessionTable' => Table::PHPSESSIONS,
+        //     ] + App::sessionConfig());
+        // }
+        //
+        // if ($this->getConfig()->enableMutex) {
+        //     $app->set('mutex', [
+        //         'class' => \craft\mutex\Mutex::class,
+        //         'mutex' => $app->getDb()->getDriverName() === 'pgsql'
+        //             ? PgsqlMutex::class
+        //             : MysqlMutex::class,
+        //     ]);
+        // }
 
-        if ($this->getConfig()->enableMutex) {
-            $app->set('mutex', [
-                'class' => \craft\mutex\Mutex::class,
-                'mutex' => $app->getDb()->getDriverName() === 'pgsql'
-                    ? PgsqlMutex::class
-                    : MysqlMutex::class,
-            ]);
-        }
-
-        if ($this->getConfig()->enableQueue && $this->getConfig()->sqsUrl) {
-            $app->set('queue', [
-                'class' => \craft\queue\Queue::class,
-                'proxyQueue' => Queue::class,
-            ]);
-        }
+        // if ($this->getConfig()->enableQueue && $this->getConfig()->sqsUrl) {
+        //     $app->set('queue', [
+        //         'class' => \craft\queue\Queue::class,
+        //         'proxyQueue' => Queue::class,
+        //     ]);
+        // }
 
         if ($this->getConfig()->enableCdn) {
-            $app->set('assetManager', [
-                'class' => AssetManager::class,
-                'fs' => Craft::createObject(CpResourcesFs::class),
-            ]);
+            // $app->set('assetManager', [
+            //     'class' => AssetManager::class,
+            //     'fs' => Craft::createObject(CpResourcesFs::class),
+            // ]);
 
             $app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
 
