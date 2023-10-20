@@ -131,6 +131,11 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         if ($app instanceof WebApplication) {
             Craft::setAlias('@web', $app->getRequest()->getHostInfo());
 
+            Craft::$app->getResponse()->attachBehavior(
+                'cloud',
+                ResponseBehavior::class
+            );
+
             $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
                 ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
                 ->all();

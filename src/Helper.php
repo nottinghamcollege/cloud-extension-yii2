@@ -49,12 +49,6 @@ class Helper
         }
 
         if ($appType === 'web') {
-            // TODO: make this a behavior instead?
-            // load Craft's config
-            $config['components']['response'] = [
-                'class' => \craft\cloud\web\Response::class,
-            ];
-
             $config['components']['session'] = function() {
                 return Craft::createObject([
                         'class' => DbSession::class,
