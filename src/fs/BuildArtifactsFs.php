@@ -12,7 +12,7 @@ class BuildArtifactsFs extends BuildsFs
 
     protected function useLocalFs(): bool
     {
-        return Module::getInstance()->getConfig()->getUseArtifactCdn();
+        return !Module::getInstance()->getConfig()->getUseArtifactCdn();
     }
 
     public function getPrefix(): string

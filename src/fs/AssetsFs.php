@@ -20,7 +20,7 @@ class AssetsFs extends Fs
 
     protected function useLocalFs(): bool
     {
-        return Module::getInstance()->getConfig()->getUseAssetCdn();
+        return !Module::getInstance()->getConfig()->getUseAssetCdn();
     }
 
     public function getPrefix(): string
