@@ -18,6 +18,11 @@ class AssetsFs extends Fs
         return 'Craft Cloud';
     }
 
+    protected function useLocalFs(): bool
+    {
+        return Module::getInstance()->getConfig()->getUseAssetCdn();
+    }
+
     public function getPrefix(): string
     {
         if (!Module::getInstance()->getConfig()->getUseAssetCdn()) {
