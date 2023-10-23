@@ -20,7 +20,8 @@ class Config extends BaseConfig
     public ?string $accessSecret = null;
     public ?string $cdnSigningKey = null;
     protected ?string $region = null;
-    protected bool $useCloudFs = true;
+    protected bool $useAssetCdn = true;
+    protected bool $useArtifactCdn = true;
 
     public function __call($name, $params)
     {
@@ -31,14 +32,14 @@ class Config extends BaseConfig
         }
     }
 
-    public function getUseCloudFs(): bool
+    public function getUseAssetCdn(): bool
     {
-        return App::env('CRAFT_CLOUD_USE_CLOUD_FS') ?? ($this->useCloudFs || Helper::isCraftCloud());
+        return App::env('CRAFT_CLOUD_USE_ASSET_CDN') ?? ($this->useAssetCdn || Helper::isCraftCloud());
     }
 
-    public function setUseCloudFs(bool $value): static
+    public function setUseAssetCdn(bool $value): static
     {
-        $this->useCloudFs = $value;
+        $this->useAssetCdn = $value;
 
         return $this;
     }
@@ -47,9 +48,30 @@ class Config extends BaseConfig
      * @used-by Module::getConfig()
      * Alias to match Craft convention
      */
-    public function useCloudFs(bool $value): static
+    public function useAssetCdn(bool $value): static
     {
-        return $this->setUseCloudFs($value);
+        return $this->setUseAssetCdn($value);
+    }
+
+    public function getUseArtifactCdn(): bool
+    {
+        return App::env('CRAFT_CLOUD_USE_ARTIFACT_CDN') ?? ($this->useArtifactCdn || Helper::isCraftCloud());
+    }
+
+    public function setUseArtifactCdn(bool $value): static
+    {
+        $this->useArtifactCdn = $value;
+
+        return $this;
+    }
+
+    /**
+     * @used-by Module::getConfig()
+     * Alias to match Craft convention
+     */
+    public function useArtifactCdn(bool $value): static
+    {
+        return $this->setUseArtifactCdn($value);
     }
 
     public function getRegion(): ?string
@@ -71,5 +93,24 @@ class Config extends BaseConfig
     public function region(?string $value): static
     {
         return $this->setRegion($value);
+    }
+
+    protected function defineRules(): array
+    {
+        $rules = parent::defineRules();
+
+        $rules[] = [
+            ['projectId', 'environmentId'],
+            'required',
+            'when' => fn(Config $model) => $model->getUseAssetCdn() || $model->getUseArtifactCdn(),
+        ];
+
+        $rules[] = [
+            'buildId',
+            'required',
+            'when' => fn(Config $model) => $model->getUseArtifactCdn(),
+        ];
+
+        return $rules;
     }
 }

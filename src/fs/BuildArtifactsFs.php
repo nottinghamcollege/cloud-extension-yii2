@@ -12,7 +12,7 @@ class BuildArtifactsFs extends BuildsFs
 
     public function getPrefix(): string
     {
-        if (!Module::getInstance()->getConfig()->getUseCloudFs()) {
+        if (!Module::getInstance()->getConfig()->getUseArtifactCdn()) {
             return '';
         }
 

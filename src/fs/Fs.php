@@ -79,7 +79,7 @@ abstract class Fs extends FlysystemFs
 
     protected function useLocalFs(): bool
     {
-        return !Module::getInstance()->getConfig()->getUseCloudFs();
+        return false;
     }
 
     /**
@@ -100,9 +100,9 @@ abstract class Fs extends FlysystemFs
 
     public function createUrl(string $path = ''): string
     {
-        $baseUrl = Module::getInstance()->getConfig()->getUseCloudFs()
-            ? Module::getInstance()->getConfig()->cdnBaseUrl
-            : $this->getLocalFs()->getRootUrl();
+        $baseUrl = $this->useLocalFs()
+            ? $this->getLocalFs()->getRootUrl()
+            : Module::getInstance()->getConfig()->cdnBaseUrl;
 
         if (!$baseUrl) {
             throw new FsException('Filesystem is not configured with a valid base URL.');
@@ -230,9 +230,9 @@ abstract class Fs extends FlysystemFs
     protected function getPrefix(): string
     {
         $segments = [
-            Module::getInstance()->getConfig()->getUseCloudFs()
-                ? Module::getInstance()->getConfig()->environmentId ?? ''
-                : '',
+            $this->useLocalFs()
+                ? ''
+                : Module::getInstance()->getConfig()->environmentId,
         ];
 
         return HierarchicalPath::createRelativeFromSegments($segments)

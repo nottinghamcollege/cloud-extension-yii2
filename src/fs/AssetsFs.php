@@ -2,6 +2,7 @@
 
 namespace craft\cloud\fs;
 
+use craft\cloud\Module;
 use League\Uri\Components\HierarchicalPath;
 
 class AssetsFs extends Fs
@@ -19,6 +20,10 @@ class AssetsFs extends Fs
 
     public function getPrefix(): string
     {
+        if (!Module::getInstance()->getConfig()->getUseAssetCdn()) {
+            return '';
+        }
+
         return HierarchicalPath::createRelativeFromSegments([
             parent::getPrefix(),
             'assets',

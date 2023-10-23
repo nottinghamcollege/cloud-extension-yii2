@@ -23,6 +23,7 @@ use craft\web\Application as WebApplication;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
+use yii\base\InvalidConfigException;
 
 /**
  * @property-read Config $config
@@ -49,6 +50,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             : 'craft\\cloud\\controllers';
 
         $this->registerEventHandlers();
+        $this->validateConfig();
     }
 
     /**
@@ -186,5 +188,15 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'dataPath' => 'debug',
             ],
         );
+    }
+
+    protected function validateConfig(): void
+    {
+        $config = $this->getConfig();
+
+        if (!$config->validate()) {
+            $firstErrors = $config->getFirstErrors();
+            throw new InvalidConfigException(reset($firstErrors) ?: '');
+        }
     }
 }
