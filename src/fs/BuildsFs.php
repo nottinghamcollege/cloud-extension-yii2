@@ -7,7 +7,7 @@ use League\Uri\Components\HierarchicalPath;
 
 abstract class BuildsFs extends Fs
 {
-    protected ?string $expires = '1 year';
+    protected ?string $expires = '1 years';
     public bool $hasUrls = true;
 
     public function getPrefix(): string

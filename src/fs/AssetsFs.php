@@ -9,6 +9,7 @@ class AssetsFs extends Fs
 {
     public ?string $localFsPath = '@webroot/craft-cloud/{handle}';
     public ?string $localFsUrl = '@web/craft-cloud/{handle}';
+    protected ?string $expires = '1 years';
 
     /**
      * @inheritDoc
