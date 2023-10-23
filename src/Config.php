@@ -23,6 +23,14 @@ class Config extends BaseConfig
     protected bool $useAssetCdn = true;
     protected bool $useArtifactCdn = true;
 
+    public function init(): void
+    {
+        if (!Helper::isCraftCloud()) {
+            $this->useAssetCdn = false;
+            $this->useArtifactCdn = false;
+        }
+    }
+
     public function __call($name, $params)
     {
         if (property_exists($this, $name)) {
