@@ -2,6 +2,7 @@
 
 namespace craft\cloud;
 
+use Craft;
 use craft\config\BaseConfig;
 use craft\helpers\App;
 
@@ -29,6 +30,15 @@ class Config extends BaseConfig
             $this->useAssetCdn = false;
             $this->useArtifactCdn = false;
         }
+    }
+
+    public function attributeLabels(): array
+    {
+        return [
+            'projectId' => Craft::t('app', 'Project ID'),
+            'environmentId' => Craft::t('app', 'Environment ID'),
+            'buildId' => Craft::t('app', 'Build ID'),
+        ];
     }
 
     public function __call($name, $params)
