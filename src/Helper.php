@@ -42,6 +42,27 @@ class Helper
         return $memoryLimit;
     }
 
+    /**
+     * A version of tableExists that doesn't rely on the cache component
+     */
+    public static function tableExists(string $table): bool
+    {
+        $sql = <<<SQL
+SELECT count(*)
+FROM [[information_schema]].tables
+WHERE [[table_name]] = :tableName
+AND [[table_schema]] = :tableSchema
+SQL;
+        $command = Craft::$app->getDb()->createCommand($sql, [
+            ':tableName' => Craft::$app->getDb()->getSchema()->getRawTableName($table),
+            ':tableSchema' => Craft::$app->getDb()->getIsMysql()
+                ? Craft::$app->getConfig()->getDb()->database
+                : Craft::$app->getConfig()->getDb()->schema,
+        ]);
+
+        return $command->queryScalar() > 0;
+    }
+
     public static function modifyConfig(array &$config, string $appType): void
     {
         if (!CloudHelper::isCraftCloud()) {
@@ -50,12 +71,26 @@ class Helper
 
         if ($appType === 'web') {
             $config['components']['session'] = function() {
-                return Craft::createObject([
-                        'class' => DbSession::class,
-                        'sessionTable' => Table::PHPSESSIONS,
-                    ] + App::sessionConfig());
+                $config = App::sessionConfig();
+
+                if (static::tableExists(Table::PHPSESSIONS)) {
+                    $config['class'] = DbSession::class;
+                    $config['sessionTable'] = Table::PHPSESSIONS;
+                }
+
+                return Craft::createObject($config);
             };
         }
+
+        $config['components']['cache'] = function() {
+            $config = static::tableExists(Table::CACHE) ? [
+                'class' => DbCache::class,
+                'cacheTable' => Table::CACHE,
+                'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
+            ] : App::cacheConfig();
+
+            return Craft::createObject($config);
+        };
 
         $config['components']['mutex'] = function() {
             return Craft::createObject([
@@ -63,13 +98,6 @@ class Helper
                 'mutex' => Craft::$app->getDb()->getDriverName() === 'pgsql'
                     ? PgsqlMutex::class
                     : MysqlMutex::class,
-            ]);
-        };
-
-        $config['components']['cache'] = function() {
-            return Craft::createObject([
-                'class' => DbCache::class,
-                'defaultDuration' => Craft::$app->getConfig()->getGeneral()->cacheDuration,
             ]);
         };
 
