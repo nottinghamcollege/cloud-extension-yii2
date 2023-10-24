@@ -11,7 +11,6 @@ use craft\events\ReplaceAssetEvent;
 use craft\fields\Assets as AssetsField;
 use craft\helpers\Assets;
 use craft\helpers\Db;
-use craft\i18n\Formatter;
 use craft\web\Controller;
 use DateTime;
 use yii\base\Exception;
@@ -311,7 +310,10 @@ class CloudController extends Controller
             'filename' => $resultingAsset->getFilename(),
             'formattedSize' => $resultingAsset->getFormattedSize(0),
             'formattedSizeInBytes' => $resultingAsset->getFormattedSizeInBytes(false),
-            'formattedDateUpdated' => Craft::$app->getFormatter()->asDatetime($resultingAsset->dateUpdated, Formatter::FORMAT_WIDTH_SHORT),
+            'formattedDateUpdated' => Craft::$app->getFormatter()->asDatetime(
+                $resultingAsset->dateUpdated,
+                \yii\i18n\Formatter::FORMAT_WIDTH_SHORT,
+            ),
             'dimensions' => $resultingAsset->getDimensions(),
         ]);
     }

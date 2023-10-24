@@ -10,6 +10,9 @@ use Symfony\Component\Process\Exception\RuntimeException;
 use Symfony\Component\Process\Process;
 use yii\base\BaseObject;
 
+/**
+ * @property-read array $assetBundleClasses
+ */
 class AssetBundlePublisher extends BaseObject
 {
     public int $concurrency = 5;

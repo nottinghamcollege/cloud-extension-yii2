@@ -25,7 +25,7 @@ class Helper
      */
     public static function isCraftCloud(): bool
     {
-        return (bool)App::env('AWS_LAMBDA_RUNTIME_API') || App::env('LAMBDA_TASK_ROOT');
+        return App::env('AWS_LAMBDA_RUNTIME_API') || App::env('LAMBDA_TASK_ROOT');
     }
 
     public static function artifactUrl(string $path = ''): string

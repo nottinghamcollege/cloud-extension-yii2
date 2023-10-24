@@ -48,6 +48,8 @@ class Config extends BaseConfig
 
             return $this;
         }
+
+        return parent::__call($name, $params);
     }
 
     public function getUseAssetCdn(): bool

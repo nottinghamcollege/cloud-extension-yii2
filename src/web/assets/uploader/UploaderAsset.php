@@ -7,7 +7,6 @@ use craft\cloud\Helper;
 use craft\helpers\ConfigHelper;
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
-use craft\web\View;
 
 class UploaderAsset extends AssetBundle
 {
@@ -38,6 +37,6 @@ class UploaderAsset extends AssetBundle
         $js = <<<JS
 window.Craft.CloudUploader.defaults.maxFileSize = $maxFileSize;
 JS;
-        $view->registerJs($js, View::POS_END);
+        $view->registerJs($js, \yii\web\View::POS_END);
     }
 }

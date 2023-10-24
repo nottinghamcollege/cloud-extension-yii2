@@ -26,7 +26,7 @@ class AssetManager extends \craft\web\AssetManager
     {
         $hash = $this->hash($src);
         $fileName = basename($src);
-        $dest = (string) HierarchicalPath::createFromString("$hash/$fileName");
+        $dest = (string) HierarchicalPath::new("$hash/$fileName");
         $stream = @fopen($src, 'rb');
 
         if (!$stream) {
