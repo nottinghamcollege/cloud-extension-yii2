@@ -10,9 +10,9 @@ class StorageFs extends Fs
 
     public function getPrefix(): string
     {
-        return HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::fromRelative(
             parent::getPrefix(),
             'storage',
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 }

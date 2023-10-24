@@ -16,10 +16,10 @@ abstract class BuildsFs extends Fs
             return '';
         }
 
-        return HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::fromRelative(
             parent::getPrefix(),
             'builds',
             Module::getInstance()->getConfig()->buildId,
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 }

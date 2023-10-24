@@ -108,7 +108,7 @@ abstract class Fs extends FlysystemFs
             throw new FsException('Filesystem is not configured with a valid base URL.');
         }
 
-        return Uri::createFromBaseUri(
+        return Uri::fromBaseUri(
             $this->prefixPath($path),
             StringHelper::ensureRight($baseUrl, '/'),
         );
@@ -229,24 +229,22 @@ abstract class Fs extends FlysystemFs
 
     protected function getPrefix(): string
     {
-        $segments = [
-            $this->useLocalFs()
-                ? ''
-                : Module::getInstance()->getConfig()->environmentId,
-        ];
+        if ($this->useLocalFs()) {
+            return '';
+        }
 
-        return HierarchicalPath::createRelativeFromSegments($segments)
+        return HierarchicalPath::fromRelative(Module::getInstance()->getConfig()->environmentId)
             ->withoutEmptySegments()
             ->withoutTrailingSlash();
     }
 
     public function prefixPath(string $path = ''): string
     {
-        return HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::fromRelative(
             $this->getPrefix(),
             $this->subpath ?? '',
             $path,
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 
     public function getBucketName(): ?string

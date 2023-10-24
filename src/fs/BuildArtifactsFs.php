@@ -21,9 +21,9 @@ class BuildArtifactsFs extends BuildsFs
             return '';
         }
 
-        return HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::fromRelative(
             parent::getPrefix(),
             'artifacts',
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 }

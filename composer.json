@@ -7,11 +7,11 @@
     "craftcms/cms": "^4.5.9 || ^5",
     "yiisoft/yii2-queue": "^2.3",
     "craftcms/flysystem": "^1.0.0",
-    "league/uri": "^6.7",
+    "league/uri": "^7",
     "bref/bref": "^2",
     "bref/extra-php-extensions": "^1.2",
     "league/flysystem-aws-s3-v3": "^3.15",
-    "league/uri-components": "^2.4"
+    "league/uri-components": "^7"
   },
   "require-dev": {
     "craftcms/ecs": "dev-main",

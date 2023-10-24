@@ -30,9 +30,9 @@ class AssetsFs extends Fs
             return '';
         }
 
-        return HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::fromRelative(
             parent::getPrefix(),
             'assets',
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 }
