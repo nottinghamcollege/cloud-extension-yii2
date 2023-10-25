@@ -36,11 +36,23 @@ class SetupController extends Controller
         $defaultNodeVersion = Version::parse('20.9');
         $defaultNpmScript = 'build';
         $ddevConfigFile = Craft::getAlias('@root/.ddev/config.yaml');
+        $ddevConfig = file_exists($ddevConfigFile)
+            ? Yaml::parseFile($ddevConfigFile)
+            : null;
+        $ddevPhpVersion = $ddevConfig['php_version'] ?? null;
+        $ddevNodeVersion = $ddevConfig['nodejs_version'] ?? null;
         $composerJsonFile = Craft::getAlias('@root/composer.json');
+        $composerJson = file_exists($composerJsonFile)
+            ? json_decode(file_get_contents($composerJsonFile), true)
+            : null;
+        $composerJsonPhpVersion = $composerJson['config']['platform']['php'] ?? null;
         $packageJsonFile = Craft::getAlias('@root/package.json');
-        $ddevConfig = file_exists($ddevConfigFile) ? Yaml::parseFile($ddevConfigFile) : null;
-        $packageJson = file_exists($packageJsonFile) ? json_decode(file_get_contents($packageJsonFile)) : null;
-        $composerJson = file_exists($composerJsonFile) ? json_decode(file_get_contents($composerJsonFile)) : null;
+        $packageJson = file_exists($packageJsonFile)
+            ? json_decode(file_get_contents($packageJsonFile), true)
+            : null;
+        $packageJsonNodeVersion = $packageJson['engines']['node'] ?? null;
+        $packageJsonScripts = Collection::make($packageJson['scripts'] ?? null)->keys();
+
         $confirmMessage = file_exists($filePath)
             ? $this->markdownToAnsi("`{$fileName}` already exists. Overwrite?")
             : $this->markdownToAnsi("Create `{$fileName}`?");
@@ -49,24 +61,24 @@ class SetupController extends Controller
             return ExitCode::OK;
         }
 
-        if ($ddevConfig['php_version'] ?? null) {
+        if ($ddevPhpVersion) {
             try {
                 $this->do(
-                    "Detected PHP version from DDEV config: `{$ddevConfig['php_version']}`",
-                    function() use ($ddevConfig, &$defaultPhpVersion) {
-                        $defaultPhpVersion = Version::parse($ddevConfig['php_version']);
+                    "Detected PHP version from DDEV config: `{$ddevPhpVersion}`",
+                    function() use ($ddevPhpVersion, &$defaultPhpVersion) {
+                        $defaultPhpVersion = Version::parse($ddevPhpVersion);
                     }
                 );
             } catch (InvalidVersionException $e) {
             }
         }
 
-        if ($composerJson?->config?->platform?->php) {
+        if ($composerJsonPhpVersion) {
             try {
                 $this->do(
-                    "Detected PHP version from composer.json (_config.platforms.php_): `{$composerJson->config->platform->php}`",
-                    function() use ($composerJson, &$defaultPhpVersion) {
-                        $defaultPhpVersion = Version::parse($composerJson->config->platform->php);
+                    "Detected PHP version from composer.json (_config.platforms.php_): `{$composerJsonPhpVersion}`",
+                    function() use ($composerJsonPhpVersion, &$defaultPhpVersion) {
+                        $defaultPhpVersion = Version::parse($composerJsonPhpVersion);
                     }
                 );
             } catch (InvalidVersionException $e) {
@@ -85,13 +97,12 @@ class SetupController extends Controller
             },
         ));
 
-        if ($packageJson?->scripts && $this->confirm('Run npm script on deploy?', true)) {
-            $scripts = Collection::make($packageJson->scripts)->keys();
+        if ($packageJsonScripts->isNotEmpty() && $this->confirm('Run npm script on deploy?', true)) {
             $config['npm-script'] = $this->prompt('npm script to run:', [
-                'default' => $scripts->contains($defaultNpmScript) ? $defaultNpmScript : null,
+                'default' => $packageJsonScripts->contains($defaultNpmScript) ? $defaultNpmScript : null,
                 'required' => true,
-                'validator' => function(string $value, &$error) use ($scripts) {
-                    if (!$scripts->contains($value)) {
+                'validator' => function(string $value, &$error) use ($packageJsonScripts) {
+                    if (!$packageJsonScripts->contains($value)) {
                         $error = $this->markdownToAnsi("npm script not found in package.json: `{$value}`");
                         return false;
                     }
@@ -104,24 +115,24 @@ class SetupController extends Controller
                 unset($config['npm-script']);
             }
 
-            if ($ddevConfig['nodejs_version'] ?? null) {
+            if ($ddevNodeVersion) {
                 try {
                     $this->do(
-                        "Detected Node.js version from DDEV config: `{$ddevConfig['nodejs_version']}`",
-                        function() use ($ddevConfig, &$defaultNodeVersion) {
-                            $defaultNodeVersion = Version::parse($ddevConfig['nodejs_version']);
+                        "Detected Node.js version from DDEV config: `{$ddevNodeVersion}`",
+                        function() use ($ddevNodeVersion, &$defaultNodeVersion) {
+                            $defaultNodeVersion = Version::parse($ddevNodeVersion);
                         }
                     );
                 } catch (InvalidVersionException $e) {
                 }
             }
 
-            if ($packageJson->engines?->node) {
+            if ($packageJsonNodeVersion) {
                 try {
                     $this->do(
-                        "Detected Node.js version from package.json (_engines.node_): `{$packageJson->engines->node}`",
-                        function() use ($packageJson, &$defaultNodeVersion) {
-                            $defaultNodeVersion = Version::parse($packageJson->engines->node);
+                        "Detected Node.js version from package.json (_engines.node_): `{$packageJsonNodeVersion}`",
+                        function() use ($packageJsonNodeVersion, &$defaultNodeVersion) {
+                            $defaultNodeVersion = Version::parse($packageJsonNodeVersion);
                         }
                     );
                 } catch (InvalidVersionException $e) {
