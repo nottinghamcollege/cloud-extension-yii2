@@ -65,6 +65,8 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $app->getView()->registerTwigExtension(new TwigExtension());
 
+        Craft::setAlias('@artifactBaseUrl', Helper::artifactUrl());
+
         if (Helper::isCraftCloud()) {
             $this->bootstrapCloud($app);
         }
