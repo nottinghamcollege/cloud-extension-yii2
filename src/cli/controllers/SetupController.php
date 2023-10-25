@@ -16,11 +16,9 @@ class SetupController extends Controller
     public function actionIndex(): int
     {
         $this->runAction('config');
-        $this->stdout("Full config reference: https://craftcms.com/knowledge-base/cloud-config\n");
         $this->stdout(PHP_EOL);
         $this->stdout("Your project is ready to deploy to Craft Cloud!\n", BaseConsole::FG_GREEN);
         $this->stdout("See https://craftcms.com/knowledge-base/cloud-getting-started\n");
-
 
         return ExitCode::OK;
     }
@@ -50,7 +48,6 @@ class SetupController extends Controller
             : null;
         $packageJsonNodeVersion = $packageJson['engines']['node'] ?? null;
         $packageJsonScripts = Collection::make($packageJson['scripts'] ?? null)->keys();
-
         $confirmMessage = file_exists($filePath)
             ? $this->markdownToAnsi("`{$fileName}` already exists. Overwrite?")
             : $this->markdownToAnsi("Create `{$fileName}`?");
@@ -150,9 +147,13 @@ class SetupController extends Controller
             ]);
         }
 
+        $output = "# Craft Cloud configuration file`\n";
+        $output .= "# https://craftcms.com/knowledge-base/cloud-config\n";
+        $output .= Yaml::dump($config, 20, 2);
+
         $this->writeToFile(
             $filePath,
-            Yaml::dump($config, 20, 2),
+            $output,
         );
 
         return ExitCode::OK;
