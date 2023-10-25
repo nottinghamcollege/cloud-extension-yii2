@@ -45,22 +45,33 @@ class Helper
     /**
      * A version of tableExists that doesn't rely on the cache component
      */
-    public static function tableExists(string $table): bool
+    public static function tableExists(string $table, ?string $schema = null): bool
     {
-        $sql = <<<SQL
-SELECT count(*)
-FROM [[information_schema]].tables
-WHERE [[table_name]] = :tableName
-AND [[table_schema]] = :tableSchema
-SQL;
-        $command = Craft::$app->getDb()->createCommand($sql, [
-            ':tableName' => Craft::$app->getDb()->getSchema()->getRawTableName($table),
-            ':tableSchema' => Craft::$app->getDb()->getIsMysql()
-                ? Craft::$app->getConfig()->getDb()->database
-                : Craft::$app->getConfig()->getDb()->schema,
-        ]);
+        $db = Craft::$app->getDb();
+        $params = [
+            ':tableName' => $db->getSchema()->getRawTableName($table),
+        ];
 
-        return $command->queryScalar() > 0;
+        if ($db->getIsMysql()) {
+            // based on yii\db\mysql\Schema::findTableName()
+            $sql = <<<SQL
+SHOW CREATE TABLES LIKE :tableName
+SQL;
+
+            $sql = "";
+        } else {
+            // based on yii\db\pgsql\Schema::findTableName()
+            $sql = <<<SQL
+SELECT c.relname
+FROM pg_class c
+INNER JOIN pg_namespace ns ON ns.oid = c.relnamespace
+WHERE ns.nspname = :schemaName AND c.relkind IN ('r','v','m','f', 'p')
+and c.relname = :tableName
+SQL;
+            $params[':schemaName'] = $schema ?? $db->getSchema()->defaultSchema;
+        }
+
+        return (bool)$db->createCommand($sql, $params)->queryScalar();
     }
 
     public static function modifyConfig(array &$config, string $appType): void
