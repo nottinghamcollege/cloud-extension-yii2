@@ -24,6 +24,7 @@ use League\Flysystem\UnableToCreateDirectory;
 use League\Flysystem\UnableToMoveFile;
 use League\Flysystem\Visibility;
 use League\Uri\Components\HierarchicalPath;
+use League\Uri\Components\Path;
 use League\Uri\Uri;
 use Throwable;
 use yii\web\BadRequestHttpException;
@@ -106,6 +107,12 @@ abstract class Fs extends FlysystemFs
 
         if (!$baseUrl) {
             throw new FsException('Filesystem is not configured with a valid base URL.');
+        }
+
+        // If an alias is unparsed by now, we have to fall back to a root relative URL.
+        // This likely means this is a console request and @web isn't set.
+        if (str_starts_with($baseUrl, '@')) {
+            return Path::new($this->prefixPath($path))->withLeadingSlash();
         }
 
         return Uri::fromBaseUri(
