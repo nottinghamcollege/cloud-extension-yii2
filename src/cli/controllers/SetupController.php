@@ -4,25 +4,23 @@ namespace craft\cloud\cli\controllers;
 
 use Craft;
 use craft\console\Controller;
-use craft\helpers\Console;
 use Illuminate\Support\Collection;
 use PHLAK\SemVer\Exceptions\InvalidVersionException;
 use PHLAK\SemVer\Version;
 use Symfony\Component\Yaml\Yaml;
 use yii\console\ExitCode;
+use yii\helpers\BaseConsole;
 
 class SetupController extends Controller
 {
     public function actionIndex(): int
     {
         $this->runAction('config');
-
+        $this->stdout("Full config reference: https://craftcms.com/knowledge-base/cloud-config\n");
         $this->stdout(PHP_EOL);
+        $this->stdout("Your project is ready to deploy to Craft Cloud!\n", BaseConsole::FG_GREEN);
+        $this->stdout("See https://craftcms.com/knowledge-base/cloud-getting-started\n");
 
-        // TODO: why do we need to add these locally?
-        $this->stdout('Adding required database tables…' . PHP_EOL, Console::FG_GREY);
-        $this->run('/setup/php-session-table');
-        $this->run('/setup/db-cache-table');
 
         return ExitCode::OK;
     }
@@ -156,10 +154,6 @@ class SetupController extends Controller
             $filePath,
             Yaml::dump($config, 20, 2),
         );
-
-        $this->stdout(PHP_EOL);
-        $this->stdout($this->markdownToAnsi('Full configuration reference: https://craftcms.com/knowledge-base/cloud-config'), Console::FG_YELLOW);
-        $this->stdout(PHP_EOL);
 
         return ExitCode::OK;
     }
