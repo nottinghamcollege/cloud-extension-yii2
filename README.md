@@ -37,6 +37,18 @@ Generates a URL to a resource that was uploaded to the CDN during the build and 
 
 `true` when the app detects it is running on Cloud infrastructure, `false` otherwise.
 
+### Aliases
+
+The following aliases are available, in addition to [those provided by Craft](https://craftcms.com/docs/4.x/config/#aliases).
+
+#### `@web`
+
+We override the `@web` alias to guarantee that the correct environment URL is used in all HTTP contexts.
+
+#### `@artifactBaseUrl`
+
+Equivalent to [`artifactsUrl()`](#artifactsUrl), this allows [Project Config](https://craftcms.com/docs/4.x/project-config.html) settings to take advantage of dynamically-determined CDN URLs.
+
 ## Configuration
 
 Most configuration is handled directly by the Cloud infrastructure, through [environment overrides](https://craftcms.com/docs/4.x/config/#environment-overrides). These values are provided strictly for reference, and have limited utility outside the platform.
