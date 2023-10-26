@@ -2,7 +2,7 @@
 
 # Craft Cloud Extension
 
-Welcome to [**Craft Cloud**](https://craft.cloud/)!
+Welcome to [**Craft Cloud**](https://craftcms.com/cloud)!
 
 This repository contains source code for the `craftcms/cloud` Composer package, which is required to run a Craft project on our first-party hosting platform, Craft Cloud.
 
@@ -11,7 +11,7 @@ When installed, the extension automatically [bootstraps](https://www.yiiframewor
 - :cloud_with_lightning: **Cloud:** There’s no infrastructure settings to worry about—database, queue, cache, and session configuration is handled for you.
 - :computer: **Local development:** Craft runs normally, in your favorite [development environment](https://craftcms.com/docs/4.x/installation.html).
 
-:sparkles: To learn more about Cloud, check out [our website](https://craftcms.com/cloud)—or dive right in with [Craft Console](https://console.craftcms.com/cloud). Interested in everything the extension does to get your app ready for Cloud? Read our [Cloud module deep-dive](https://craftcms.com/knowledge-base/cloud-module), in the knowledge base.
+:sparkles: To learn more about Cloud, check out [our website](https://craftcms.com/cloud)—or dive right in with [Craft Console](https://console.craftcms.com/cloud). Interested in everything the extension does to get your app ready for Cloud? Read our [Cloud module deep-dive](https://craftcms.com/knowledge-base/cloud-extension), in the knowledge base.
 
 ## Installation
 
@@ -21,7 +21,7 @@ When you deploy a project to Cloud, the `cloud/up` command will run, wrapping Cr
 
 ## Filesystem
 
-When setting up your project’s assets, use the provided **Craft Cloud** filesystem type. Read more about [managing assets in Cloud projects](https://craftcms.com/knowledge-base/cloud-filesystem).
+When setting up your project’s assets, use the provided **Craft Cloud** filesystem type. Read more about [managing assets in Cloud projects](https://craftcms.com/knowledge-base/cloud-assets).
 
 ## Developer Features
 
