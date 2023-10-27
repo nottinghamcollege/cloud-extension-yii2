@@ -120,13 +120,13 @@ class Config extends BaseConfig
         $rules = parent::defineRules();
 
         $rules[] = [
-            ['projectId', 'environmentId'],
+            ['environmentId', 'projectId'],
             'required',
-            'when' => fn(Config $model) => $model->getUseAssetCdn() || $model->getUseArtifactCdn(),
+            'when' => fn(Config $model) => $model->getUseAssetCdn(),
         ];
 
         $rules[] = [
-            'buildId',
+            ['environmentId', 'buildId'],
             'required',
             'when' => fn(Config $model) => $model->getUseArtifactCdn(),
         ];
