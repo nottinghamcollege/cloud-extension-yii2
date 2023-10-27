@@ -157,6 +157,9 @@ abstract class Fs extends FlysystemFs
     {
         return array_merge(parent::settingsAttributes(), [
             'expires',
+            'subpath',
+            'localFsPath',
+            'localFsUrl',
         ]);
     }
 
