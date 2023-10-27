@@ -51,22 +51,20 @@ Equivalent to [`artifactsUrl()`](#artifactsUrl), this allows [Project Config](ht
 
 ## Configuration
 
-Most configuration is handled directly by the Cloud infrastructure, through [environment overrides](https://craftcms.com/docs/4.x/config/#environment-overrides). These values are provided strictly for reference, and have limited utility outside the platform.
+Most configuration (to Craft and the extension itself) is handled directly by Cloud infrastructure, through [environment overrides](https://craftcms.com/docs/4.x/config/#environment-overrides). These options are provided strictly for reference, and have limited utility outside the platform.
 
-> [!NOTE]
-> Some local development features (like asset synchronization) may require defining environment-specific credentials with `accessKey`, `accessSecret`, `region`, `projectId`, and `environmentId`.
+| Option            | Type      | Description                                                                                 |
+| ----------------- | --------- | ------------------------------------------------------------------------------------------- |
+| `accessKey`       | `string`  | AWS access key, used for communicating with storage APIs.                                   |
+| `accessSecret`    | `string`  | AWS access secret, used in conjunction with the `accessKey`.                                |
+| `cdnBaseUrl`      | `string`  | Used when building URLs to [assets](#filesystem) and other build [artifacts](#artifacturl). |
+| `cdnSigningKey`   | `string`  | A secret value used to protect transform URLs against abuse.                                |
+| `useAssetCdn`     | `boolean` | Whether or not to enable the CDN for uploaded assets.                                       |
+| `useArtifactCdn`  | `boolean` | Whether or not to enable the CDN for build artifacts and asset bundles.                     |
+| `environmentId`   | `string`  | UUID of the current environment.                                                            |
+| `projectId`       | `string`  | UUID of the current project.                                                                |
+| `region`          | `string`  | The app region, chosen when creating the project.                                           |
+| `s3ClientOptions` | `array`   | Additional settings to pass to the `Aws\S3\S3Client` instance when accessing storage APIs.  |
+| `sqsUrl`          | `string`  | Determines how Craft communicates with the underlying queue provider.                       |
 
-| Option            | Type     | Description                                                                                 |
-| ----------------- | -------- | ------------------------------------------------------------------------------------------- |
-| `accessKey`       | `string` | AWS access key, used for communicating with storage APIs.                                   |
-| `accessSecret`    | `string` | AWS access secret, used in conjunction with the `accessKey`.                                |
-| `cdnBaseUrl`      | `string` | Used when building URLs to [assets](#filesystem) and other build [artifacts](#artifacturl). |
-| `cdnSigningKey`   | `string` | A secret value used to protect transform URLs against abuse.                                |
-| `enableCache`     | `bool`   | Uses the database for cache data.                                                           |
-| `useCloudFs`      | `bool`   |                                                                                             |
-| `environmentId`   | `string` |                                                                                             |
-| `projectId`       | `string` |                                                                                             |
-| `redisUrl`        | `string` |                                                                                             |
-| `region`          | `string` | The app region.                                                                             |
-| `s3ClientOptions` | `array`  | Additional settings to pass to the `Aws\S3\S3Client` instance when accessing storage APIs.  |
-| `sqsUrl`          | `string` | With `enableQueue`, determines how Craft communicates with the underlying queue provider.   |
+These options can also be set via environment overrides beginning with `CRAFT_CLOUD_`.
