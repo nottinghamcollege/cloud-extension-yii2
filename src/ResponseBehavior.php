@@ -1,37 +1,47 @@
 <?php
 
-namespace craft\cloud\web;
+namespace craft\cloud;
 
 use Craft;
 use craft\cloud\fs\TmpFs;
-use craft\cloud\Module;
+use craft\errors\FsException;
+use craft\web\Response;
+use yii\base\Behavior;
+use yii\base\InvalidConfigException;
+use yii\web\Response as YiiResponse;
 use yii\web\ServerErrorHttpException;
 
-class Response extends \craft\web\Response
+/**
+ * @property Response $owner
+ */
+class ResponseBehavior extends Behavior
 {
-    /**
-     * @inheritDoc
-     */
-    public function send(): void
+    public function events(): array
     {
-        if (
-            $this->stream &&
-            Craft::$app->getRequest()->getIsCpRequest() &&
-            Module::getInstance()->getConfig()->preventBinaryResponse
-        ) {
-            $this->serveBinaryFromS3();
-        }
-
-        parent::send();
+        return [
+            YiiResponse::EVENT_BEFORE_SEND => [$this, 'beforeSend'],
+        ];
     }
 
+    public function beforeSend(): void
+    {
+        if ($this->owner->stream) {
+            $this->serveBinaryFromS3();
+        }
+    }
+
+    /**
+     * @throws InvalidConfigException
+     * @throws ServerErrorHttpException
+     * @throws FsException
+     */
     protected function serveBinaryFromS3(): void
     {
         /** @var TmpFs $fs */
         $fs = Craft::createObject([
             'class' => TmpFs::class,
         ]);
-        $stream = $this->stream[0] ?? null;
+        $stream = $this->owner->stream[0] ?? null;
 
         if (!$stream) {
             throw new ServerErrorHttpException('Invalid stream in response.');
@@ -46,13 +56,13 @@ class Response extends \craft\web\Response
         $cmd = $fs->getClient()->getCommand('GetObject', [
             'Bucket' => $fs->getBucketName(),
             'Key' => $fs->prefixPath($path),
-            'ResponseContentDisposition' => $this->getHeaders()->get('content-disposition'),
+            'ResponseContentDisposition' => $this->owner->getHeaders()->get('content-disposition'),
         ]);
 
         // TODO: config
         $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
         $url = (string) $s3Request->getUri();
-        $this->clear();
-        $this->redirect($url);
+        $this->owner->clear();
+        $this->owner->redirect($url);
     }
 }

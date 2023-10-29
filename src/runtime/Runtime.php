@@ -6,6 +6,7 @@ use Bref\Bref;
 use Bref\FpmRuntime\FpmHandler;
 use Bref\Runtime\LambdaRuntime;
 use craft\cloud\runtime\event\EventHandler;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -28,7 +29,7 @@ class Runtime
         $appRoot = getenv('LAMBDA_TASK_ROOT');
         $handlerFile = $appRoot . '/' . getenv('_HANDLER');
         if (!is_file($handlerFile)) {
-            $lambdaRuntime->failInitialization("Handler `$handlerFile` doesn't exist");
+            $lambdaRuntime->failInitialization("Handler `$handlerFile` doesn't exist", 'Runtime.NoSuchHandler');
         }
 
         // use the Bref fpm handler to start php-fpm
@@ -36,7 +37,7 @@ class Runtime
         try {
             $phpFpm->start();
         } catch (Throwable $e) {
-            $lambdaRuntime->failInitialization('Error while starting PHP-FPM', $e);
+            $lambdaRuntime->failInitialization(new RuntimeException('Error while starting PHP-FPM: ' . $e->getMessage(), 0, $e));
         }
 
         // create our own event handler and pass the fpm handler to it

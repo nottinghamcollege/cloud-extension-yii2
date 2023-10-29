@@ -10,14 +10,14 @@ class UpController extends Controller
 {
     public function actionIndex(): int
     {
+        $this->run('asset-bundles/publish');
+        $this->run('/setup/php-session-table');
+        $this->run('/setup/db-cache-table');
+
         // TODO: wrap with events
         if (Craft::$app->getIsInstalled()) {
-            $this->run('/setup/php-session-table');
-            $this->run('/setup/db-cache-table');
             $this->run('/up');
         }
-
-        $this->run('asset-bundles/publish');
 
         return ExitCode::OK;
     }

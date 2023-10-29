@@ -8,9 +8,9 @@ class CpResourcesFs extends BuildsFs
 {
     public function getPrefix(): string
     {
-        return HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::fromRelative(
             parent::getPrefix(),
             'cpresources',
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 }

@@ -2,9 +2,9 @@
 
 namespace craft\cloud;
 
+use Craft;
 use craft\config\BaseConfig;
 use craft\helpers\App;
-use craft\helpers\StringHelper;
 
 /**
  * @method array s3ClientOptions(array $options)
@@ -16,33 +16,29 @@ class Config extends BaseConfig
     public ?string $sqsUrl = null;
     public ?string $projectId = null;
     public ?string $environmentId = null;
+    public ?string $buildId = 'current';
     public ?string $accessKey = null;
     public ?string $accessSecret = null;
-    public ?string $region = null;
     public ?string $cdnSigningKey = null;
-    public bool $enableCache = false;
-    public bool $enableMutex = false;
-    public bool $enableSession = false;
-    public bool $enableQueue = false;
-    public bool $enableCdn = false;
-    public bool $enableDebug = false;
-    public bool $enableTmpFs = false;
-    public bool $preventBinaryResponse = false;
+    protected ?string $region = null;
+    protected bool $useAssetCdn = true;
+    protected bool $useArtifactCdn = true;
 
     public function init(): void
     {
-        if (Helper::isCraftCloud()) {
-            $this->enableCache = true;
-            $this->enableMutex = true;
-            $this->enableSession = true;
-            $this->enableQueue = true;
-            $this->enableCdn = true;
-            $this->enableDebug = true;
-            $this->enableTmpFs = true;
-            $this->preventBinaryResponse = true;
+        if (!Helper::isCraftCloud()) {
+            $this->useAssetCdn = false;
+            $this->useArtifactCdn = false;
         }
+    }
 
-        parent::init();
+    public function attributeLabels(): array
+    {
+        return [
+            'projectId' => Craft::t('app', 'Project ID'),
+            'environmentId' => Craft::t('app', 'Environment ID'),
+            'buildId' => Craft::t('app', 'Build ID'),
+        ];
     }
 
     public function __call($name, $params)
@@ -52,15 +48,89 @@ class Config extends BaseConfig
 
             return $this;
         }
+
+        return parent::__call($name, $params);
+    }
+
+    public function getUseAssetCdn(): bool
+    {
+        return App::env('CRAFT_CLOUD_USE_ASSET_CDN') ?? ($this->useAssetCdn || Helper::isCraftCloud());
+    }
+
+    public function setUseAssetCdn(bool $value): static
+    {
+        $this->useAssetCdn = $value;
+
+        return $this;
+    }
+
+    /**
+     * @used-by Module::getConfig()
+     * Alias to match Craft convention
+     */
+    public function useAssetCdn(bool $value): static
+    {
+        return $this->setUseAssetCdn($value);
+    }
+
+    public function getUseArtifactCdn(): bool
+    {
+        return App::env('CRAFT_CLOUD_USE_ARTIFACT_CDN') ?? ($this->useArtifactCdn || Helper::isCraftCloud());
+    }
+
+    public function setUseArtifactCdn(bool $value): static
+    {
+        $this->useArtifactCdn = $value;
+
+        return $this;
+    }
+
+    /**
+     * @used-by Module::getConfig()
+     * Alias to match Craft convention
+     */
+    public function useArtifactCdn(bool $value): static
+    {
+        return $this->setUseArtifactCdn($value);
     }
 
     public function getRegion(): ?string
     {
-        return $this->region ?? App::env('AWS_REGION');
+        return App::env('CRAFT_CLOUD_REGION') ?? $this->region ?? App::env('AWS_REGION');
     }
 
-    public function getCdnBaseUrl(): string
+    public function setRegion(?string $value): static
     {
-        return StringHelper::ensureRight($this->cdnBaseUrl, '/');
+        $this->region = $value;
+
+        return $this;
+    }
+
+    /**
+     * @used-by Module::getConfig()
+     * Alias to match Craft convention
+     */
+    public function region(?string $value): static
+    {
+        return $this->setRegion($value);
+    }
+
+    protected function defineRules(): array
+    {
+        $rules = parent::defineRules();
+
+        $rules[] = [
+            ['environmentId', 'projectId'],
+            'required',
+            'when' => fn(Config $model) => $model->getUseAssetCdn(),
+        ];
+
+        $rules[] = [
+            ['environmentId', 'buildId'],
+            'required',
+            'when' => fn(Config $model) => $model->getUseArtifactCdn(),
+        ];
+
+        return $rules;
     }
 }

@@ -13,6 +13,7 @@ use craft\flysystem\base\FlysystemFs;
 use craft\fs\Local;
 use craft\helpers\Assets;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\StringHelper;
 use DateTime;
 use DateTimeInterface;
 use Generator;
@@ -23,6 +24,7 @@ use League\Flysystem\UnableToCreateDirectory;
 use League\Flysystem\UnableToMoveFile;
 use League\Flysystem\Visibility;
 use League\Uri\Components\HierarchicalPath;
+use League\Uri\Components\Path;
 use League\Uri\Uri;
 use Throwable;
 use yii\web\BadRequestHttpException;
@@ -33,15 +35,15 @@ use yii\web\BadRequestHttpException;
  * @property-read string $prefix
  * @property-read ?string $settingsHtml
  */
-class Fs extends FlysystemFs
+abstract class Fs extends FlysystemFs
 {
     protected static bool $showUrlSetting = false;
     protected ?string $expires = null;
     protected ?Local $localFs = null;
     protected S3Client $client;
     public ?string $subpath = null;
-    public ?string $localFsPath = '@webroot/craft-cloud/{handle}';
-    public ?string $localFsUrl = '@web/craft-cloud/{handle}';
+    public ?string $localFsPath = null;
+    public ?string $localFsUrl = null;
     public ?string $url = '__URL__';
 
     /**
@@ -78,7 +80,7 @@ class Fs extends FlysystemFs
 
     protected function useLocalFs(): bool
     {
-        return !Module::getInstance()->getConfig()->enableCdn;
+        return false;
     }
 
     /**
@@ -99,17 +101,23 @@ class Fs extends FlysystemFs
 
     public function createUrl(string $path = ''): string
     {
-        $baseUrl = Module::getInstance()->getConfig()->enableCdn
-            ? Module::getInstance()->getConfig()->getCdnBaseUrl()
-            : $this->getLocalFs()->getRootUrl();
+        $baseUrl = $this->useLocalFs()
+            ? $this->getLocalFs()->getRootUrl()
+            : Module::getInstance()->getConfig()->cdnBaseUrl;
 
         if (!$baseUrl) {
             throw new FsException('Filesystem is not configured with a valid base URL.');
         }
 
-        return Uri::createFromBaseUri(
+        // If an alias is unparsed by now, we have to fall back to a root relative URL.
+        // This likely means this is a console request and @web isn't set.
+        if (str_starts_with($baseUrl, '@')) {
+            return Path::new($this->prefixPath($path))->withLeadingSlash();
+        }
+
+        return Uri::fromBaseUri(
             $this->prefixPath($path),
-            $baseUrl,
+            StringHelper::ensureRight($baseUrl, '/'),
         );
     }
 
@@ -149,6 +157,9 @@ class Fs extends FlysystemFs
     {
         return array_merge(parent::settingsAttributes(), [
             'expires',
+            'subpath',
+            'localFsPath',
+            'localFsUrl',
         ]);
     }
 
@@ -228,24 +239,22 @@ class Fs extends FlysystemFs
 
     protected function getPrefix(): string
     {
-        $segments = [
-            Module::getInstance()->getConfig()->enableCdn
-                ? Module::getInstance()->getConfig()->environmentId ?? ''
-                : '',
-        ];
+        if ($this->useLocalFs()) {
+            return '';
+        }
 
-        return HierarchicalPath::createRelativeFromSegments($segments)
+        return HierarchicalPath::fromRelative(Module::getInstance()->getConfig()->environmentId)
             ->withoutEmptySegments()
             ->withoutTrailingSlash();
     }
 
     public function prefixPath(string $path = ''): string
     {
-        return HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::fromRelative(
             $this->getPrefix(),
             $this->subpath ?? '',
             $path,
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 
     public function getBucketName(): ?string

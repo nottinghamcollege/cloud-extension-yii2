@@ -2,21 +2,24 @@
 
 namespace craft\cloud\fs;
 
-use Craft;
+use craft\cloud\Module;
 use League\Uri\Components\HierarchicalPath;
 
-class BuildsFs extends Fs
+abstract class BuildsFs extends Fs
 {
-    protected ?string $expires = '1 year';
+    protected ?string $expires = '1 years';
     public bool $hasUrls = true;
 
-    // TODO: default to $CRAFT_CLOUD_BUILD_ID?
     public function getPrefix(): string
     {
-        return HierarchicalPath::createRelativeFromSegments([
+        if (!Module::getInstance()->getConfig()->getUseArtifactCdn()) {
+            return '';
+        }
+
+        return HierarchicalPath::fromRelative(
             parent::getPrefix(),
             'builds',
-            Craft::$app->getConfig()->getGeneral()->buildId ?? '',
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+            Module::getInstance()->getConfig()->buildId,
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 }

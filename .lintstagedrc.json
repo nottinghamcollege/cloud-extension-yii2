@@ -1,7 +1,4 @@
 {
-  "**/*.php": [
-    "./vendor/bin/ecs check --ansi --fix",
-    "./vendor/bin/phpstan analyse"
-  ],
+  "**/*.php": ["composer run fix-cs", "composer run phpstan analyse"],
   "*": "prettier --ignore-unknown --write"
 }

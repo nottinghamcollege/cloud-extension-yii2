@@ -8,9 +8,9 @@ class TmpFs extends StorageFs
 {
     public function getPrefix(): string
     {
-        return HierarchicalPath::createRelativeFromSegments([
+        return HierarchicalPath::fromRelative(
             parent::getPrefix(),
             'tmp',
-        ])->withoutEmptySegments()->withoutTrailingSlash();
+        )->withoutEmptySegments()->withoutTrailingSlash();
     }
 }
