@@ -4,44 +4,28 @@ namespace craft\cloud;
 
 use Craft;
 use craft\cloud\fs\TmpFs;
-use craft\errors\FsException;
-use craft\web\Response;
-use yii\base\Behavior;
-use yii\base\InvalidConfigException;
-use yii\web\Response as YiiResponse;
+use yii\base\Event;
 use yii\web\ServerErrorHttpException;
 
-/**
- * @property Response $owner
- */
-class ResponseBehavior extends Behavior
+class BinaryResponse
 {
-    public function events(): array
+    public static function beforeSend(Event $event): void
     {
-        return [
-            YiiResponse::EVENT_BEFORE_SEND => [$this, 'beforeSend'],
-        ];
-    }
-
-    public function beforeSend(): void
-    {
-        if ($this->owner->stream) {
-            $this->serveBinaryFromS3();
+        if (Helper::isCraftCloud() && $event->sender->stream) {
+            static::serveBinaryFromS3();
         }
     }
 
-    /**
-     * @throws InvalidConfigException
-     * @throws ServerErrorHttpException
-     * @throws FsException
-     */
-    protected function serveBinaryFromS3(): void
+    protected static function serveBinaryFromS3(): void
     {
+        $response = Craft::$app->getResponse();
+
         /** @var TmpFs $fs */
         $fs = Craft::createObject([
             'class' => TmpFs::class,
         ]);
-        $stream = $this->owner->stream[0] ?? null;
+
+        $stream = $response->stream[0] ?? null;
 
         if (!$stream) {
             throw new ServerErrorHttpException('Invalid stream in response.');
@@ -56,13 +40,13 @@ class ResponseBehavior extends Behavior
         $cmd = $fs->getClient()->getCommand('GetObject', [
             'Bucket' => $fs->getBucketName(),
             'Key' => $fs->prefixPath($path),
-            'ResponseContentDisposition' => $this->owner->getHeaders()->get('content-disposition'),
+            'ResponseContentDisposition' => $response->getHeaders()->get('content-disposition'),
         ]);
 
         // TODO: config
         $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
         $url = (string) $s3Request->getUri();
-        $this->owner->clear();
-        $this->owner->redirect($url);
+        $response->clear();
+        $response->redirect($url);
     }
 }

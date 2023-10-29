@@ -11,15 +11,18 @@ use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\console\Application as ConsoleApplication;
 use craft\debug\Module as DebugModule;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterTemplateRootsEvent;
 use craft\fs\Temp;
 use craft\helpers\App;
 use craft\imagetransforms\FallbackTransformer;
 use craft\imagetransforms\ImageTransformer as CraftImageTransformerAlias;
 use craft\log\Dispatcher;
+use craft\services\Elements;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Application as WebApplication;
 use craft\web\twig\variables\CraftVariable;
+use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\base\InvalidConfigException;
 
@@ -65,10 +68,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         Craft::setAlias('@artifactBaseUrl', Helper::artifactUrl());
 
-        $app->getView()->attachBehavior('cloud', ViewBehavior::class);
-        $app->getResponse()->attachBehavior('cloud', ResponseBehavior::class);
-        $app->getElements()->attachBehavior('cloud', ElementsBehavior::class);
-
         if (Helper::isCraftCloud()) {
             $this->bootstrapCloud($app);
         }
@@ -111,6 +110,14 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         );
 
         Event::on(
+            View::class,
+            View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
+            function(RegisterTemplateRootsEvent $e) {
+                $e->roots[$this->id] = sprintf('%s/templates', $this->getBasePath());
+            }
+        );
+
+        Event::on(
             CraftVariable::class,
             CraftVariable::EVENT_INIT,
             function(\yii\base\Event $e) {
@@ -119,9 +126,27 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 $craftVariable->set('cloud', Module::class);
             }
         );
+
+        Event::on(
+            View::class,
+            View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
+            [StaticCaching::class, 'beforeRenderPageTemplate'],
+        );
+
+        Event::on(
+            View::class,
+            View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
+            [StaticCaching::class, 'afterRenderPageTemplate'],
+        );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_INVALIDATE_CACHES,
+            [StaticCaching::class, 'onInvalidateCaches'],
+        );
     }
 
-    protected function bootstrapCloud(ConsoleApplication|WebApplication $app)
+    protected function bootstrapCloud(ConsoleApplication|WebApplication $app): void
     {
         // Set Craft memory limit to just below PHP's limit
         Helper::setMemoryLimit(ini_get('memory_limit'), $app->getErrorHandler()->memoryReserveSize);
