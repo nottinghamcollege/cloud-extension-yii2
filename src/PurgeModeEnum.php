@@ -4,6 +4,6 @@ namespace craft\cloud;
 
 enum PurgeModeEnum: string
 {
-    case TAGS = 'tags';
+    case TAG = 'tag';
     case ALL = 'all';
 }

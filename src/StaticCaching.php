@@ -47,12 +47,14 @@ class StaticCaching
 
     public static function onInvalidateCaches(InvalidateElementCachesEvent $event): void
     {
-        static::addCachePurgeToResponse(PurgeModeEnum::TAGS);
+        static::addCachePurgeToResponse(PurgeModeEnum::TAG);
         static::addCacheTagsToResponse($event->tags ?? []);
     }
 
     public static function minifyCacheTags(array $tags): Collection
     {
+        // TODO: can't exceed 16KB
+        // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
         return Collection::make($tags)
             ->map(fn(string $tag) => static::minifyCacheTag($tag))
             ->filter()
@@ -80,7 +82,7 @@ class StaticCaching
 
         if ($tags->isNotEmpty()) {
             $response = Craft::$app->getResponse();
-            $response->getHeaders()->set('Cache-Tags', $tags->implode(' '));
+            $response->getHeaders()->set('Cache-Tag', $tags->implode(','));
 
             if ($duration !== null) {
                 $response->setCacheHeaders($duration, false);
