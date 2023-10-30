@@ -4,19 +4,23 @@ namespace craft\cloud;
 
 use Craft;
 use craft\cloud\fs\Fs;
+use craft\helpers\FileHelper;
 use League\Uri\Components\HierarchicalPath;
 use yii\base\InvalidArgumentException;
 
 class AssetManager extends \craft\web\AssetManager
 {
     public Fs $fs;
+    public $basePath = '@webroot/cpresources';
     private array $_published = [];
 
-    public function __construct($config = [])
+    public function init()
     {
-        parent::__construct($config);
-        $this->basePath = '';
         $this->baseUrl = $this->fs->getRootUrl();
+        $this->basePath = Craft::getAlias($this->basePath);
+        FileHelper::createDirectory($this->basePath);
+
+        parent::init();
     }
 
     /**
@@ -33,7 +37,7 @@ class AssetManager extends \craft\web\AssetManager
             throw new InvalidArgumentException("Could not open file for publishing: $src");
         }
 
-        $this->fs->writeFileFromStream($dest, $stream);
+        copy($src, HierarchicalPath::new("$this->basePath/$dest"));
 
         return [$dest, $this->fs->createUrl($dest)];
     }
@@ -45,10 +49,10 @@ class AssetManager extends \craft\web\AssetManager
     {
         $hash = $this->hash($src);
 
-        // TODO: try/catch
-        if (!$this->fs->directoryExists($hash)) {
-            $this->fs->uploadDirectory($src, $hash);
-        }
+        FileHelper::copyDirectory(
+            $src,
+            HierarchicalPath::new("$this->basePath/$hash"),
+        );
 
         return [$hash, $this->fs->createUrl($hash)];
     }
