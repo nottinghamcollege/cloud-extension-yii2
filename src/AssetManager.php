@@ -11,13 +11,12 @@ use yii\base\InvalidArgumentException;
 class AssetManager extends \craft\web\AssetManager
 {
     public Fs $fs;
-    public $basePath = '@webroot/cpresources';
     private array $_published = [];
 
     public function init()
     {
         $this->baseUrl = $this->fs->getRootUrl();
-        $this->basePath = Craft::getAlias($this->basePath);
+        $this->basePath = Craft::getAlias('@webroot/cpresources');
         FileHelper::createDirectory($this->basePath);
 
         parent::init();
