@@ -92,6 +92,7 @@ class StaticCaching
 
     public static function addCachePurgeToResponse(PurgeModeEnum $mode): void
     {
+        // You can purge up to 30 cache-tags per API call and up to 250,000 cache-tags per a 24-hour period.
         Craft::$app->getResponse()
             ->getHeaders()
             ->add('Cache-Purge', $mode->value);
