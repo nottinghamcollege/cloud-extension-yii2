@@ -63,17 +63,7 @@ class StaticCaching
 
     public static function minifyCacheTag(string $tag): ?string
     {
-        $matches = [];
-
-        if (preg_match('/^element::craft\\\elements\\\.+::(\d+)$/', $tag, $matches)) {
-            return sprintf('e%s', $matches[1]);
-        }
-
-        if (preg_match('/^element::craft\\\elements\\\Entry::section:(\d+)$/', $tag, $matches)) {
-            return sprintf('s%s', $matches[1]);
-        }
-
-        return $tag;
+        return sprintf('%x', crc32($tag));
     }
 
     public static function addCacheTagsToResponse(array $tags, $duration = null): void
