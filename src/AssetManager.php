@@ -8,6 +8,12 @@ use craft\helpers\FileHelper;
 
 class AssetManager extends \craft\web\AssetManager
 {
+    public function init()
+    {
+        $this->preparePaths();
+        parent::init();
+    }
+
     public function publish($path, $options = []): array
     {
         $this->preparePaths();
