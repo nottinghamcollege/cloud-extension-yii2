@@ -10,7 +10,7 @@ class AssetManager extends \craft\web\AssetManager
 {
     public bool $cacheSourcePaths = false;
 
-    public function init()
+    public function init(): void
     {
         $this->preparePaths();
         parent::init();
@@ -25,7 +25,10 @@ class AssetManager extends \craft\web\AssetManager
     protected function preparePaths(): void
     {
         $this->basePath = Craft::getAlias($this->basePath);
-        FileHelper::createDirectory($this->basePath);
+
+        if (!Helper::isCraftCloud()) {
+            FileHelper::createDirectory($this->basePath);
+        }
 
         if (Module::getInstance()->getConfig()->useAssetBundleCdn) {
             $this->baseUrl = (new CpResourcesFs())->getRootUrl();
