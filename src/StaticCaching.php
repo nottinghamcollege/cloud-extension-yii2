@@ -82,7 +82,7 @@ class StaticCaching
 
         if ($tags->isNotEmpty()) {
             $response = Craft::$app->getResponse();
-            $response->getHeaders()->set('Cache-Tag', $tags->implode(','));
+            $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
 
             if ($duration !== null) {
                 $response->setCacheHeaders($duration, false);
@@ -95,6 +95,6 @@ class StaticCaching
         // You can purge up to 30 cache-tags per API call and up to 250,000 cache-tags per a 24-hour period.
         Craft::$app->getResponse()
             ->getHeaders()
-            ->add('Cache-Purge', $mode->value);
+            ->add(HeaderEnum::CACHE_PURGE->value, $mode->value);
     }
 }
