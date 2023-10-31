@@ -4,7 +4,9 @@ namespace craft\cloud\cli\controllers;
 
 use Craft;
 use craft\cloud\AssetBundlePublisher;
+use craft\cloud\AssetManager;
 use craft\console\Controller;
+use craft\helpers\App;
 use ReflectionClass;
 use yii\console\Exception;
 use yii\console\ExitCode;
@@ -13,14 +15,18 @@ use yii\web\AssetBundle;
 class AssetBundlesController extends Controller
 {
     public bool $quiet = false;
+    public ?string $to = null;
 
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), match ($actionID) {
             'publish-bundle' => [
                 'quiet',
+                'to',
             ],
-            default => [],
+            default => [
+                'to',
+            ],
         });
     }
 
@@ -36,7 +42,16 @@ class AssetBundlesController extends Controller
 
                 /** @var AssetBundle $assetBundle */
                 $assetBundle = Craft::createObject($className);
-                $assetManager = Craft::$app->getAssetManager();
+
+                // Intentionally not using the component, as it won't be loaded when run from the builder.
+                $assetManager = Craft::createObject([
+                    'class' => AssetManager::class,
+                ] + App::assetManagerConfig());
+
+                if ($this->to) {
+                    $assetManager->basePath = $this->to;
+                }
+
                 $assetBundle->publish($assetManager);
             });
         } catch (\Throwable $e) {

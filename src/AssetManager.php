@@ -3,89 +3,38 @@
 namespace craft\cloud;
 
 use Craft;
-use craft\cloud\fs\Fs;
+use craft\cloud\fs\CpResourcesFs;
 use craft\helpers\FileHelper;
-use League\Uri\Components\HierarchicalPath;
-use yii\base\InvalidArgumentException;
 
 class AssetManager extends \craft\web\AssetManager
 {
-    public Fs $fs;
-    private array $_published = [];
-
-    public function init()
-    {
-        $this->baseUrl = $this->fs->getRootUrl();
-        $this->basePath = Craft::getAlias('@webroot/cpresources');
-        FileHelper::createDirectory($this->basePath);
-
-        parent::init();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    protected function publishFile($src): array
-    {
-        $hash = $this->hash($src);
-        $fileName = basename($src);
-        $dest = (string) HierarchicalPath::new("$hash/$fileName");
-        $stream = @fopen($src, 'rb');
-
-        if (!$stream) {
-            throw new InvalidArgumentException("Could not open file for publishing: $src");
-        }
-
-        copy($src, HierarchicalPath::new("$this->basePath/$dest"));
-
-        return [$dest, $this->fs->createUrl($dest)];
-    }
-
-    /**
-     * @inheritDoc
-     */
-    protected function publishDirectory($src, $options): array
-    {
-        $hash = $this->hash($src);
-
-        FileHelper::copyDirectory(
-            $src,
-            HierarchicalPath::new("$this->basePath/$hash"),
-        );
-
-        return [$hash, $this->fs->createUrl($hash)];
-    }
-
-    /**
-     * @inheritDoc
-     * Always publish from cli, never from web
-     */
     public function publish($path, $options = []): array
     {
-        if (!Craft::$app->getRequest()->getIsConsoleRequest()) {
-            return [$path, $this->getPublishedUrl($path)];
+        $this->preparePaths();
+        return parent::publish($path, $options);
+    }
+
+    protected function hash($path): string
+    {
+        if (is_callable($this->hashCallback)) {
+            return call_user_func($this->hashCallback, $path);
         }
 
-        $path = Craft::getAlias($path);
+        $dir = is_file($path) ? dirname($path) : $path;
 
-        if (isset($this->_published[$path])) {
-            return $this->_published[$path];
+        // TODO: what?
+        /** @phpstan-ignore-next-line */
+        $alias = Craft::alias($dir);
+        return sprintf('%x', crc32($alias . '|' . FileHelper::lastModifiedTime($path) . '|' . $this->linkAssets));
+    }
+
+    protected function preparePaths(): void
+    {
+        $this->basePath = Craft::getAlias($this->basePath);
+        FileHelper::createDirectory($this->basePath);
+
+        if (Module::getInstance()->getConfig()->useAssetBundleCdn) {
+            $this->baseUrl = (new CpResourcesFs())->getRootUrl();
         }
-
-        $src = realpath($path);
-
-        if ($src === false) {
-            throw new InvalidArgumentException("The file or directory to be published does not exist: $path");
-        }
-
-        if (!is_readable($src)) {
-            throw new InvalidArgumentException("The file or directory to be published is not readable: $path");
-        }
-
-        if (is_file($src)) {
-            return $this->_published[$path] = $this->publishFile($src);
-        }
-
-        return $this->_published[$path] = $this->publishDirectory($src, $options);
     }
 }
