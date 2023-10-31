@@ -10,9 +10,10 @@ class BuildArtifactsFs extends BuildsFs
     public ?string $localFsPath = '@webroot';
     public ?string $localFsUrl = '@web';
 
-    protected function useLocalFs(): bool
+    public function init(): void
     {
-        return !Module::getInstance()->getConfig()->getUseArtifactCdn();
+        $this->useLocalFs = !Module::getInstance()->getConfig()->getUseArtifactCdn();
+        parent::init();
     }
 
     public function getPrefix(): string

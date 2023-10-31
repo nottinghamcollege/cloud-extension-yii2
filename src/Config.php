@@ -20,6 +20,7 @@ class Config extends BaseConfig
     public ?string $accessKey = null;
     public ?string $accessSecret = null;
     public ?string $cdnSigningKey = null;
+    public bool $useAssetBundleCdn = true;
     protected ?string $region = null;
     protected bool $useAssetCdn = true;
     protected bool $useArtifactCdn = true;
@@ -29,6 +30,7 @@ class Config extends BaseConfig
         if (!Helper::isCraftCloud()) {
             $this->useAssetCdn = false;
             $this->useArtifactCdn = false;
+            $this->useAssetBundleCdn = false;
         }
     }
 
@@ -54,7 +56,7 @@ class Config extends BaseConfig
 
     public function getUseAssetCdn(): bool
     {
-        return App::env('CRAFT_CLOUD_USE_ASSET_CDN') ?? ($this->useAssetCdn || Helper::isCraftCloud());
+        return App::env('CRAFT_CLOUD_USE_ASSET_CDN') ?? $this->useAssetCdn;
     }
 
     public function setUseAssetCdn(bool $value): static
@@ -75,7 +77,7 @@ class Config extends BaseConfig
 
     public function getUseArtifactCdn(): bool
     {
-        return App::env('CRAFT_CLOUD_USE_ARTIFACT_CDN') ?? ($this->useArtifactCdn || Helper::isCraftCloud());
+        return App::env('CRAFT_CLOUD_USE_ARTIFACT_CDN') ?? $this->useArtifactCdn;
     }
 
     public function setUseArtifactCdn(bool $value): static

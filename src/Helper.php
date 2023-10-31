@@ -5,7 +5,6 @@ namespace craft\cloud;
 use Craft;
 use craft\cache\DbCache;
 use craft\cloud\fs\BuildArtifactsFs;
-use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\Helper as CloudHelper;
 use craft\cloud\queue\Queue;
 use craft\db\Table;
@@ -19,13 +18,9 @@ use yii\web\DbSession;
 
 class Helper
 {
-    /**
-     * With local Bref, AWS_LAMBDA_RUNTIME_API is only set from web requests,
-     * while LAMBDA_TASK_ROOT is set for both.
-     */
     public static function isCraftCloud(): bool
     {
-        return App::env('AWS_LAMBDA_RUNTIME_API') || App::env('LAMBDA_TASK_ROOT');
+        return App::env('CRAFT_CLOUD') ?? App::env('AWS_LAMBDA_RUNTIME_API') ?? false;
     }
 
     public static function artifactUrl(string $path = ''): string
@@ -106,9 +101,12 @@ SQL;
             'proxyQueue' => Queue::class,
         ];
 
-        $config['components']['assetManager'] = [
-            'class' => AssetManager::class,
-            'fs' => Craft::createObject(CpResourcesFs::class),
-        ];
+        $config['components']['assetManager'] = function() {
+            $config = [
+                'class' => AssetManager::class,
+            ] + App::assetManagerConfig();
+
+            return Craft::createObject($config);
+        };
     }
 }

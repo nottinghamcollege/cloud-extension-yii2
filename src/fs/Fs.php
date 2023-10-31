@@ -27,7 +27,7 @@ use League\Uri\Components\HierarchicalPath;
 use League\Uri\Components\Path;
 use League\Uri\Uri;
 use Throwable;
-use yii\web\BadRequestHttpException;
+use yii\base\InvalidConfigException;
 
 /**
  *
@@ -45,6 +45,7 @@ abstract class Fs extends FlysystemFs
     public ?string $localFsPath = null;
     public ?string $localFsUrl = null;
     public ?string $url = '__URL__';
+    public bool $useLocalFs = false;
 
     /**
      * @inheritDoc
@@ -78,11 +79,6 @@ abstract class Fs extends FlysystemFs
         return $this->localFs;
     }
 
-    protected function useLocalFs(): bool
-    {
-        return false;
-    }
-
     /**
      * @inheritdoc
      */
@@ -101,7 +97,7 @@ abstract class Fs extends FlysystemFs
 
     public function createUrl(string $path = ''): string
     {
-        $baseUrl = $this->useLocalFs()
+        $baseUrl = $this->useLocalFs
             ? $this->getLocalFs()->getRootUrl()
             : Module::getInstance()->getConfig()->cdnBaseUrl;
 
@@ -239,7 +235,7 @@ abstract class Fs extends FlysystemFs
 
     protected function getPrefix(): string
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             return '';
         }
 
@@ -308,6 +304,10 @@ abstract class Fs extends FlysystemFs
 
     public function uploadDirectory(string $path, string $destPath, $config = []): void
     {
+        if ($this->useLocalFs) {
+            throw new InvalidConfigException();
+        }
+
         try {
             $config = $this->addFileMetadataToConfig($config);
 
@@ -324,8 +324,8 @@ abstract class Fs extends FlysystemFs
 
     public function presignedUrl(string $command, string $path, DateTimeInterface $expiresAt, array $config = []): string
     {
-        if ($this->useLocalFs()) {
-            throw new BadRequestHttpException();
+        if ($this->useLocalFs) {
+            throw new InvalidConfigException();
         }
 
         try {
@@ -354,7 +354,7 @@ abstract class Fs extends FlysystemFs
      */
     public function copyFile(string $path, string $newPath): void
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             $this->getLocalFs()->copyFile($path, $newPath);
             return;
         }
@@ -374,7 +374,7 @@ abstract class Fs extends FlysystemFs
      */
     public function renameFile(string $path, string $newPath): void
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             $this->getLocalFs()->renameFile($path, $newPath);
             return;
         }
@@ -394,7 +394,7 @@ abstract class Fs extends FlysystemFs
      */
     public function createDirectory(string $path, array $config = []): void
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             $this->getLocalFs()->createDirectory($path, $config);
             return;
         }
@@ -412,7 +412,7 @@ abstract class Fs extends FlysystemFs
      */
     public function getFileList(string $directory = '', bool $recursive = true): Generator
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             return $this->getLocalFs()->getFileList($directory, $recursive);
         }
 
@@ -424,7 +424,7 @@ abstract class Fs extends FlysystemFs
      */
     public function getFileSize(string $uri): int
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             return $this->getLocalFs()->getFileSize($uri);
         }
 
@@ -436,7 +436,7 @@ abstract class Fs extends FlysystemFs
      */
     public function getDateModified(string $uri): int
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             return $this->getLocalFs()->getDateModified($uri);
         }
 
@@ -449,7 +449,7 @@ abstract class Fs extends FlysystemFs
      */
     public function write(string $path, string $contents, array $config = []): void
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             $this->getLocalFs()->write($path, $contents, $config);
             return;
         }
@@ -462,7 +462,7 @@ abstract class Fs extends FlysystemFs
      */
     public function read(string $path): string
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             return $this->getLocalFs()->read($path);
         }
 
@@ -474,7 +474,7 @@ abstract class Fs extends FlysystemFs
      */
     public function writeFileFromStream(string $path, $stream, array $config = []): void
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             $this->getLocalFs()->writeFileFromStream($path, $stream, $config);
             return;
         }
@@ -487,7 +487,7 @@ abstract class Fs extends FlysystemFs
      */
     public function fileExists(string $path): bool
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             return $this->getLocalFs()->fileExists($path);
         }
 
@@ -499,7 +499,7 @@ abstract class Fs extends FlysystemFs
      */
     public function deleteFile(string $path): void
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             $this->getLocalFs()->deleteFile($path);
             return;
         }
@@ -512,7 +512,7 @@ abstract class Fs extends FlysystemFs
      */
     public function getFileStream(string $uriPath)
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             return $this->getLocalFs()->getFileStream($uriPath);
         }
 
@@ -524,7 +524,7 @@ abstract class Fs extends FlysystemFs
      */
     public function directoryExists(string $path): bool
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             return $this->getLocalFs()->directoryExists($path);
         }
 
@@ -536,7 +536,7 @@ abstract class Fs extends FlysystemFs
      */
     public function deleteDirectory(string $path): void
     {
-        if ($this->useLocalFs()) {
+        if ($this->useLocalFs) {
             $this->getLocalFs()->deleteDirectory($path);
             return;
         }
