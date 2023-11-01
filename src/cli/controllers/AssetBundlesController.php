@@ -5,6 +5,7 @@ namespace craft\cloud\cli\controllers;
 use Craft;
 use craft\cloud\AssetBundlePublisher;
 use craft\cloud\AssetManager;
+use craft\cloud\Helper;
 use craft\console\Controller;
 use craft\helpers\App;
 use ReflectionClass;
@@ -19,6 +20,10 @@ class AssetBundlesController extends Controller
 
     public function init(): void
     {
+        if (Helper::isCraftCloud()) {
+            throw new Exception('Asset bundle publishing is not supported in a Craft Cloud environment.');
+        }
+
         $this->to = $this->to ?? Craft::$app->getConfig()->getGeneral()->resourceBasePath;
         parent::init();
     }
