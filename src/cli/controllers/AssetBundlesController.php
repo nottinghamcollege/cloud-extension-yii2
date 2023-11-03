@@ -55,9 +55,9 @@ class AssetBundlesController extends Controller
 
                 // Intentionally not using the component, as it won't be loaded when run from the builder.
                 $assetManager = Craft::createObject([
-                        'class' => AssetManager::class,
-                        'basePath' => $this->to,
-                    ] + App::assetManagerConfig());
+                    'class' => AssetManager::class,
+                    'basePath' => $this->to,
+                ] + App::assetManagerConfig());
 
                 $assetBundle->publish($assetManager);
             });
