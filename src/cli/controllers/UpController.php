@@ -10,7 +10,6 @@ class UpController extends Controller
 {
     public function actionIndex(): int
     {
-        $this->run('asset-bundles/publish');
         $this->run('/setup/php-session-table');
         $this->run('/setup/db-cache-table');
 

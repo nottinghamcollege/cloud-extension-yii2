@@ -138,7 +138,7 @@ class ImageTransformer extends Component implements ImageTransformerInterface
         $paramString = http_build_query($params);
         $data = "$path#?$paramString";
 
-        Craft::info("Signing transform: “{$data}”");
+        Craft::info("Signing transform: `{$data}`");
 
         return base64_encode(hash_hmac(
             'sha256',

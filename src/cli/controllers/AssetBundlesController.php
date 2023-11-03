@@ -5,6 +5,7 @@ namespace craft\cloud\cli\controllers;
 use Craft;
 use craft\cloud\AssetBundlePublisher;
 use craft\cloud\AssetManager;
+use craft\cloud\Helper;
 use craft\console\Controller;
 use craft\helpers\App;
 use ReflectionClass;
@@ -17,6 +18,15 @@ class AssetBundlesController extends Controller
     public bool $quiet = false;
     public ?string $to = null;
 
+    public function init(): void
+    {
+        if (Helper::isCraftCloud()) {
+            throw new Exception('Asset bundle publishing is not supported in a Craft Cloud environment.');
+        }
+
+        $this->to = $this->to ?? Craft::$app->getConfig()->getGeneral()->resourceBasePath;
+        parent::init();
+    }
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), match ($actionID) {
@@ -33,7 +43,7 @@ class AssetBundlesController extends Controller
     public function actionPublishBundle(string $className): int
     {
         try {
-            $this->do("Publishing “{$className}”", function() use ($className) {
+            $this->do("Publishing `$className` to `$this->to`", function() use ($className) {
                 $rc = new ReflectionClass($className);
 
                 if (!$rc->isSubclassOf(AssetBundle::class) || !$rc->isInstantiable()) {
@@ -45,12 +55,9 @@ class AssetBundlesController extends Controller
 
                 // Intentionally not using the component, as it won't be loaded when run from the builder.
                 $assetManager = Craft::createObject([
-                    'class' => AssetManager::class,
-                ] + App::assetManagerConfig());
-
-                if ($this->to) {
-                    $assetManager->basePath = $this->to;
-                }
+                        'class' => AssetManager::class,
+                        'basePath' => $this->to,
+                    ] + App::assetManagerConfig());
 
                 $assetBundle->publish($assetManager);
             });
@@ -66,6 +73,7 @@ class AssetBundlesController extends Controller
     public function actionPublish(): int
     {
         $publisher = new AssetBundlePublisher();
+        $publisher->to = $this->to;
         $publisher->wait();
 
         return ExitCode::OK;

@@ -20,6 +20,8 @@ class AssetBundlePublisher extends BaseObject
     /** @var array<string> */
     public array $classNames;
 
+    public ?string $to = null;
+
     /** @var Iterator<Process> */
     protected Iterator $processes;
 
@@ -77,15 +79,19 @@ class AssetBundlePublisher extends BaseObject
     protected function getProcesses(): \Generator
     {
         $processes = Collection::make($this->classNames)
-            ->map(fn(string $className) => new Process([
-                PHP_BINARY,
-                Craft::$app->getRequest()->getScriptFile(),
-                'cloud/asset-bundles/publish-bundle',
-                $className,
-                '--quiet',
-                '2>&1',
-            ])
-        );
+            ->map(function(string $className) {
+                $args = Collection::make([
+                    PHP_BINARY,
+                    Craft::$app->getRequest()->getScriptFile(),
+                    'cloud/asset-bundles/publish-bundle',
+                    $className,
+                ])->when($this->to, function(Collection $args) {
+                    return $args->push('--to')->push($this->to);
+                })->push('--quiet', '2>&1');
+
+                return new Process($args->all());
+            }
+            );
 
         foreach ($processes->all() as $process) {
             yield $process;
