@@ -84,7 +84,7 @@ class StaticCaching extends \yii\base\Component
                 "public, max-age=$duration",
             );
 
-            $response->setCacheHeaders();
+            $response->setCacheHeaders($duration, false);
         }
     }
 
