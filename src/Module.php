@@ -36,6 +36,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
     /**
      * @inheritDoc
+     * @throws InvalidConfigException
      */
     public function init(): void
     {
@@ -49,6 +50,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
             ? 'craft\\cloud\\cli\\controllers'
             : 'craft\\cloud\\controllers';
+
+        $this->setComponents([
+            'staticCaching' => StaticCaching::class,
+        ]);
 
         $this->registerEventHandlers();
         $this->validateConfig();

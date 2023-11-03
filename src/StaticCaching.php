@@ -10,7 +10,7 @@ use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\caching\TagDependency;
 
-class StaticCaching
+class StaticCaching extends \yii\base\Component
 {
     public static function beforeRenderPageTemplate(TemplateEvent $event): void
     {
@@ -50,8 +50,7 @@ class StaticCaching
 
     public static function onInvalidateCaches(InvalidateElementCachesEvent $event): void
     {
-        static::addCachePurgeToResponse(PurgeModeEnum::TAG);
-        static::addCacheTagsToResponse($event->tags ?? []);
+        static::addCachePurgeTagsToResponse($event->tags ?? []);
     }
 
     public static function minifyCacheTags(array $tags): Collection
@@ -71,35 +70,32 @@ class StaticCaching
 
     public static function addCacheTagsToResponse(array $tags, $duration = null): void
     {
+        $response = Craft::$app->getResponse();
         $tags = static::minifyCacheTags($tags);
 
         if ($tags->isNotEmpty()) {
-            $response = Craft::$app->getResponse();
             $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
+        }
 
-            // TODO: when would this be null?
-            if ($duration !== null) {
-                $response->getHeaders()->setDefault(
-                    'Cache-Control',
-                    "public, max-age=$duration",
-                );
-            }
+        // TODO: when would this be null?
+        if ($duration !== null) {
+            $response->getHeaders()->setDefault(
+                HeaderEnum::CACHE_CONTROL->value,
+                "public, max-age=$duration",
+            );
+
+            $response->setCacheHeaders();
         }
     }
 
-    public static function addCachePurgeToResponse(PurgeModeEnum $mode): void
+    public static function addCachePurgeTagsToResponse(array $tags): void
     {
-        // You can purge up to 30 cache-tags per API call and up to 250,000 cache-tags per a 24-hour period.
-        Craft::$app->getResponse()
-            ->getHeaders()
-            ->add(HeaderEnum::CACHE_PURGE->value, $mode->value);
-    }
+        $tags = static::minifyCacheTags($tags);
 
-    public static function addCacheControlHeaders(?int $duration)
-    {
-        Craft::$app->getResponse()->getHeaders()->setDefault(
-            'Cache-Control',
-            "max-age=$duration",
-        );
+        if ($tags->isNotEmpty()) {
+            Craft::$app->getResponse()
+                ->getHeaders()
+                ->add(HeaderEnum::CACHE_TAG_PURGE->value, $tags->implode(','));
+        }
     }
 }
