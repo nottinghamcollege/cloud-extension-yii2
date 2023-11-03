@@ -74,8 +74,12 @@ class StaticCaching
             $response = Craft::$app->getResponse();
             $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
 
+            // TODO: when would this be null?
             if ($duration !== null) {
-                $response->setCacheHeaders($duration, false);
+                $response->getHeaders()->setDefault(
+                    'Cache-Control',
+                    "public, max-age=$duration",
+                );
             }
         }
     }
@@ -86,5 +90,13 @@ class StaticCaching
         Craft::$app->getResponse()
             ->getHeaders()
             ->add(HeaderEnum::CACHE_PURGE->value, $mode->value);
+    }
+
+    public static function addCacheControlHeaders(?int $duration)
+    {
+        Craft::$app->getResponse()->getHeaders()->setDefault(
+            'Cache-Control',
+            "max-age=$duration",
+        );
     }
 }
