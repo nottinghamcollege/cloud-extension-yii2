@@ -75,6 +75,7 @@ class StaticCaching extends \yii\base\Component
 
         if ($tags->isNotEmpty()) {
             $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
+            $response->getHeaders()->set('X-Cache-Tag', $tags->implode(','));
         }
 
         // TODO: when would this be null?
