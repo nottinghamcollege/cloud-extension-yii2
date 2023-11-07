@@ -51,10 +51,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ? 'craft\\cloud\\cli\\controllers'
             : 'craft\\cloud\\controllers';
 
-        $this->setComponents([
-            'staticCaching' => StaticCaching::class,
-        ]);
-
         $this->registerEventHandlers();
         $this->validateConfig();
     }
@@ -131,24 +127,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 $craftVariable->set('cloud', Module::class);
             }
         );
-
-        Event::on(
-            View::class,
-            View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
-            [StaticCaching::class, 'beforeRenderPageTemplate'],
-        );
-
-        Event::on(
-            View::class,
-            View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
-            [StaticCaching::class, 'afterRenderPageTemplate'],
-        );
-
-        Event::on(
-            Elements::class,
-            Elements::EVENT_INVALIDATE_CACHES,
-            [StaticCaching::class, 'onInvalidateCaches'],
-        );
     }
 
     protected function bootstrapCloud(ConsoleApplication|WebApplication $app): void
@@ -208,6 +186,28 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 'fs' => Craft::createObject(StorageFs::class),
                 'dataPath' => 'debug',
             ],
+        );
+
+        $this->setComponents([
+            'staticCaching' => StaticCaching::class,
+        ]);
+
+        Event::on(
+            View::class,
+            View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
+            [$this->get('staticCaching'), 'beforeRenderPageTemplate'],
+        );
+
+        Event::on(
+            View::class,
+            View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
+            [$this->get('staticCaching'), 'afterRenderPageTemplate'],
+        );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_INVALIDATE_CACHES,
+            [$this->get('staticCaching'), 'onInvalidateCaches'],
         );
     }
 

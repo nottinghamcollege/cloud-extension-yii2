@@ -12,7 +12,7 @@ use yii\caching\TagDependency;
 
 class StaticCaching extends \yii\base\Component
 {
-    public static function beforeRenderPageTemplate(TemplateEvent $event): void
+    public function beforeRenderPageTemplate(TemplateEvent $event): void
     {
         // ignore CP requests
         if ($event->templateMode !== View::TEMPLATE_MODE_SITE) {
@@ -31,7 +31,7 @@ class StaticCaching extends \yii\base\Component
         }
     }
 
-    public static function afterRenderPageTemplate(TemplateEvent $event): void
+    public function afterRenderPageTemplate(TemplateEvent $event): void
     {
         // ignore CP requests
         if ($event->templateMode !== View::TEMPLATE_MODE_SITE) {
@@ -42,15 +42,15 @@ class StaticCaching extends \yii\base\Component
         /** @var int|null $duration */
         [$dependency, $duration] = Craft::$app->getElements()->stopCollectingCacheInfo();
 
-        static::addCacheTagsToResponse($dependency?->tags, $duration);
+        $this->addCacheTagsToResponse($dependency?->tags, $duration);
     }
 
-    public static function onInvalidateCaches(InvalidateElementCachesEvent $event): void
+    public function onInvalidateCaches(InvalidateElementCachesEvent $event): void
     {
-        static::addCachePurgeTagsToResponse($event->tags ?? []);
+        $this->addCachePurgeTagsToResponse($event->tags ?? []);
     }
 
-    public static function formatTags(array $tags): Collection
+    protected function formatTags(array $tags): Collection
     {
         // Header value can't exceed 16KB
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
@@ -59,7 +59,7 @@ class StaticCaching extends \yii\base\Component
         return Collection::make($tags)
             ->sort(SORT_NATURAL)
             ->map(fn(string $tag) =>
-                static::hash(Module::getInstance()->getConfig()->environmentId) . static::hash($tag)
+                $this->hash(Module::getInstance()->getConfig()->environmentId) . $this->hash($tag)
             )
             ->filter()
             ->unique()
@@ -72,15 +72,15 @@ class StaticCaching extends \yii\base\Component
             ->values();
     }
 
-    public static function hash(string $string): ?string
+    protected function hash(string $string): ?string
     {
         return sprintf('%x', crc32($string));
     }
 
-    public static function addCacheTagsToResponse(array $tags, $duration = null): void
+    protected function addCacheTagsToResponse(array $tags, $duration = null): void
     {
         $response = Craft::$app->getResponse();
-        $tags = static::formatTags($tags);
+        $tags = $this->formatTags($tags);
 
         if ($tags->isNotEmpty()) {
             $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
@@ -97,9 +97,9 @@ class StaticCaching extends \yii\base\Component
         }
     }
 
-    public static function addCachePurgeTagsToResponse(array $tags): void
+    protected function addCachePurgeTagsToResponse(array $tags): void
     {
-        $tags = static::formatTags($tags);
+        $tags = $this->formatTags($tags);
 
         if ($tags->isNotEmpty()) {
             Craft::$app->getResponse()
