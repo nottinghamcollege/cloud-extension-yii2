@@ -105,6 +105,7 @@ class StaticCaching extends \yii\base\Component
     {
         $tags = $this->formatTags($tags);
 
+        // TODO: prepend env id in worker for safety
         if ($tags->isNotEmpty()) {
             Craft::$app->getResponse()
                 ->getHeaders()
