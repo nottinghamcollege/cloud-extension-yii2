@@ -61,10 +61,9 @@ class StaticCaching extends \yii\base\Component
 
         return Collection::make($tags)
             ->sort(SORT_NATURAL)
-            ->map(fn(string $tag) => implode('.', [
-                static::hash(Module::getInstance()->getConfig()->environmentId),
-                static::hash($tag),
-            ]))
+            ->map(fn(string $tag) =>
+                static::hash(Module::getInstance()->getConfig()->environmentId) . static::hash($tag)
+            )
             ->filter()
             ->unique()
             ->slice(0, 30)
