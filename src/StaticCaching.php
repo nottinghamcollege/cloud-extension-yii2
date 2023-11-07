@@ -63,7 +63,6 @@ class StaticCaching extends \yii\base\Component
             )
             ->filter()
             ->unique()
-            ->slice(0, 30)
             ->filter(function($tag) use ($bytes) {
                 // plus one for comma
                 $bytes += strlen($tag) + 1;
