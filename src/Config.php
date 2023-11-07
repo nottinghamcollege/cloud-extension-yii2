@@ -117,6 +117,13 @@ class Config extends BaseConfig
         return $this->setRegion($value);
     }
 
+    public function getShortEnvironmentId(): ?string
+    {
+        return $this->environmentId
+            ? substr($this->environmentId, 0, 8)
+            : null;
+    }
+
     protected function defineRules(): array
     {
         $rules = parent::defineRules();

@@ -59,7 +59,7 @@ class StaticCaching extends \yii\base\Component
         return Collection::make($tags)
             ->sort(SORT_NATURAL)
             ->map(fn(string $tag) =>
-                $this->hash(Module::getInstance()->getConfig()->environmentId) . $this->hash($tag)
+                Module::getInstance()->getConfig()->getShortEnvironmentId() . $this->hash($tag)
             )
             ->filter()
             ->unique()
@@ -82,11 +82,15 @@ class StaticCaching extends \yii\base\Component
         $response = Craft::$app->getResponse();
         $tags = $this->formatTags($tags);
 
-        if ($tags->isNotEmpty()) {
-            $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
+        if (
+            $tags->isEmpty() ||
+            Craft::$app->getConfig()->getGeneral()->devMode
+        ) {
+            return;
         }
 
-        // TODO: when would this be null?
+        $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
+
         if ($duration !== null) {
             $response->getHeaders()->setDefault(
                 HeaderEnum::CACHE_CONTROL->value,
