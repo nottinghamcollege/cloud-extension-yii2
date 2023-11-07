@@ -53,29 +53,42 @@ class StaticCaching extends \yii\base\Component
         static::addCachePurgeTagsToResponse($event->tags ?? []);
     }
 
-    public static function minifyCacheTags(array $tags): Collection
+    public static function formatTags(array $tags): Collection
     {
-        // TODO: can't exceed 16KB
+        // Header value can't exceed 16KB
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
+        $bytes = 0;
+
         return Collection::make($tags)
-            ->map(fn(string $tag) => static::minifyCacheTag($tag))
+            ->sort(SORT_NATURAL)
+            ->map(fn(string $tag) => implode('.', [
+                static::hash(Module::getInstance()->getConfig()->environmentId),
+                static::hash($tag),
+            ]))
             ->filter()
-            ->unique();
+            ->unique()
+            ->slice(0, 30)
+            ->filter(function($tag) use ($bytes) {
+                // plus one for comma
+                $bytes += strlen($tag) + 1;
+
+                return $bytes < 16 * 1024;
+            })
+            ->values();
     }
 
-    public static function minifyCacheTag(string $tag): ?string
+    public static function hash(string $string): ?string
     {
-        return sprintf('%x', crc32($tag));
+        return sprintf('%x', crc32($string));
     }
 
     public static function addCacheTagsToResponse(array $tags, $duration = null): void
     {
         $response = Craft::$app->getResponse();
-        $tags = static::minifyCacheTags($tags);
+        $tags = static::formatTags($tags);
 
         if ($tags->isNotEmpty()) {
             $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
-            $response->getHeaders()->set('X-Cache-Tag', $tags->implode(','));
         }
 
         // TODO: when would this be null?
@@ -91,12 +104,15 @@ class StaticCaching extends \yii\base\Component
 
     public static function addCachePurgeTagsToResponse(array $tags): void
     {
-        $tags = static::minifyCacheTags($tags);
+        $tags = static::formatTags($tags);
 
         if ($tags->isNotEmpty()) {
             Craft::$app->getResponse()
                 ->getHeaders()
-                ->add(HeaderEnum::CACHE_TAG_PURGE->value, $tags->implode(','));
+                ->add(
+                    HeaderEnum::CACHE_TAG_PURGE->value,
+                    $tags->slice(0, 30)->implode(','),
+                );
         }
     }
 }
