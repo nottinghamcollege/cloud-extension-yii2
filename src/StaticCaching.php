@@ -59,9 +59,11 @@ class StaticCaching extends \yii\base\Component
         return Collection::make($tags)
             ->sort(SORT_NATURAL)
             ->filter()
-            ->map(fn(string $tag) =>
-                Module::getInstance()->getConfig()->getShortEnvironmentId() . $this->hash($tag)
-            )
+            ->map(function(string $tag) {
+                return $this->removeNonPrintableChars(
+                    Module::getInstance()->getConfig()->getShortEnvironmentId() . $this->hash($tag),
+                );
+            })
             ->unique()
             ->filter(function($tag) use (&$bytes) {
                 // plus one for comma
@@ -70,6 +72,11 @@ class StaticCaching extends \yii\base\Component
                 return $bytes < 16 * 1024;
             })
             ->values();
+    }
+
+    protected function removeNonPrintableChars(string $string): string
+    {
+        return preg_replace('/[^[:print:]]/', '', $string);
     }
 
     protected function toHeaderValue(Collection $tags): string
