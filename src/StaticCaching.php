@@ -8,6 +8,7 @@ use craft\events\TemplateEvent;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
+use samdark\log\PsrMessage;
 use yii\caching\TagDependency;
 
 class StaticCaching extends \yii\base\Component
@@ -97,17 +98,22 @@ class StaticCaching extends \yii\base\Component
             return;
         }
 
+        Craft::info(new PsrMessage('Cache tags collected', $tags));
+
         $tags = $this->prepareTags($tags);
 
         if ($tags->isEmpty() || $duration === null) {
             return;
         }
 
+        Craft::info(new PsrMessage('Adding cache tags to response', $tags->all()));
+
         $response->getHeaders()->set(
             HeaderEnum::CACHE_TAG->value,
             $this->toHeaderValue($tags),
         );
 
+        // TODO: remove this once Craft sets `public`
         $response->getHeaders()->setDefault(
             HeaderEnum::CACHE_CONTROL->value,
             "public, max-age=$duration",
@@ -118,6 +124,8 @@ class StaticCaching extends \yii\base\Component
 
     protected function addCachePurgeTagsToResponse(array $tags): void
     {
+        Craft::info(new PsrMessage('Invalidating cache tags', $tags));
+
         // Max 30 tags per purge
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
         $tags = $this->prepareTags($tags)->slice(0, 30);
@@ -125,6 +133,8 @@ class StaticCaching extends \yii\base\Component
         if ($tags->isEmpty()) {
             return;
         }
+
+        Craft::info(new PsrMessage('Adding cache purge tags to response', $tags->all()));
 
         Craft::$app->getResponse()
             ->getHeaders()
