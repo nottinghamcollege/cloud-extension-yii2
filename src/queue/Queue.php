@@ -15,4 +15,10 @@ class Queue extends \yii\queue\sqs\Queue
 
         parent::__construct($config);
     }
+
+    protected function pushMessage($message, $ttr, $delay, $priority)
+    {
+        /** @phpstan-ignore-next-line  */
+        return parent::pushMessage($message, (string) $ttr, $delay, $priority);
+    }
 }
