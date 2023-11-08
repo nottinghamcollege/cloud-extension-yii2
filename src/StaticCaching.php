@@ -50,7 +50,7 @@ class StaticCaching extends \yii\base\Component
         $this->addCachePurgeTagsToResponse($event->tags ?? []);
     }
 
-    protected function formatTags(array $tags): Collection
+    protected function prepareTags(array $tags): Collection
     {
         // Header value can't exceed 16KB
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
@@ -58,18 +58,23 @@ class StaticCaching extends \yii\base\Component
 
         return Collection::make($tags)
             ->sort(SORT_NATURAL)
+            ->filter()
             ->map(fn(string $tag) =>
                 Module::getInstance()->getConfig()->getShortEnvironmentId() . $this->hash($tag)
             )
-            ->filter()
             ->unique()
-            ->filter(function($tag) use ($bytes) {
+            ->filter(function($tag) use (&$bytes) {
                 // plus one for comma
                 $bytes += strlen($tag) + 1;
 
                 return $bytes < 16 * 1024;
             })
             ->values();
+    }
+
+    protected function toHeaderValue(Collection $tags): string
+    {
+        return $tags->implode(',');
     }
 
     protected function hash(string $string): ?string
@@ -80,39 +85,45 @@ class StaticCaching extends \yii\base\Component
     protected function addCacheTagsToResponse(array $tags, $duration = null): void
     {
         $response = Craft::$app->getResponse();
-        $tags = $this->formatTags($tags);
 
-        if (
-            $tags->isEmpty() ||
-            Craft::$app->getConfig()->getGeneral()->devMode
-        ) {
+        if ($response->isServerError || Craft::$app->getConfig()->getGeneral()->devMode) {
             return;
         }
 
-        $response->getHeaders()->set(HeaderEnum::CACHE_TAG->value, $tags->implode(','));
+        $tags = $this->prepareTags($tags);
 
-        if ($duration !== null) {
-            $response->getHeaders()->setDefault(
-                HeaderEnum::CACHE_CONTROL->value,
-                "public, max-age=$duration",
-            );
-
-            $response->setCacheHeaders($duration, false);
+        if ($tags->isEmpty() || $duration === null) {
+            return;
         }
+
+        $response->getHeaders()->set(
+            HeaderEnum::CACHE_TAG->value,
+            $this->toHeaderValue($tags),
+        );
+
+        $response->getHeaders()->setDefault(
+            HeaderEnum::CACHE_CONTROL->value,
+            "public, max-age=$duration",
+        );
+
+        $response->setCacheHeaders($duration, false);
     }
 
     protected function addCachePurgeTagsToResponse(array $tags): void
     {
-        $tags = $this->formatTags($tags);
+        // Max 30 tags per purge
+        // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
+        $tags = $this->prepareTags($tags)->slice(0, 30);
 
-        // TODO: prepend env id in worker for safety
-        if ($tags->isNotEmpty()) {
-            Craft::$app->getResponse()
-                ->getHeaders()
-                ->add(
-                    HeaderEnum::CACHE_TAG_PURGE->value,
-                    $tags->slice(0, 30)->implode(','),
-                );
+        if ($tags->isEmpty()) {
+            return;
         }
+
+        Craft::$app->getResponse()
+            ->getHeaders()
+            ->add(
+                HeaderEnum::CACHE_TAG_PURGE->value,
+                $this->toHeaderValue($tags),
+            );
     }
 }
