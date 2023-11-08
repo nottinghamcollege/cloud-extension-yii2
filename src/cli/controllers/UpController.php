@@ -16,7 +16,6 @@ class UpController extends Controller
         // TODO: wrap with events
         if (Craft::$app->getIsInstalled()) {
             $this->run('/up');
-            // TODO: curl to web controller, clear caches
         }
 
         return ExitCode::OK;
