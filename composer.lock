@@ -62,16 +62,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.285.0",
+            "version": "3.285.3",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "41c7a9491455f89052cba62c4e4f0c748af51265"
+                "reference": "afa1e722f1b2c95644f375dc1a19072e4daf67be"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/41c7a9491455f89052cba62c4e4f0c748af51265",
-                "reference": "41c7a9491455f89052cba62c4e4f0c748af51265",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/afa1e722f1b2c95644f375dc1a19072e4daf67be",
+                "reference": "afa1e722f1b2c95644f375dc1a19072e4daf67be",
                 "shasum": ""
             },
             "require": {
@@ -151,22 +151,22 @@
             "support": {
                 "forum": "https://forums.aws.amazon.com/forum.jspa?forumID=80",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.285.0"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.285.3"
             },
-            "time": "2023-11-07T19:33:47+00:00"
+            "time": "2023-11-09T19:07:19+00:00"
         },
         {
             "name": "bref/bref",
-            "version": "2.1.6",
+            "version": "2.1.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/brefphp/bref.git",
-                "reference": "378a63a26c0ed0eb0e6c1ec63b39a79eb52b7e3d"
+                "reference": "c048947f8ac2166785a671ed4673f23481f7256b"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/brefphp/bref/zipball/378a63a26c0ed0eb0e6c1ec63b39a79eb52b7e3d",
-                "reference": "378a63a26c0ed0eb0e6c1ec63b39a79eb52b7e3d",
+                "url": "https://api.github.com/repos/brefphp/bref/zipball/c048947f8ac2166785a671ed4673f23481f7256b",
+                "reference": "c048947f8ac2166785a671ed4673f23481f7256b",
                 "shasum": ""
             },
             "require": {
@@ -220,7 +220,7 @@
             ],
             "support": {
                 "issues": "https://github.com/brefphp/bref/issues",
-                "source": "https://github.com/brefphp/bref/tree/2.1.6"
+                "source": "https://github.com/brefphp/bref/tree/2.1.7"
             },
             "funding": [
                 {
@@ -232,7 +232,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2023-11-05T10:52:31+00:00"
+            "time": "2023-11-08T09:02:57+00:00"
         },
         {
             "name": "bref/extra-php-extensions",
