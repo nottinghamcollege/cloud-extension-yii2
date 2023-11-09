@@ -51,7 +51,7 @@ class StaticCaching extends \yii\base\Component
         $this->addCachePurgeTagsToResponse($event->tags ?? []);
     }
 
-    protected function prepareTags(array $tags): Collection
+    protected function prepareTags(iterable $tags): Collection
     {
         // Header value can't exceed 16KB
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
@@ -126,21 +126,33 @@ class StaticCaching extends \yii\base\Component
     {
         Craft::info(new PsrMessage('Invalidating cache tags', $tags));
 
+        $tags = Collection::make($tags);
+
+        $filteredTags = $tags->filter(function($tag) {
+            $exclude = preg_match('/element::craft\\\\elements\\\\\S+::(drafts|revisions|\*)/', $tag);
+
+            if ($exclude) {
+                Craft::info(new PsrMessage("Excluding cache tag: $tag"));
+            }
+
+            return !$exclude;
+        });
+
         // Max 30 tags per purge
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
-        $tags = $this->prepareTags($tags)->slice(0, 30);
+        $tagsForHeader = $this->prepareTags($filteredTags)->slice(0, 30);
 
-        if ($tags->isEmpty()) {
+        if ($tagsForHeader->isEmpty()) {
             return;
         }
 
-        Craft::info(new PsrMessage('Adding cache purge tags to response', $tags->all()));
+        Craft::info(new PsrMessage('Adding cache purge tags to response', $tagsForHeader->all()));
 
         Craft::$app->getResponse()
             ->getHeaders()
             ->add(
                 HeaderEnum::CACHE_TAG_PURGE->value,
-                $this->toHeaderValue($tags),
+                $this->toHeaderValue($tagsForHeader),
             );
     }
 }
