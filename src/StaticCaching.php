@@ -5,6 +5,7 @@ namespace craft\cloud;
 use Craft;
 use craft\events\InvalidateElementCachesEvent;
 use craft\events\TemplateEvent;
+use craft\web\Response;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
@@ -94,7 +95,11 @@ class StaticCaching extends \yii\base\Component
     {
         $response = Craft::$app->getResponse();
 
-        if ($response->isServerError || Craft::$app->getConfig()->getGeneral()->devMode) {
+        if (
+            !($response instanceof Response) ||
+            $response->isServerError ||
+            Craft::$app->getConfig()->getGeneral()->devMode
+        ) {
             return;
         }
 
