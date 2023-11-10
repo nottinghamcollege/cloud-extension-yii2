@@ -156,15 +156,5 @@ class StaticCaching extends \yii\base\Component
             HeaderEnum::CACHE_TAG_PURGE->value,
             $this->toHeaderValue($tagsForHeader),
         );
-
-        // TODO…then what is HeaderCollection::add for?
-        $joinedHeader = Collection::make(
-            $headers->get(HeaderEnum::CACHE_TAG_PURGE->value, null, false)
-        )->filter()->join(', ');
-
-        $headers->set(
-            HeaderEnum::CACHE_TAG_PURGE->value,
-            $joinedHeader,
-        );
     }
 }
