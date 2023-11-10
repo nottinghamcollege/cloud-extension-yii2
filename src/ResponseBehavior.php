@@ -11,14 +11,14 @@ use yii\web\Response as YiiResponse;
 use yii\web\ServerErrorHttpException;
 
 /**
- * @property  Response $owner;
+ * @property Response $owner
  */
 class ResponseBehavior extends Behavior
 {
     public function events(): array
     {
         return [
-            YiiResponse::EVENT_BEFORE_SEND => 'serveBinaryFromS3',
+            YiiResponse::EVENT_BEFORE_SEND => [$this, 'beforeSend'],
         ];
     }
 
