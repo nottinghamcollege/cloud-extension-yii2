@@ -1,6 +1,6 @@
 <?php
 
-namespace craft\cloud;
+namespace craft\cloud\web;
 
 use Craft;
 use craft\cloud\fs\TmpFs;

@@ -8,6 +8,7 @@ use craft\cloud\fs\AssetsFs;
 use craft\cloud\fs\StorageFs;
 use craft\cloud\fs\TmpFs;
 use craft\cloud\web\assets\uploader\UploaderAsset;
+use craft\cloud\web\ResponseBehavior;
 use craft\console\Application as ConsoleApplication;
 use craft\debug\Module as DebugModule;
 use craft\events\RegisterComponentTypesEvent;
