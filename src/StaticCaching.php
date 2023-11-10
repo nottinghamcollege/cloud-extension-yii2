@@ -5,7 +5,7 @@ namespace craft\cloud;
 use Craft;
 use craft\events\InvalidateElementCachesEvent;
 use craft\events\TemplateEvent;
-use craft\web\Response;
+use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
@@ -16,8 +16,11 @@ class StaticCaching extends \yii\base\Component
 {
     public function beforeRenderPageTemplate(TemplateEvent $event): void
     {
-        // ignore CP requests
-        if ($event->templateMode !== View::TEMPLATE_MODE_SITE) {
+        // ignore CP and CLI requests
+        if (
+            $event->templateMode !== View::TEMPLATE_MODE_SITE ||
+            !(Craft::$app->getResponse() instanceof WebResponse)
+        ) {
             return;
         }
 
@@ -35,8 +38,11 @@ class StaticCaching extends \yii\base\Component
 
     public function afterRenderPageTemplate(TemplateEvent $event): void
     {
-        // ignore CP requests
-        if ($event->templateMode !== View::TEMPLATE_MODE_SITE) {
+        // ignore CP and CLI requests
+        if (
+            $event->templateMode !== View::TEMPLATE_MODE_SITE ||
+            !(Craft::$app->getResponse() instanceof WebResponse)
+        ) {
             return;
         }
 
@@ -49,7 +55,11 @@ class StaticCaching extends \yii\base\Component
 
     public function onInvalidateCaches(InvalidateElementCachesEvent $event): void
     {
-        $this->addCachePurgeTagsToResponse($event->tags ?? []);
+        if (Craft::$app->getResponse() instanceof WebResponse) {
+            $this->addCachePurgeTagsToResponse($event->tags ?? []);
+        } else {
+            // TODO: Support invalidation from CLI
+        }
     }
 
     protected function prepareTags(iterable $tags): Collection
@@ -96,7 +106,6 @@ class StaticCaching extends \yii\base\Component
         $response = Craft::$app->getResponse();
 
         if (
-            !($response instanceof Response) ||
             $response->isServerError ||
             Craft::$app->getConfig()->getGeneral()->devMode
         ) {
