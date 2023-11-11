@@ -91,11 +91,6 @@ class StaticCaching extends \yii\base\Component
         return preg_replace('/[^[:print:]]/', '', $string);
     }
 
-    protected function toHeaderValue(Collection $tags): string
-    {
-        return $tags->implode(',');
-    }
-
     protected function hash(string $string): ?string
     {
         return sprintf('%x', crc32($string));
@@ -107,25 +102,26 @@ class StaticCaching extends \yii\base\Component
 
         if (
             $response->isServerError ||
-            Craft::$app->getConfig()->getGeneral()->devMode
+            Craft::$app->getConfig()->getGeneral()->devMode ||
+            $this->shouldIgnoreTags($tags)
         ) {
+            Craft::info(new PsrMessage('Ignoring cache tags', $tags));
+
             return;
         }
 
-        Craft::info(new PsrMessage('Cache tags collected', $tags));
+        $tagsForHeader = $this->prepareTags($tags);
 
-        $tags = $this->prepareTags($tags);
-
-        if ($tags->isEmpty() || $duration === null) {
+        if ($tagsForHeader->isEmpty() || $duration === null) {
             return;
         }
 
-        Craft::info(new PsrMessage('Adding cache tags to response', $tags->all()));
+        Craft::info(new PsrMessage('Adding cache tags to response', $tagsForHeader->all()));
 
-        $response->getHeaders()->set(
+        $tagsForHeader->each(fn(string $tag) => $response->getHeaders()->add(
             HeaderEnum::CACHE_TAG->value,
-            $this->toHeaderValue($tags),
-        );
+            $tag,
+        ));
 
         // TODO: remove this once Craft sets `public`
         // https://github.com/craftcms/cms/pull/13922
@@ -137,15 +133,18 @@ class StaticCaching extends \yii\base\Component
         $response->setCacheHeaders($duration, false);
     }
 
+    protected function shouldIgnoreTags(iterable $tags): bool
+    {
+        return Collection::make($tags)->contains(function(string $tag) {
+            return preg_match('/element::craft\\\\elements\\\\\S+::(drafts|revisions)/', $tag);
+        });
+    }
+
     protected function addCachePurgeTagsToResponse(array $tags): void
     {
-        Craft::info(new PsrMessage('Invalidating cache tags', $tags));
+        if ($this->shouldIgnoreTags($tags)) {
+            Craft::info(new PsrMessage('Ignoring cache tags', $tags));
 
-        $tags = Collection::make($tags);
-
-        if ($tags->contains(function(string $tag) {
-            return preg_match('/element::craft\\\\elements\\\\\S+::(drafts|revisions)/', $tag);
-        })) {
             return;
         }
 
@@ -161,9 +160,9 @@ class StaticCaching extends \yii\base\Component
 
         $headers = Craft::$app->getResponse()->getHeaders();
 
-        $headers->add(
+        $tagsForHeader->each(fn(string $tag) => $headers->add(
             HeaderEnum::CACHE_TAG_PURGE->value,
-            $this->toHeaderValue($tagsForHeader),
-        );
+            $tag,
+        ));
     }
 }

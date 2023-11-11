@@ -96,10 +96,14 @@ SQL;
             ]);
         };
 
-        $config['components']['queue'] = [
-            'class' => CraftQueue::class,
-            'proxyQueue' => Queue::class,
-        ];
+        $config['components']['queue'] = function() {
+            return Craft::createObject([
+                'class' => CraftQueue::class,
+                'proxyQueue' => Module::getInstance()->getConfig()->sqsUrl
+                    ? Queue::class
+                    : null,
+            ]);
+        };
 
         $config['components']['assetManager'] = function() {
             $config = [

@@ -30,11 +30,11 @@ class ResponseBehavior extends Behavior
     public function events(): array
     {
         return [
-            YiiResponse::EVENT_BEFORE_SEND => [$this, 'beforeSend'],
+            YiiResponse::EVENT_AFTER_PREPARE => [$this, 'afterPrepare'],
         ];
     }
 
-    public function beforeSend(Event $event): void
+    public function afterPrepare(Event $event): void
     {
         foreach ($this->csvHeaders as $name) {
             $this->joinHeaderValues($name, ', ');
