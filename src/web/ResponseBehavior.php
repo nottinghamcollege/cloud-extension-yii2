@@ -36,7 +36,6 @@ class ResponseBehavior extends Behavior
 
     public function afterPrepare(Event $event): void
     {
-        // API Gateway v2 does not support multi-header values
         $this->joinMultiValueHeaders();
 
         if ($this->owner->stream) {
@@ -79,9 +78,18 @@ class ResponseBehavior extends Behavior
         $this->owner->redirect($url);
     }
 
+    /**
+     * API Gateway v2 doesn't support multi-value headers,
+     * and Bref currently will truncate all but the last value.
+     *
+     * @see https://github.com/brefphp/bref/issues/1691
+     * @see https://developers.cloudflare.com/workers/runtime-apis/headers/#differences
+     * @see https://github.com/brefphp/bref/issues/1691
+     */
     protected function joinMultiValueHeaders(string $glue = ','): void
     {
         Collection::make($this->owner->getHeaders())
+            ->reject(fn(array $values, string $name) => strcasecmp($name, 'Set-Cookie') === 0)
             ->each(function(array $values, string $name) use ($glue) {
                 $this->joinHeaderValues($name, $values, $glue);
             });
