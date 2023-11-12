@@ -36,11 +36,10 @@ class ResponseBehavior extends Behavior
 
     public function afterPrepare(Event $event): void
     {
-        foreach ($this->csvHeaders as $name) {
-            $this->joinHeaderValues($name, ', ');
-        }
+        // API Gateway v2 does not support multi-header values
+        $this->joinMultiValueHeaders();
 
-        if ($event->sender->stream) {
+        if ($this->owner->stream) {
             $this->serveBinaryFromS3();
         }
     }
@@ -80,19 +79,21 @@ class ResponseBehavior extends Behavior
         $this->owner->redirect($url);
     }
 
-    protected function joinHeaderValues($name, string $glue): ?string
+    protected function joinMultiValueHeaders(string $glue = ','): void
     {
-        $headers = $this->owner->getHeaders();
+        Collection::make($this->owner->getHeaders())
+            ->each(function(array $values, string $name) use ($glue) {
+                $this->joinHeaderValues($name, $values, $glue);
+            });
+    }
 
-        $value = Collection::make($headers->get($name, null, false))
+    protected function joinHeaderValues(string $name, array $values, string $glue): ?string
+    {
+        $value = Collection::make($values)
             ->filter()
             ->join($glue);
 
-        if (!$value) {
-            return null;
-        }
-
-        $headers->set($name, $value);
+        $this->owner->getHeaders()->set($name, $value);
 
         return $value;
     }
