@@ -58,7 +58,9 @@ class AssetBundlesController extends Controller
                 $rc = new ReflectionClass($className);
 
                 if (!$rc->isSubclassOf(AssetBundle::class) || !$rc->isInstantiable()) {
-                    throw new Exception('Not a valid asset bundle.');
+                    // TODO: enhance \craft\console\Controller::do to return
+                    // non-error responses (skip)
+                    return;
                 }
 
                 /** @var AssetBundle $assetBundle */
