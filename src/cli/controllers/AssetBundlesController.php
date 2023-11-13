@@ -5,10 +5,10 @@ namespace craft\cloud\cli\controllers;
 use Craft;
 use craft\cloud\AssetBundlePublisher;
 use craft\cloud\AssetManager;
+use craft\cloud\Composer;
 use craft\cloud\Helper;
 use craft\console\Controller;
 use craft\helpers\App;
-use Illuminate\Support\Collection;
 use ReflectionClass;
 use yii\console\Exception;
 use yii\console\ExitCode;
@@ -28,9 +28,12 @@ class AssetBundlesController extends Controller
         $this->to = $this->to ?? Craft::$app->getConfig()->getGeneral()->resourceBasePath;
 
         if (App::env('CRAFT_NO_DB')) {
-            $this->getPluginAliases()?->each(function($path, $alias) {
-                return Craft::setAlias($alias, $path);
-            });
+            Composer::getModuleAliases()
+                ->merge(Composer::getPluginAliases())
+                ->merge(Composer::getRootAliases())
+                ->each(function($path, $alias) {
+                    return Craft::setAlias($alias, $path);
+                });
         }
 
         parent::init();
@@ -85,18 +88,5 @@ class AssetBundlesController extends Controller
         $publisher->wait();
 
         return ExitCode::OK;
-    }
-
-    protected function getPluginAliases(): ?Collection
-    {
-        $path = Craft::$app->getVendorPath() . DIRECTORY_SEPARATOR . 'craftcms' . DIRECTORY_SEPARATOR . 'plugins.php';
-
-        if (!file_exists($path)) {
-            return null;
-        }
-
-        $plugins = require $path;
-
-        return Collection::make($plugins)->flatMap(fn(array $plugin) => $plugin['aliases'] ?? []);
     }
 }
