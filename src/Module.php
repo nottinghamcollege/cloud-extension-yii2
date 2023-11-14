@@ -21,6 +21,7 @@ use craft\log\Dispatcher;
 use craft\services\Elements;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
+use craft\utilities\ClearCaches;
 use craft\web\Application as WebApplication;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
@@ -201,19 +202,25 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         Event::on(
             View::class,
             View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
-            [$this->get('staticCaching'), 'beforeRenderPageTemplate'],
+            [$this->get('staticCaching'), 'handleBeforeRenderPageTemplate'],
         );
 
         Event::on(
             View::class,
             View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
-            [$this->get('staticCaching'), 'afterRenderPageTemplate'],
+            [$this->get('staticCaching'), 'handleAfterRenderPageTemplate'],
         );
 
         Event::on(
             Elements::class,
             Elements::EVENT_INVALIDATE_CACHES,
-            [$this->get('staticCaching'), 'onInvalidateCaches'],
+            [$this->get('staticCaching'), 'handleInvalidateCaches'],
+        );
+
+        Event::on(
+            ClearCaches::class,
+            ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
+            [$this->get('staticCaching'), 'handleRegisterCacheOptions'],
         );
     }
 

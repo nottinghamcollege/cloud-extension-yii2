@@ -21,11 +21,16 @@ class AssetBundlesController extends Controller
 
     public function init(): void
     {
+        $this->to = $this->to ?? Craft::$app->getConfig()->getGeneral()->resourceBasePath;
+
+        parent::init();
+    }
+
+    public function beforeAction($action): bool
+    {
         if (Helper::isCraftCloud()) {
             throw new Exception('Asset bundle publishing is not supported in a Craft Cloud environment.');
         }
-
-        $this->to = $this->to ?? Craft::$app->getConfig()->getGeneral()->resourceBasePath;
 
         if (App::env('CRAFT_NO_DB')) {
             Composer::getModuleAliases()
@@ -36,8 +41,9 @@ class AssetBundlesController extends Controller
                 });
         }
 
-        parent::init();
+        return true;
     }
+
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), match ($actionID) {

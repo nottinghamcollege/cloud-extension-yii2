@@ -4,17 +4,20 @@ namespace craft\cloud;
 
 use Craft;
 use craft\events\InvalidateElementCachesEvent;
+use craft\events\RegisterCacheOptionsEvent;
 use craft\events\TemplateEvent;
+use craft\helpers\UrlHelper;
 use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
+use League\Uri\Uri;
 use samdark\log\PsrMessage;
 use yii\caching\TagDependency;
 
 class StaticCaching extends \yii\base\Component
 {
-    public function beforeRenderPageTemplate(TemplateEvent $event): void
+    public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
     {
         // ignore CP and CLI requests
         if (
@@ -36,7 +39,7 @@ class StaticCaching extends \yii\base\Component
         }
     }
 
-    public function afterRenderPageTemplate(TemplateEvent $event): void
+    public function handleAfterRenderPageTemplate(TemplateEvent $event): void
     {
         // ignore CP and CLI requests
         if (
@@ -53,13 +56,45 @@ class StaticCaching extends \yii\base\Component
         $this->addCacheTagsToResponse($dependency?->tags, $duration);
     }
 
-    public function onInvalidateCaches(InvalidateElementCachesEvent $event): void
+    public function handleInvalidateCaches(InvalidateElementCachesEvent $event): void
     {
         if (Craft::$app->getResponse() instanceof WebResponse) {
             $this->addCachePurgeTagsToResponse($event->tags ?? []);
         } else {
             // TODO: Support invalidation from CLI
         }
+    }
+
+    public function handleRegisterCacheOptions(RegisterCacheOptionsEvent $event): void
+    {
+        $event->options[] = [
+            'key' => 'cloud-static-caches',
+            'label' => Craft::t('app', 'Craft Cloud static caches'),
+            'action' => [$this, 'purgeAll'],
+        ];
+    }
+
+    public function purgeAll(): void
+    {
+        if (Craft::$app->getRequest()->isConsoleRequest) {
+            $url = Uri::new(UrlHelper::baseSiteUrl());
+
+            // TODO: warn about @web not being defined for CLI
+
+            Craft::createGuzzleClient()
+                ->request('HEAD', (string) $url, [
+                    'headers' => [
+                        HeaderEnum::CACHE_PURGE_HOST->value => '*',
+                    ],
+                ]);
+
+            return;
+        }
+
+
+        Craft::$app->getResponse()->getHeaders()->set(
+            HeaderEnum::CACHE_PURGE_HOST->value, '*',
+        );
     }
 
     protected function prepareTags(iterable $tags): Collection
@@ -69,12 +104,11 @@ class StaticCaching extends \yii\base\Component
         $bytes = 0;
 
         return Collection::make($tags)
-            ->sort(SORT_NATURAL)
+            ->map(fn(string $tag) => $this->removeNonPrintableChars($tag))
             ->filter()
+            ->sort(SORT_NATURAL)
             ->map(function(string $tag) {
-                return $this->removeNonPrintableChars(
-                    Module::getInstance()->getConfig()->getShortEnvironmentId() . $this->hash($tag),
-                );
+                return Module::getInstance()->getConfig()->getShortEnvironmentId() . $this->hash($tag);
             })
             ->unique()
             ->filter(function($tag) use (&$bytes) {
@@ -161,7 +195,7 @@ class StaticCaching extends \yii\base\Component
         $headers = Craft::$app->getResponse()->getHeaders();
 
         $tagsForHeader->each(fn(string $tag) => $headers->add(
-            HeaderEnum::CACHE_TAG_PURGE->value,
+            HeaderEnum::CACHE_PURGE_TAG->value,
             $tag,
         ));
     }

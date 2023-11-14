@@ -23,7 +23,7 @@ class ResponseBehavior extends Behavior
     {
         $this->csvHeaders = [
             HeaderEnum::CACHE_TAG->value,
-            HeaderEnum::CACHE_TAG_PURGE->value,
+            HeaderEnum::CACHE_PURGE_TAG->value,
         ];
     }
 
