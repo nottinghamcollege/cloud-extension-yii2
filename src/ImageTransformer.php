@@ -144,6 +144,7 @@ class ImageTransformer extends Component implements ImageTransformerInterface
             'sha256',
             $data,
             Module::getInstance()->getConfig()->cdnSigningKey,
+            true,
         ));
     }
 }
