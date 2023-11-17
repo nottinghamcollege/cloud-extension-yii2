@@ -23,10 +23,12 @@ use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\utilities\ClearCaches;
 use craft\web\Application as WebApplication;
+use craft\web\Response;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\base\InvalidConfigException;
+use yii\web\Response as YiiResponse;
 
 /**
  * @property-read Config $config
@@ -221,6 +223,12 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ClearCaches::class,
             ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
             [$this->get('staticCaching'), 'handleRegisterCacheOptions'],
+        );
+
+        Event::on(
+            Response::class,
+            YiiResponse::EVENT_BEFORE_SEND,
+            [$this->get('staticCaching'), 'handleBeforeSend'],
         );
     }
 

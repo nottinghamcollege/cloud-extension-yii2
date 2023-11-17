@@ -55,6 +55,19 @@ class StaticCaching extends \yii\base\Component
         $this->addCacheTagsToResponse($dependency?->tags, $duration);
     }
 
+    public function handleBeforeSend(): void
+    {
+        $purgeHeader = Craft::$app->getRequest()->getHeaders()->get(HeaderEnum::CACHE_PURGE->value);
+
+        // TODO: check authorization header
+        if ($purgeHeader) {
+            Craft::$app->getResponse()->getHeaders()->setDefault(
+                HeaderEnum::CACHE_PURGE->value,
+                $purgeHeader,
+            );
+        }
+    }
+
     public function handleInvalidateCaches(InvalidateElementCachesEvent $event): void
     {
         if (Craft::$app->getResponse() instanceof WebResponse) {
@@ -83,10 +96,12 @@ class StaticCaching extends \yii\base\Component
             }
 
             // TODO: should this hit a ping/healthcheck controller instead?
+            // TODO: send authorization header
             Craft::createGuzzleClient()
                 ->request('HEAD', $url, [
                     'headers' => [
                         HeaderEnum::CACHE_PURGE->value => '*',
+                        HeaderEnum::AUTHORIZATION->value => 'bearer xxx',
                     ],
                 ]);
 
