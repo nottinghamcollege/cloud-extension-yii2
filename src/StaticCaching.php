@@ -61,6 +61,7 @@ class StaticCaching extends \yii\base\Component
 
         // TODO: check authorization header
         if ($purgeHeader) {
+            Craft::$app->getResponse()->setNoCacheHeaders();
             Craft::$app->getResponse()->getHeaders()->setDefault(
                 HeaderEnum::CACHE_PURGE->value,
                 $purgeHeader,
@@ -101,7 +102,6 @@ class StaticCaching extends \yii\base\Component
                 ->request('HEAD', $url, [
                     'headers' => [
                         HeaderEnum::CACHE_PURGE->value => '*',
-                        HeaderEnum::AUTHORIZATION->value => 'bearer xxx',
                     ],
                 ]);
 
