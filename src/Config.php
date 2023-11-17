@@ -5,6 +5,7 @@ namespace craft\cloud;
 use Craft;
 use craft\config\BaseConfig;
 use craft\helpers\App;
+use League\Uri\Uri;
 
 /**
  * @method array s3ClientOptions(array $options)
@@ -21,6 +22,7 @@ class Config extends BaseConfig
     public ?string $accessSecret = null;
     public ?string $cdnSigningKey = null;
     public bool $useAssetBundleCdn = true;
+    public ?string $previewDomain = null;
     protected ?string $region = null;
     protected bool $useAssetCdn = true;
     protected bool $useArtifactCdn = true;
@@ -122,6 +124,17 @@ class Config extends BaseConfig
         return $this->environmentId
             ? substr($this->environmentId, 0, 8)
             : null;
+    }
+
+    public function getPreviewDomainUrl(): ?string
+    {
+        if (!$this->previewDomain) {
+            return null;
+        }
+
+        return (Uri::new())
+            ->withHost($this->previewDomain)
+            ->withScheme('https');
     }
 
     protected function defineRules(): array

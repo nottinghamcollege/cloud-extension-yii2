@@ -6,12 +6,12 @@ use Craft;
 use craft\events\InvalidateElementCachesEvent;
 use craft\events\RegisterCacheOptionsEvent;
 use craft\events\TemplateEvent;
-use craft\helpers\UrlHelper;
 use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
 use samdark\log\PsrMessage;
+use yii\base\Exception;
 use yii\caching\TagDependency;
 
 class StaticCaching extends \yii\base\Component
@@ -76,21 +76,15 @@ class StaticCaching extends \yii\base\Component
     public function purgeAll(): void
     {
         if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-            // TODO: should this hit a ping/healthcheck controller instead?
-            $url = UrlHelper::baseSiteUrl();
+            $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
 
-            if (str_starts_with($url, '@web')) {
-                $message = implode(PHP_EOL, [
-                    'Unable to clear static caches because the web host isn\'t known for console commands.',
-                    'Explicitly set the @web alias in config/general.php to avoid this error.',
-                    'See https://craftcms.com/docs/4.x/config/#aliases for more info.',
-                ]);
-
-                throw new \yii\console\Exception($message);
+            if (!$url) {
+                throw new Exception('Unable to purge cache from the CLI without a preview domain.');
             }
 
+            // TODO: should this hit a ping/healthcheck controller instead?
             Craft::createGuzzleClient()
-                ->request('HEAD', (string) $url, [
+                ->request('HEAD', $url, [
                     'headers' => [
                         HeaderEnum::CACHE_PURGE->value => '*',
                     ],
