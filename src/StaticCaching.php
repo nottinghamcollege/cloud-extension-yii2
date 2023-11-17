@@ -11,7 +11,6 @@ use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
-use League\Uri\Uri;
 use samdark\log\PsrMessage;
 use yii\caching\TagDependency;
 
@@ -76,15 +75,24 @@ class StaticCaching extends \yii\base\Component
 
     public function purgeAll(): void
     {
-        if (Craft::$app->getRequest()->isConsoleRequest) {
-            $url = Uri::new(UrlHelper::baseSiteUrl());
+        if (Craft::$app->getRequest()->getIsConsoleRequest()) {
+            // TODO: should this hit a ping/healthcheck controller instead?
+            $url = UrlHelper::baseSiteUrl();
 
-            // TODO: warn about @web not being defined for CLI
+            if (str_starts_with($url, '@web')) {
+                $message = implode(PHP_EOL, [
+                    'Unable to clear static caches because the web host isn\'t known for console commands.',
+                    'Explicitly set the @web alias in config/general.php to avoid this error.',
+                    'See https://craftcms.com/docs/4.x/config/#aliases for more info.',
+                ]);
+
+                throw new \yii\console\Exception($message);
+            }
 
             Craft::createGuzzleClient()
                 ->request('HEAD', (string) $url, [
                     'headers' => [
-                        HeaderEnum::CACHE_PURGE_HOST->value => '*',
+                        HeaderEnum::CACHE_PURGE->value => '*',
                     ],
                 ]);
 
@@ -93,7 +101,7 @@ class StaticCaching extends \yii\base\Component
 
 
         Craft::$app->getResponse()->getHeaders()->set(
-            HeaderEnum::CACHE_PURGE_HOST->value, '*',
+            HeaderEnum::CACHE_PURGE->value, '*',
         );
     }
 
@@ -195,7 +203,7 @@ class StaticCaching extends \yii\base\Component
         $headers = Craft::$app->getResponse()->getHeaders();
 
         $tagsForHeader->each(fn(string $tag) => $headers->add(
-            HeaderEnum::CACHE_PURGE_TAG->value,
+            HeaderEnum::CACHE_PURGE->value,
             $tag,
         ));
     }
