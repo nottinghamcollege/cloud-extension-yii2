@@ -5,6 +5,7 @@ namespace craft\cloud;
 use Craft;
 use craft\config\BaseConfig;
 use craft\helpers\App;
+use League\Uri\Contracts\UriInterface;
 use League\Uri\Uri;
 
 /**
@@ -126,7 +127,7 @@ class Config extends BaseConfig
             : null;
     }
 
-    public function getPreviewDomainUrl(): ?string
+    public function getPreviewDomainUrl(): ?UriInterface
     {
         if (!$this->previewDomain) {
             return null;

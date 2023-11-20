@@ -13,8 +13,6 @@ use craft\helpers\App;
 use craft\helpers\ConfigHelper;
 use craft\mutex\Mutex;
 use craft\queue\Queue as CraftQueue;
-use yii\mutex\MysqlMutex;
-use yii\mutex\PgsqlMutex;
 use yii\web\DbSession;
 
 class Helper
@@ -91,9 +89,7 @@ SQL;
         $config['components']['mutex'] = function() {
             return Craft::createObject([
                 'class' => Mutex::class,
-                'mutex' => Craft::$app->getDb()->getDriverName() === 'pgsql'
-                    ? PgsqlMutex::class
-                    : MysqlMutex::class,
+                'namePrefix' => Module::getInstance()->getConfig()->environmentId,
             ]);
         };
 
