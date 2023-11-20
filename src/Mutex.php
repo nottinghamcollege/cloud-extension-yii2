@@ -5,6 +5,7 @@ namespace craft\cloud;
 use Craft;
 use craft\mutex\MutexTrait;
 use GuzzleHttp\Exception\RequestException;
+use Illuminate\Support\Collection;
 use yii\base\Exception;
 
 class Mutex extends \yii\mutex\Mutex
@@ -25,7 +26,7 @@ class Mutex extends \yii\mutex\Mutex
 
             try {
                 Craft::createGuzzleClient()
-                    ->request('HEAD', $url, [
+                    ->request('HEAD', (string) $url, [
                         'headers' => [
                             HeaderEnum::MUTEX_ACQUIRE_LOCK->value => $name,
                         ],
@@ -60,11 +61,13 @@ class Mutex extends \yii\mutex\Mutex
 
             try {
                 Craft::createGuzzleClient()
-                    ->request('HEAD', $url, [
+                    ->request('HEAD', (string) $url, [
                         'headers' => [
                             HeaderEnum::MUTEX_RELEASE_LOCK->value => $name,
                         ],
                     ]);
+
+                return true;
             } catch (RequestException $e) {
                 Craft::error('Unable to release mutex lock: ' . $e->getMessage());
 
@@ -77,5 +80,25 @@ class Mutex extends \yii\mutex\Mutex
         );
 
         return true;
+    }
+
+    public function handleBeforeSend(): void
+    {
+        $headers = Collection::make(Craft::$app->getRequest()->getHeaders())
+            ->only([
+                HeaderEnum::MUTEX_ACQUIRE_LOCK->value,
+                HeaderEnum::MUTEX_RELEASE_LOCK->value,
+            ]);
+
+        if ($headers->isNotEmpty()) {
+            Craft::$app->getResponse()->setNoCacheHeaders();
+        }
+
+        $headers->each(function($value, $key) {
+            Craft::$app->getResponse()->getHeaders()->setDefault(
+                $key,
+                $value,
+            );
+        });
     }
 }

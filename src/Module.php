@@ -23,12 +23,12 @@ use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\utilities\ClearCaches;
 use craft\web\Application as WebApplication;
-use craft\web\Response;
+use craft\web\Response as WebResponse;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\base\InvalidConfigException;
-use yii\web\Response as YiiResponse;
+use yii\web\Response as YiiWebResponse;
 
 /**
  * @property-read Config $config
@@ -197,6 +197,13 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ],
         );
 
+        Event::on(
+            WebResponse::class,
+            YiiWebResponse::EVENT_BEFORE_SEND,
+            [$this->get('mutex'), 'handleBeforeSend'],
+        );
+
+
         $this->setComponents([
             'staticCaching' => StaticCaching::class,
         ]);
@@ -226,8 +233,8 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         );
 
         Event::on(
-            Response::class,
-            YiiResponse::EVENT_BEFORE_SEND,
+            WebResponse::class,
+            YiiWebResponse::EVENT_BEFORE_SEND,
             [$this->get('staticCaching'), 'handleBeforeSend'],
         );
     }

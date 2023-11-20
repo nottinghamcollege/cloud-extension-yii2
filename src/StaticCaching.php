@@ -99,7 +99,7 @@ class StaticCaching extends \yii\base\Component
             // TODO: should this hit a ping/healthcheck controller instead?
             // TODO: send authorization header
             Craft::createGuzzleClient()
-                ->request('HEAD', $url, [
+                ->request('HEAD', (string) $url, [
                     'headers' => [
                         HeaderEnum::CACHE_PURGE->value => '*',
                     ],
