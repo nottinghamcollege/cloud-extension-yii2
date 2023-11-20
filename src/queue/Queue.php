@@ -2,21 +2,11 @@
 
 namespace craft\cloud\queue;
 
-use craft\cloud\Module;
-
 class Queue extends \yii\queue\sqs\Queue
 {
-    public function __construct($config = [])
-    {
-        $config += [
-            'url' => Module::getInstance()->getConfig()->sqsUrl,
-            'region' => Module::getInstance()->getConfig()->getRegion(),
-            'ttr' => 60 * 15 - 1,
-        ];
-
-        parent::__construct($config);
-    }
-
+    /**
+     * TODO: remove this once released: https://github.com/yiisoft/yii2-queue/pull/502
+     */
     protected function pushMessage($message, $ttr, $delay, $priority)
     {
         /** @phpstan-ignore-next-line  */

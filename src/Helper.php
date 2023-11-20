@@ -7,6 +7,7 @@ use craft\cache\DbCache;
 use craft\cloud\fs\BuildArtifactsFs;
 use craft\cloud\Helper as CloudHelper;
 use craft\cloud\queue\Queue;
+use craft\cloud\runtime\Runtime;
 use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
@@ -97,11 +98,17 @@ SQL;
         };
 
         $config['components']['queue'] = function() {
+            $ttr = Runtime::MAX_EXECUTION_SECONDS - 1;
+
             return Craft::createObject([
                 'class' => CraftQueue::class,
-                'proxyQueue' => Module::getInstance()->getConfig()->sqsUrl
-                    ? Queue::class
-                    : null,
+                'ttr' => $ttr,
+                'proxyQueue' => [
+                    'class' => Queue::class,
+                    'ttr' => $ttr,
+                    'url' => Module::getInstance()->getConfig()->sqsUrl,
+                    'region' => Module::getInstance()->getConfig()->getRegion(),
+                ],
             ]);
         };
 
