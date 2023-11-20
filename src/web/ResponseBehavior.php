@@ -24,8 +24,6 @@ class ResponseBehavior extends Behavior
         $this->csvHeaders = [
             HeaderEnum::CACHE_TAG->value,
             HeaderEnum::CACHE_PURGE->value,
-            HeaderEnum::MUTEX_ACQUIRE_LOCK->value,
-            HeaderEnum::MUTEX_RELEASE_LOCK->value,
         ];
     }
 
