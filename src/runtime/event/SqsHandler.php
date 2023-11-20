@@ -31,11 +31,16 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 
                 (new CliHandler())->handle([
                     'command' => "cloud/queue/exec {$jobId}",
-                ] , $context);
+                ], $context, true);
             } catch (Throwable $e) {
                 echo "Marking SQS record as failed:\n";
                 echo "Message: #{$record->getMessageId()}\n";
                 echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
+
+                // TODO: if process has already run for 15(ish) minutes, don't retry it.
+                // if ($e instanceof ProcessTimedOutException) {
+                //     $diff = Runtime::MAX_EXECUTION_SECONDS - CliHandler::getRunningTime($e->getProcess();
+                // }
 
                 $this->markAsFailed($record);
             }
