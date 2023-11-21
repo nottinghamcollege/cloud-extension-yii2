@@ -16,26 +16,29 @@ class Mutex extends \yii\mutex\Mutex
      */
     protected function acquireLock($name, $timeout = 0): bool
     {
-        $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
-
-        if (!$url) {
-            throw new Exception();
-        }
-
-        try {
-            Craft::createGuzzleClient()
-                ->request('HEAD', (string) $url, [
-                    'headers' => [
-                        HeaderEnum::MUTEX_ACQUIRE_LOCK->value => $name,
-                    ],
-                ]);
-        } catch (RequestException $e) {
-            Craft::error('Unable to acquire mutex lock: ' . $e->getMessage());
-
-            return false;
-        }
-
+        Craft::warning(__METHOD__);
         return true;
+
+        // $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
+        //
+        // if (!$url) {
+        //     throw new Exception();
+        // }
+        //
+        // try {
+        //     Craft::createGuzzleClient()
+        //         ->request('HEAD', (string) $url, [
+        //             'headers' => [
+        //                 HeaderEnum::MUTEX_ACQUIRE_LOCK->value => $name,
+        //             ],
+        //         ]);
+        // } catch (RequestException $e) {
+        //     Craft::error('Unable to acquire mutex lock: ' . $e->getMessage());
+        //
+        //     return false;
+        // }
+        //
+        // return true;
     }
 
     /**
@@ -43,26 +46,29 @@ class Mutex extends \yii\mutex\Mutex
      */
     protected function releaseLock($name): bool
     {
-        $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
+        Craft::warning(__METHOD__);
+        return true;
 
-        if (!$url) {
-            throw new Exception();
-        }
-
-        try {
-            Craft::createGuzzleClient()
-                ->request('HEAD', (string) $url, [
-                    'headers' => [
-                        HeaderEnum::MUTEX_RELEASE_LOCK->value => $name,
-                        HeaderEnum::AUTHORIZATION->value => "bearer xxx",
-                    ],
-                ]);
-
-            return true;
-        } catch (RequestException $e) {
-            Craft::error('Unable to release mutex lock: ' . $e->getMessage());
-
-            return false;
-        }
+        // $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
+        //
+        // if (!$url) {
+        //     throw new Exception();
+        // }
+        //
+        // try {
+        //     Craft::createGuzzleClient()
+        //         ->request('HEAD', (string) $url, [
+        //             'headers' => [
+        //                 HeaderEnum::MUTEX_RELEASE_LOCK->value => $name,
+        //                 HeaderEnum::AUTHORIZATION->value => "bearer xxx",
+        //             ],
+        //         ]);
+        //
+        //     return true;
+        // } catch (RequestException $e) {
+        //     Craft::error('Unable to release mutex lock: ' . $e->getMessage());
+        //
+        //     return false;
+        // }
     }
 }
