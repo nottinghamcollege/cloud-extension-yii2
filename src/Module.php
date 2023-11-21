@@ -155,10 +155,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         /** @var Dispatcher $dispatcher */
         $dispatcher = $app->getLog();
-
-        // Force JSON
         $dispatcher->monologTargetConfig = [
             'allowLineBreaks' => false,
+            'logContext' => false,
         ];
 
         $app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
