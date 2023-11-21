@@ -18,6 +18,7 @@ use craft\helpers\App;
 use craft\imagetransforms\FallbackTransformer;
 use craft\imagetransforms\ImageTransformer as CraftImageTransformerAlias;
 use craft\log\Dispatcher;
+use craft\log\MonologTarget;
 use craft\services\Elements;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
@@ -27,6 +28,7 @@ use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\base\InvalidConfigException;
+use yii\log\Target;
 
 /**
  * @property-read Config $config
@@ -155,10 +157,17 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         /** @var Dispatcher $dispatcher */
         $dispatcher = $app->getLog();
-        $dispatcher->monologTargetConfig = [
-            'allowLineBreaks' => false,
-            'logContext' => false,
-        ];
+        $dispatcher->targets = Collection::make($dispatcher->getTargets())
+            ->map(function(Target $target) {
+                if (!($target instanceof MonologTarget)) {
+                    return $target;
+                }
+
+                return Craft::configure($target, [
+                    'logContext' => false,
+                ]);
+            })
+            ->all();
 
         $app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
 
