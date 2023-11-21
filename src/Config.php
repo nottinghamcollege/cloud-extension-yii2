@@ -25,6 +25,7 @@ class Config extends BaseConfig
     public bool $useAssetBundleCdn = true;
     public ?string $previewDomain = null;
     public bool $useMutex = true;
+    public bool $useQueue = true;
     protected ?string $region = null;
     protected bool $useAssetCdn = true;
     protected bool $useArtifactCdn = true;
@@ -36,6 +37,7 @@ class Config extends BaseConfig
             $this->useArtifactCdn = false;
             $this->useAssetBundleCdn = false;
             $this->useMutex = false;
+            $this->useQueue = false;
         }
     }
 

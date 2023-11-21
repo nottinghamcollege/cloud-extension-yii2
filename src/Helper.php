@@ -105,12 +105,12 @@ SQL;
             return Craft::createObject([
                 'class' => CraftQueue::class,
                 'ttr' => $ttr,
-                'proxyQueue' => [
+                'proxyQueue' => Module::getInstance()->getConfig()->useQueue ? [
                     'class' => Queue::class,
                     'ttr' => $ttr,
                     'url' => Module::getInstance()->getConfig()->sqsUrl,
                     'region' => Module::getInstance()->getConfig()->getRegion(),
-                ],
+                ] : null,
             ]);
         };
 
