@@ -38,6 +38,7 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                     'command' => "cloud/queue/exec {$jobId}",
                 ], $context, true);
             } catch (Throwable $e) {
+                echo "Exception class: ".get_class($e)."\n";
                 if ($e instanceof ProcessTimedOutException) {
                     $process = $e->getProcess();
 
