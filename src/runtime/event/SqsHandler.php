@@ -6,7 +6,6 @@ use Bref\Context\Context;
 use Bref\Event\Sqs\SqsEvent;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
-use Throwable;
 
 class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 {
@@ -34,24 +33,17 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                 $cliHandler->handle([
                     'command' => "cloud/queue/exec {$jobId}",
                 ], $context, true);
-            } catch (Throwable $e) {
-                echo "Exception class: " . get_class($e) . "\n";
-                echo "Exception message: " . $e->getMessage() . "\n";
-                if ($e instanceof ProcessTimedOutException) {
-                    if (!$cliHandler->shouldRetry()) {
-                        echo "Job ran for {$cliHandler->getTotalRunningTime()} seconds and will not be retried:\n";
-                        echo "Message: #{$record->getMessageId()}\n";
-                        echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
+            } catch (ProcessTimedOutException $e) {
+                if (!$cliHandler->shouldRetry()) {
+                    echo "Job #$jobId ran for {$cliHandler->getTotalRunningTime()} seconds and will not be retried:\n";
+                    echo "Message: #{$record->getMessageId()}\n";
 
-                        return;
-                    }
+                    return;
                 }
 
-                echo "Marking SQS record as failed for retry:\n";
-                echo "Message: #{$record->getMessageId()}\n";
-                echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
-
                 $this->markAsFailed($record);
+            } catch (\Throwable $e) {
+                return;
             }
         }
     }
