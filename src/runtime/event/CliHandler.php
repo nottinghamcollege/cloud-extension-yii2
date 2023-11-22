@@ -30,13 +30,14 @@ class CliHandler implements Handler
 
         $php = PHP_BINARY;
         $command = escapeshellcmd("{$php} {$this->scriptPath} {$commandArgs}");
-        $timeout = max(1, $context->getRemainingTimeInMillis() / 1000 - 1);
+        $remainingSeconds = $context->getRemainingTimeInMillis() / 1000;
+        $timeout = max(1, $remainingSeconds - 1);
         $this->process = Process::fromShellCommandline($command, null, [
             'LAMBDA_INVOCATION_CONTEXT' => json_encode($context, JSON_THROW_ON_ERROR),
         ], null, $timeout);
         $exitCode = null;
 
-        echo "Function time remaining: {$context->getRemainingTimeInMillis()}";
+        echo "Function time remaining: {$remainingSeconds} seconds";
 
         try {
             echo "Running command with $timeout second timeout: $command";
