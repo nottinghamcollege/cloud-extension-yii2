@@ -4,6 +4,7 @@ namespace craft\cloud\runtime\event;
 
 use Bref\Context\Context;
 use Bref\Event\Handler;
+use craft\cloud\runtime\Runtime;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
@@ -11,7 +12,10 @@ use Symfony\Component\Process\Process;
 class CliHandler implements Handler
 {
     public const EXIT_CODE_TIMEOUT = 187;
+    public const MAX_EXECUTION_BUFFER_SECONDS = 5;
+    public Process $process;
     protected string $scriptPath = '/var/task/craft';
+    protected ?float $totalRunningTime = null;
 
     /**
      * @inheritDoc
@@ -26,23 +30,26 @@ class CliHandler implements Handler
 
         $php = PHP_BINARY;
         $command = escapeshellcmd("{$php} {$this->scriptPath} {$commandArgs}");
-        $timeout = max(1, $context->getRemainingTimeInMillis() / 1000 - 1);
-        $process = Process::fromShellCommandline($command, null, [
+        $remainingSeconds = $context->getRemainingTimeInMillis() / 1000;
+        $timeout = max(1, $remainingSeconds - 1);
+        $this->process = Process::fromShellCommandline($command, null, [
             'LAMBDA_INVOCATION_CONTEXT' => json_encode($context, JSON_THROW_ON_ERROR),
         ], null, $timeout);
         $exitCode = null;
 
+        echo "Function time remaining: {$remainingSeconds} seconds";
+
         try {
-            echo "Running command: $command";
+            echo "Running command with $timeout second timeout: $command";
 
             /** @throws ProcessTimedOutException|ProcessFailedException */
-            $process->mustRun(function($type, $buffer): void {
+            $this->process->mustRun(function($type, $buffer): void {
                 echo $buffer;
             });
 
-            echo "Command succeeded after {$this->getRunningTime($process)} seconds: $command\n";
+            echo "Command succeeded after {$this->getTotalRunningTime()} seconds: $command\n";
         } catch (\Throwable $e) {
-            echo "Command failed after {$this->getRunningTime($process)} seconds: $command\n";
+            echo "Command failed after {$this->getTotalRunningTime()} seconds: $command\n";
             echo "{$e->getMessage()}\n";
 
             $exitCode = $e instanceof ProcessTimedOutException
@@ -55,14 +62,25 @@ class CliHandler implements Handler
         }
 
         return [
-            'exitCode' => $exitCode ?? $process->getExitCode(),
-            'output' => $process->getErrorOutput() . $process->getOutput(),
-            'runningTime' => $this->getRunningTime($process),
+            'exitCode' => $exitCode ?? $this->process->getExitCode(),
+            'output' => $this->process->getErrorOutput() . $this->process->getOutput(),
+            'runningTime' => $this->getTotalRunningTime(),
         ];
     }
 
-    public static function getRunningTime(Process $process): float
+    public function getTotalRunningTime(): float
     {
-        return $process->getLastOutputTime() - $process->getStartTime();
+        if ($this->totalRunningTime !== null) {
+            return $this->totalRunningTime;
+        }
+
+        return max(0, microtime(true) - $this->process->getStartTime());
+    }
+
+    public function shouldRetry(): bool
+    {
+        $diff = Runtime::MAX_EXECUTION_SECONDS - $this->getTotalRunningTime();
+
+        return $diff > static::MAX_EXECUTION_BUFFER_SECONDS;
     }
 }

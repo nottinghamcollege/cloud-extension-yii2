@@ -5,6 +5,7 @@ namespace craft\cloud\runtime\event;
 use Bref\Context\Context;
 use Bref\Event\Sqs\SqsEvent;
 use RuntimeException;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Throwable;
 
 class SqsHandler extends \Bref\Event\Sqs\SqsHandler
@@ -14,6 +15,7 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
         foreach ($event->getRecords() as $record) {
             echo "Handling SQS message: #{$record->getMessageId()}";
             $jobId = null;
+            $cliHandler = new CliHandler();
 
             try {
                 $body = json_decode(
@@ -29,18 +31,25 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 
                 echo "Executing job: #$jobId";
 
-                (new CliHandler())->handle([
+                $cliHandler->handle([
                     'command' => "cloud/queue/exec {$jobId}",
                 ], $context, true);
             } catch (Throwable $e) {
-                echo "Marking SQS record as failed:\n";
+                echo "Exception class: " . get_class($e) . "\n";
+                echo "Exception message: " . $e->getMessage() . "\n";
+                if ($e instanceof ProcessTimedOutException) {
+                    if (!$cliHandler->shouldRetry()) {
+                        echo "Job ran for {$cliHandler->getTotalRunningTime()} seconds and will not be retried:\n";
+                        echo "Message: #{$record->getMessageId()}\n";
+                        echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
+
+                        return;
+                    }
+                }
+
+                echo "Marking SQS record as failed for retry:\n";
                 echo "Message: #{$record->getMessageId()}\n";
                 echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
-
-                // TODO: if process has already run for 15(ish) minutes, don't retry it.
-                // if ($e instanceof ProcessTimedOutException) {
-                //     $diff = Runtime::MAX_EXECUTION_SECONDS - CliHandler::getRunningTime($e->getProcess();
-                // }
 
                 $this->markAsFailed($record);
             }
