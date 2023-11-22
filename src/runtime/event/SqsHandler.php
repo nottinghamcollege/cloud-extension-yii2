@@ -38,6 +38,11 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                     echo "Job #$jobId ran for {$cliHandler->getTotalRunningTime()} seconds and will not be retried:\n";
                     echo "Message: #{$record->getMessageId()}\n";
 
+                    $failMessage = 'Job execution exceeded 15 minutes';
+                    $cliHandler->handle([
+                        'command' => "cloud/queue/fail {$jobId} --message={$failMessage}",
+                    ], $context, true);
+
                     return;
                 }
 
