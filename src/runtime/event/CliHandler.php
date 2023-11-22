@@ -74,7 +74,7 @@ class CliHandler implements Handler
             return $this->totalRunningTime;
         }
 
-        return microtime(true) - $this->process->getStartTime();
+        return max(0, microtime(true) - $this->process->getStartTime());
     }
 
     public function shouldRetry(): bool
