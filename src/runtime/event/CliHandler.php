@@ -32,8 +32,10 @@ class CliHandler implements Handler
         ], null, $timeout);
         $exitCode = null;
 
+        echo "Function time remaining: {$context->getRemainingTimeInMillis()}";
+
         try {
-            echo "Running command: $command";
+            echo "Running command with $timeout second timeout: $command";
 
             /** @throws ProcessTimedOutException|ProcessFailedException */
             $process->mustRun(function($type, $buffer): void {
