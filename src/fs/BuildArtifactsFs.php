@@ -13,6 +13,7 @@ class BuildArtifactsFs extends BuildsFs
     public function init(): void
     {
         $this->useLocalFs = !Module::getInstance()->getConfig()->getUseArtifactCdn();
+        $this->localFsUrl = Module::getInstance()->getConfig()->artifactBaseUrl ?? $this->localFsUrl;
         parent::init();
     }
 

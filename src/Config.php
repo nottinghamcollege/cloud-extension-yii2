@@ -13,6 +13,7 @@ use League\Uri\Uri;
  */
 class Config extends BaseConfig
 {
+    public ?string $artifactBaseUrl = null;
     public array $s3ClientOptions = [];
     public string $cdnBaseUrl = 'https://cdn.craft.cloud';
     public ?string $sqsUrl = null;
