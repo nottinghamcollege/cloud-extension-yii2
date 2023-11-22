@@ -43,7 +43,7 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                         echo "Message: #{$record->getMessageId()}\n";
                         echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
 
-                        throw $e;
+                        return;
                     }
                 }
 
