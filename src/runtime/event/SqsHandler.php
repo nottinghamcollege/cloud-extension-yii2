@@ -4,11 +4,16 @@ namespace craft\cloud\runtime\event;
 
 use Bref\Context\Context;
 use Bref\Event\Sqs\SqsEvent;
+use craft\cloud\runtime\Runtime;
 use RuntimeException;
+use Symfony\Component\Process\Exception\ProcessTimedOutException;
+use Symfony\Component\Process\Process;
 use Throwable;
 
 class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 {
+    public const MAX_EXECUTION_BUFFER_SECONDS = 5;
+
     public function handleSqs(SqsEvent $event, Context $context): void
     {
         foreach ($event->getRecords() as $record) {
@@ -33,17 +38,32 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                     'command' => "cloud/queue/exec {$jobId}",
                 ], $context, true);
             } catch (Throwable $e) {
-                echo "Marking SQS record as failed:\n";
+                if ($e instanceof ProcessTimedOutException) {
+                    $process = $e->getProcess();
+
+                    if (!$this->shouldRetry($process)) {
+                        $runningTime = CliHandler::getRunningTime($process);
+                        echo "Job ran for {$runningTime} seconds and will not be retried:\n";
+                        echo "Message: #{$record->getMessageId()}\n";
+                        echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
+
+                        throw $e;
+                    }
+                }
+
+                echo "Marking SQS record as failed for retry:\n";
                 echo "Message: #{$record->getMessageId()}\n";
                 echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
-
-                // TODO: if process has already run for 15(ish) minutes, don't retry it.
-                // if ($e instanceof ProcessTimedOutException) {
-                //     $diff = Runtime::MAX_EXECUTION_SECONDS - CliHandler::getRunningTime($e->getProcess();
-                // }
 
                 $this->markAsFailed($record);
             }
         }
+    }
+
+    protected function shouldRetry(Process $process): bool
+    {
+        $diff = Runtime::MAX_EXECUTION_SECONDS - CliHandler::getRunningTime($process);
+
+        return $diff > static::MAX_EXECUTION_BUFFER_SECONDS;
     }
 }
