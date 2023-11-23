@@ -54,8 +54,9 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 
                 $this->markAsFailed($record);
             } catch (\Throwable $e) {
-                echo "Process threw exception: {$e->getMessage()}";
-
+                echo "Exception while processing SQS message:\n";
+                echo "{$e->getMessage()}\n";
+                echo "{$e->getTraceAsString()}\n";
                 return;
             }
         });

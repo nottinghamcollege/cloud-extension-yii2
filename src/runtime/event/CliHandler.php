@@ -13,7 +13,7 @@ class CliHandler implements Handler
 {
     public const EXIT_CODE_TIMEOUT = 187;
     public const MAX_EXECUTION_BUFFER_SECONDS = 5;
-    public Process $process;
+    public ?Process $process = null;
     protected string $scriptPath = '/var/task/craft';
     protected ?float $totalRunningTime = null;
 
@@ -50,7 +50,10 @@ class CliHandler implements Handler
             echo "Command succeeded after {$this->getTotalRunningTime()} seconds: $command\n";
         } catch (\Throwable $e) {
             echo "Command failed after {$this->getTotalRunningTime()} seconds: $command\n";
+
+            echo "Exception while handling CLI event:\n";
             echo "{$e->getMessage()}\n";
+            echo "{$e->getTraceAsString()}\n";
 
             $exitCode = $e instanceof ProcessTimedOutException
                 ? self::EXIT_CODE_TIMEOUT
@@ -72,6 +75,11 @@ class CliHandler implements Handler
     {
         if ($this->totalRunningTime !== null) {
             return $this->totalRunningTime;
+        }
+
+        // This doesn't quite make sense, but we're chasing a hunch…
+        if (!$this->process) {
+            return 0;
         }
 
         return max(0, microtime(true) - $this->process->getStartTime());
