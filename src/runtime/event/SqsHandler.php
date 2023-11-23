@@ -4,6 +4,8 @@ namespace craft\cloud\runtime\event;
 
 use Bref\Context\Context;
 use Bref\Event\Sqs\SqsEvent;
+use Bref\Event\Sqs\SqsRecord;
+use Illuminate\Support\Collection;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 
@@ -11,7 +13,11 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 {
     public function handleSqs(SqsEvent $event, Context $context): void
     {
-        foreach ($event->getRecords() as $record) {
+        $records = Collection::make($event->getRecords());
+
+        echo "Processing SQS event with {$records->count()} records.";
+
+        $records->each(function(SqsRecord $record) use ($context) {
             echo "Handling SQS message: #{$record->getMessageId()}";
             $jobId = null;
             $cliHandler = new CliHandler();
@@ -48,8 +54,10 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 
                 $this->markAsFailed($record);
             } catch (\Throwable $e) {
+                echo "Process threw exception: {$e->getMessage()}";
+
                 return;
             }
-        }
+        });
     }
 }
