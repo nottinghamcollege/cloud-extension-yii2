@@ -12,6 +12,8 @@ use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
 use craft\queue\Queue as CraftQueue;
+use HttpSignatures\Context;
+use Illuminate\Support\Collection;
 use yii\di\Instance;
 use yii\mutex\Mutex as YiiMutex;
 use yii\web\DbSession;
@@ -120,5 +122,18 @@ SQL;
 
             return Craft::createObject($config);
         };
+    }
+
+    public static function createSigningContext(iterable $headers = []): Context
+    {
+        $headers = Collection::make($headers);
+
+        return new Context([
+            'keys' => [
+                'hmac' => Module::getInstance()->getConfig()->cdnSigningKey,
+            ],
+            'algorithm' => 'hmac-sha256',
+            'headers' => $headers->push('host','@method','@path','@scheme')->all(),
+        ]);
     }
 }

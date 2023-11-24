@@ -4,6 +4,8 @@ namespace craft\cloud;
 
 use Craft;
 use craft\mutex\MutexTrait;
+use GuzzleHttp\Psr7\Request;
+use Illuminate\Support\Collection;
 use yii\base\Exception;
 
 class Mutex extends \yii\mutex\Mutex
@@ -20,13 +22,15 @@ class Mutex extends \yii\mutex\Mutex
             throw new Exception();
         }
 
+        $headers = Collection::make([
+            HeaderEnum::MUTEX_ACQUIRE_LOCK->value => $name,
+        ]);
+
         try {
-            Craft::createGuzzleClient()
-                ->request('HEAD', (string) $url, [
-                    'headers' => [
-                        HeaderEnum::MUTEX_ACQUIRE_LOCK->value => $name,
-                    ],
-                ]);
+            $request = new Request('HEAD', $url, $headers->all());
+            $context = Helper::createSigningContext($headers->keys());
+            $context->signer()->sign($request);
+            Craft::createGuzzleClient()->send($request);
         } catch (\Throwable $e) {
             Craft::error('Unable to acquire mutex lock: ' . $e->getMessage());
 
@@ -47,13 +51,15 @@ class Mutex extends \yii\mutex\Mutex
             throw new Exception();
         }
 
+        $headers = Collection::make([
+            HeaderEnum::MUTEX_RELEASE_LOCK->value => $name,
+        ]);
+
         try {
-            Craft::createGuzzleClient()
-                ->request('HEAD', (string) $url, [
-                    'headers' => [
-                        HeaderEnum::MUTEX_RELEASE_LOCK->value => $name,
-                    ],
-                ]);
+            $request = new Request('HEAD', $url, $headers->all());
+            $context = Helper::createSigningContext($headers->keys());
+            $context->signer()->sign($request);
+            Craft::createGuzzleClient()->send($request);
         } catch (\Throwable $e) {
             Craft::error('Unable to release mutex lock: ' . $e->getMessage());
 

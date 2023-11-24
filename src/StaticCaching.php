@@ -10,7 +10,6 @@ use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
 use GuzzleHttp\Psr7\Request;
-use HttpSignatures\Context;
 use Illuminate\Support\Collection;
 use samdark\log\PsrMessage;
 use yii\base\Exception;
@@ -88,12 +87,7 @@ class StaticCaching extends \yii\base\Component
                 throw new Exception('Unable to purge cache from the CLI without a preview domain.');
             }
 
-            $context = new Context([
-                'signingKeyId' => Module::getInstance()->getConfig()->cdnSigningKey,
-                'algorithm' => 'hmac-sha256',
-                'headers' => $headers->prepend('(request-target)')->all(),
-            ]);
-
+            $context = Helper::createSigningContext($headers->keys());
             $request = new Request('HEAD', $url, $headers->all());
             $context->signer()->sign($request);
             Craft::createGuzzleClient()->send($request);
