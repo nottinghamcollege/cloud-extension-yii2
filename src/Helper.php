@@ -93,7 +93,7 @@ SQL;
             $mutex = Module::getInstance()->getConfig()->useMutex
                 ? Craft::createObject([
                     'class' => Mutex::class,
-                    'namePrefix' => Module::getInstance()->getConfig()->environmentId,
+                    'namePrefix' => Module::getInstance()->getConfig()->environmentId . ':',
                 ])
                 : $config['components']['mutex'];
 
