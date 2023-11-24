@@ -27,7 +27,7 @@ class Mutex extends \yii\mutex\Mutex
         ]);
 
         try {
-            $request = new Request('HEAD', $url, $headers->all());
+            $request = new Request('HEAD', (string) $url, $headers->all());
             $context = Helper::createSigningContext($headers->keys());
             $context->signer()->sign($request);
             Craft::createGuzzleClient()->send($request);
@@ -56,7 +56,7 @@ class Mutex extends \yii\mutex\Mutex
         ]);
 
         try {
-            $request = new Request('HEAD', $url, $headers->all());
+            $request = new Request('HEAD', (string) $url, $headers->all());
             $context = Helper::createSigningContext($headers->keys());
             $context->signer()->sign($request);
             Craft::createGuzzleClient()->send($request);
