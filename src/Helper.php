@@ -87,7 +87,6 @@ SQL;
             return Craft::createObject($config);
         };
 
-
         $config['components']['mutex'] = function() use ($config) {
             $mutex = Module::getInstance()->getConfig()->useMutex
                 ? Craft::createObject([
