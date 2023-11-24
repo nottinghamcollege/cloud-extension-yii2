@@ -8,6 +8,7 @@ use craft\cloud\runtime\Runtime;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
+use yii\base\Exception;
 
 class CliHandler implements Handler
 {
@@ -77,9 +78,8 @@ class CliHandler implements Handler
             return $this->totalRunningTime;
         }
 
-        // This doesn't quite make sense, but we're chasing a hunch…
         if (!$this->process) {
-            return 0;
+            throw new Exception('Process does not exist');
         }
 
         return max(0, microtime(true) - $this->process->getStartTime());
