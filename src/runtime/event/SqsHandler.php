@@ -4,15 +4,20 @@ namespace craft\cloud\runtime\event;
 
 use Bref\Context\Context;
 use Bref\Event\Sqs\SqsEvent;
+use Bref\Event\Sqs\SqsRecord;
+use Illuminate\Support\Collection;
 use RuntimeException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
-use Throwable;
 
 class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 {
     public function handleSqs(SqsEvent $event, Context $context): void
     {
-        foreach ($event->getRecords() as $record) {
+        $records = Collection::make($event->getRecords());
+
+        echo "Processing SQS event with {$records->count()} records.";
+
+        $records->each(function(SqsRecord $record) use ($context) {
             echo "Handling SQS message: #{$record->getMessageId()}";
             $jobId = null;
             $cliHandler = new CliHandler();
@@ -34,25 +39,26 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                 $cliHandler->handle([
                     'command' => "cloud/queue/exec {$jobId}",
                 ], $context, true);
-            } catch (Throwable $e) {
-                echo "Exception class: " . get_class($e) . "\n";
-                echo "Exception message: " . $e->getMessage() . "\n";
-                if ($e instanceof ProcessTimedOutException) {
-                    if (!$cliHandler->shouldRetry()) {
-                        echo "Job ran for {$cliHandler->getTotalRunningTime()} seconds and will not be retried:\n";
-                        echo "Message: #{$record->getMessageId()}\n";
-                        echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
+            } catch (ProcessTimedOutException $e) {
+                if (!$cliHandler->shouldRetry()) {
+                    echo "Job #$jobId ran for {$cliHandler->getTotalRunningTime()} seconds and will not be retried:\n";
+                    echo "Message: #{$record->getMessageId()}\n";
 
-                        return;
-                    }
+                    $failMessage = 'Job execution exceeded 15 minutes';
+                    $cliHandler->handle([
+                        'command' => "cloud/queue/fail {$jobId} --message={$failMessage}",
+                    ], $context, true);
+
+                    return;
                 }
 
-                echo "Marking SQS record as failed for retry:\n";
-                echo "Message: #{$record->getMessageId()}\n";
-                echo "Job: " . ($jobId ? "#$jobId" : 'unknown');
-
                 $this->markAsFailed($record);
+            } catch (\Throwable $e) {
+                echo "Exception while processing SQS message:\n";
+                echo "{$e->getMessage()}\n";
+                echo "{$e->getTraceAsString()}\n";
+                return;
             }
-        }
+        });
     }
 }

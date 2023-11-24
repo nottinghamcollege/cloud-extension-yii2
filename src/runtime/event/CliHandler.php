@@ -8,12 +8,13 @@ use craft\cloud\runtime\Runtime;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
+use yii\base\Exception;
 
 class CliHandler implements Handler
 {
     public const EXIT_CODE_TIMEOUT = 187;
     public const MAX_EXECUTION_BUFFER_SECONDS = 5;
-    public Process $process;
+    public ?Process $process = null;
     protected string $scriptPath = '/var/task/craft';
     protected ?float $totalRunningTime = null;
 
@@ -50,7 +51,10 @@ class CliHandler implements Handler
             echo "Command succeeded after {$this->getTotalRunningTime()} seconds: $command\n";
         } catch (\Throwable $e) {
             echo "Command failed after {$this->getTotalRunningTime()} seconds: $command\n";
+
+            echo "Exception while handling CLI event:\n";
             echo "{$e->getMessage()}\n";
+            echo "{$e->getTraceAsString()}\n";
 
             $exitCode = $e instanceof ProcessTimedOutException
                 ? self::EXIT_CODE_TIMEOUT
@@ -72,6 +76,10 @@ class CliHandler implements Handler
     {
         if ($this->totalRunningTime !== null) {
             return $this->totalRunningTime;
+        }
+
+        if (!$this->process) {
+            throw new Exception('Process does not exist');
         }
 
         return max(0, microtime(true) - $this->process->getStartTime());
