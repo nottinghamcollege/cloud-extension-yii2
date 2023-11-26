@@ -145,7 +145,7 @@ class ImageTransformer extends Component implements ImageTransformerInterface
         return str_replace('+', '-', base64_encode(hash_hmac(
             'sha256',
             $data,
-            Module::getInstance()->getConfig()->cdnSigningKey,
+            Module::getInstance()->getConfig()->signingKey,
             true,
         )));
     }
