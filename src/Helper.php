@@ -132,7 +132,7 @@ SQL;
                 'hmac' => Module::getInstance()->getConfig()->cdnSigningKey,
             ],
             'algorithm' => 'hmac-sha256',
-            'headers' => $headers->push('host')->all(),
+            'headers' => $headers->push('(request-target)')->all(),
         ]);
     }
 }
