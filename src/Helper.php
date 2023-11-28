@@ -11,11 +11,12 @@ use craft\cloud\runtime\Runtime;
 use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
+use craft\mutex\Mutex;
 use craft\queue\Queue as CraftQueue;
 use HttpSignatures\Context;
 use Illuminate\Support\Collection;
-use yii\di\Instance;
-use yii\mutex\Mutex as YiiMutex;
+use yii\mutex\MysqlMutex;
+use yii\mutex\PgsqlMutex;
 use yii\web\DbSession;
 
 class Helper
@@ -89,15 +90,13 @@ SQL;
             return Craft::createObject($config);
         };
 
-        $config['components']['mutex'] = function() use ($config) {
-            $mutex = Module::getInstance()->getConfig()->useMutex
-                ? Craft::createObject([
-                    'class' => Mutex::class,
-                    'namePrefix' => Module::getInstance()->getConfig()->environmentId . ':',
-                ])
-                : $config['components']['mutex'];
-
-            return Instance::ensure($mutex, YiiMutex::class);
+        $config['components']['mutex'] = function() {
+            return Craft::createObject([
+                'class' => Mutex::class,
+                'mutex' => Craft::$app->getDb()->getDriverName() === 'pgsql'
+                    ? PgsqlMutex::class
+                    : MysqlMutex::class,
+            ]);
         };
 
         $config['components']['queue'] = function() {
