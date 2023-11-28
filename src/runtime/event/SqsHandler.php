@@ -6,61 +6,55 @@ use Bref\Context\Context;
 use Bref\Event\Sqs\SqsEvent;
 use Bref\Event\Sqs\SqsRecord;
 use Illuminate\Support\Collection;
+use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
-use Symfony\Component\Process\Exception\RuntimeException;
 
 class SqsHandler extends \Bref\Event\Sqs\SqsHandler
 {
+    protected Context $context;
+
     public function handleSqs(SqsEvent $event, Context $context): void
     {
+        $this->context = $context;
         $records = Collection::make($event->getRecords());
 
         echo "Processing SQS event with {$records->count()} records.";
 
-        $records->each(function(SqsRecord $record) use ($context) {
+        $records->each(function(SqsRecord $record) {
             echo "Handling SQS message: #{$record->getMessageId()}";
-            $jobId = null;
             $cliHandler = new CliHandler();
+            $body = json_decode(
+                $record->getBody(),
+                associative: false,
+                flags: JSON_THROW_ON_ERROR
+            );
+            $jobId = $body->jobId ?? null;
+
+            if (!$jobId) {
+                throw new \Exception('The SQS message does not contain a job ID.');
+            }
 
             try {
-                $body = json_decode(
-                    $record->getBody(),
-                    associative: false,
-                    flags: JSON_THROW_ON_ERROR
-                );
-                $jobId = $body->jobId ?? null;
-
-                if (!$jobId) {
-                    throw new \Exception('The SQS message does not contain a job ID.');
-                }
-
                 $cliHandler->handle([
                     'command' => "cloud/queue/exec {$jobId}",
-                ], $context, true);
-            } catch (RuntimeException $e) {
-                if ($e instanceof ProcessTimedOutException && !$cliHandler->shouldRetry()) {
-                    echo "Job #$jobId will not be retried:\n";
-                    echo "Attempts: {$cliHandler->attempts}\n";
-                    echo "Message: #{$record->getMessageId()}\n";
-                    echo "Running Time: {$cliHandler->getTotalRunningTime()} seconds\n";
-
-                    $failMessage = $cliHandler->getRemainingAttempts()
-                        ? 'Job exceeded maximum running time: 15 minutes'
-                        : "Job exceeded maximum attempts: {$cliHandler->maxAttempts}";
-
-                    try {
-                        (new CliHandler())->handle([
-                            'command' => "cloud/queue/fail {$jobId} --message={$failMessage}",
-                        ], $context, true);
-                    } catch (\Throwable $e) {
-                        $this->markAsFailed($record);
-                    }
-
+                ], $this->context, true);
+            } catch (ProcessFailedException $e) {
+                return;
+            } catch (ProcessTimedOutException $e) {
+                if ($cliHandler->shouldRetry()) {
+                    $this->markAsFailed($record);
                     return;
                 }
 
-                // triggers SQS retry
-                $this->markAsFailed($record);
+                echo "Job #$jobId will not be retried:\n";
+                echo "Message: #{$record->getMessageId()}\n";
+                echo "Running Time: {$cliHandler->getTotalRunningTime()} seconds\n";
+
+                $failMessage = 'Job exceeded maximum running time: 15 minutes';
+
+                (new CliHandler())->handle([
+                    'command' => "cloud/queue/fail {$jobId} --message={$failMessage}",
+                ], $this->context, true);
             }
         });
     }
