@@ -46,7 +46,7 @@ class QueueController extends Controller
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), match ($actionID) {
-            'test-job' => [
+            'push-test-job' => [
                 'message',
                 'run',
                 'throw',
@@ -93,7 +93,7 @@ class QueueController extends Controller
         return ExitCode::OK;
     }
 
-    public function actionTestJob(): int
+    public function actionPushTestJob(): int
     {
         for ($i = 0; $i < $this->count; $i++) {
             $job = new TestJob([
