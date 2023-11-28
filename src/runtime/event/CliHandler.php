@@ -17,6 +17,8 @@ class CliHandler implements Handler
     public ?Process $process = null;
     protected string $scriptPath = '/var/task/craft';
     protected ?float $totalRunningTime = null;
+    public int $maxAttempts = 10;
+    public int $attempts = 0;
 
     /**
      * @inheritDoc
@@ -50,8 +52,8 @@ class CliHandler implements Handler
 
             echo "Command succeeded after {$this->getTotalRunningTime()} seconds: $command\n";
         } catch (\Throwable $e) {
+            $this->attempts++;
             echo "Command failed after {$this->getTotalRunningTime()} seconds: $command\n";
-
             echo "Exception while handling CLI event:\n";
             echo "{$e->getMessage()}\n";
             echo "{$e->getTraceAsString()}\n";
@@ -85,8 +87,17 @@ class CliHandler implements Handler
         return max(0, microtime(true) - $this->process->getStartTime());
     }
 
+    public function getRemainingAttempts(): int
+    {
+        return $this->maxAttempts - $this->attempts;
+    }
+
     public function shouldRetry(): bool
     {
+        if (!$this->getRemainingAttempts()) {
+            return false;
+        }
+
         $diff = Runtime::MAX_EXECUTION_SECONDS - $this->getTotalRunningTime();
 
         return $diff > static::MAX_EXECUTION_BUFFER_SECONDS;
