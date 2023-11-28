@@ -55,6 +55,9 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                 (new CliHandler())->handle([
                     'command' => "cloud/queue/fail {$jobId} --message={$failMessage}",
                 ], $this->context, true);
+            } catch (\Throwable $e) {
+                echo "Job #$jobId threw: {$e->getMessage()}";
+                $this->markAsFailed($record);
             }
         });
     }
