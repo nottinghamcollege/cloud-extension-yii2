@@ -8,8 +8,6 @@ class SqsQueue extends \yii\queue\sqs\Queue
 {
     protected function pushMessage($message, $ttr, $delay, $priority): string
     {
-        $ttr = (string) $ttr;
-
         /**
          * Delay pushing to SQS until after request is processed.
          *
