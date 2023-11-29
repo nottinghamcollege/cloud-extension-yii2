@@ -39,25 +39,46 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                     'command' => "cloud/queue/exec {$jobId}",
                 ], $this->context, true);
             } catch (ProcessFailedException $e) {
+                echo "Job #$jobId failed and WILL NOT be retried:\n";
+                echo "Message: #{$record->getMessageId()}\n";
+                echo $e->getMessage();
+
                 return;
             } catch (ProcessTimedOutException $e) {
                 if ($cliHandler->shouldRetry()) {
+                    echo "Job #$jobId timed out and WILL be retried via markAsFailed:\n";
+                    echo "Message: #{$record->getMessageId()}\n";
+                    echo $e->getMessage();
+
                     $this->markAsFailed($record);
                     return;
                 }
 
-                echo "Job #$jobId will not be retried:\n";
+                echo "Job #$jobId timed out and WILL NOT be retried:\n";
                 echo "Message: #{$record->getMessageId()}\n";
                 echo "Running Time: {$cliHandler->getTotalRunningTime()} seconds\n";
+                echo $e->getMessage();
 
                 $failMessage = 'Job exceeded maximum running time: 15 minutes';
 
-                (new CliHandler())->handle([
-                    'command' => "cloud/queue/fail {$jobId} --message={$failMessage}",
-                ], $this->context, true);
+                try {
+                    (new CliHandler())->handle([
+                        'command' => "cloud/queue/fail {$jobId} --message={$failMessage}",
+                    ], $this->context, true);
+                } catch(\Throwable $e) {
+                    echo "Exception thrown running cloud/queue/fail:\n";
+                    echo $e->getMessage();
+                    $this->markAsFailed($record);
+
+                    return;
+                }
             } catch (\Throwable $e) {
-                echo "Job #$jobId threw: {$e->getMessage()}";
+                echo "Job #$jobId threw and WILL be retried via markAsFailed:\n";
+                echo "Message: #{$record->getMessageId()}\n";
+                echo $e->getMessage();
                 $this->markAsFailed($record);
+            } finally {
+                echo "Done processing job #$jobId (finally).";
             }
         });
     }
