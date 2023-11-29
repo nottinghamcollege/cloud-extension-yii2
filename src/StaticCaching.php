@@ -89,8 +89,9 @@ class StaticCaching extends \yii\base\Component
 
             $context = Helper::createSigningContext($headers->keys());
             $request = new Request('HEAD', (string) $url, $headers->all());
-            $context->signer()->sign($request);
-            Craft::createGuzzleClient()->send($request);
+            Craft::createGuzzleClient()->send(
+                $context->signer()->sign($request)
+            );
 
             return;
         }
