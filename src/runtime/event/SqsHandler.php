@@ -43,6 +43,12 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                 echo "Message: #{$record->getMessageId()}\n";
                 echo $e->getMessage();
 
+                $this->failJob(
+                    $jobId,
+                    $record,
+                    $e->getMessage(),
+                );
+
                 return;
             } catch (ProcessTimedOutException $e) {
                 if ($cliHandler->shouldRetry()) {
@@ -59,19 +65,11 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                 echo "Running Time: {$cliHandler->getTotalRunningTime()} seconds\n";
                 echo $e->getMessage();
 
-                $failMessage = 'Job exceeded maximum running time: 15 minutes';
-
-                try {
-                    (new CliHandler())->handle([
-                        'command' => "cloud/queue/fail {$jobId} --message={$failMessage}",
-                    ], $this->context, true);
-                } catch(\Throwable $e) {
-                    echo "Exception thrown running cloud/queue/fail:\n";
-                    echo $e->getMessage();
-                    $this->markAsFailed($record);
-
-                    return;
-                }
+                $this->failJob(
+                    $jobId,
+                    $record,
+                    'Job exceeded maximum running time: 15 minutes',
+                );
             } catch (\Throwable $e) {
                 echo "Job #$jobId threw and WILL be retried via markAsFailed:\n";
                 echo "Message: #{$record->getMessageId()}\n";
@@ -81,5 +79,22 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                 echo "Done processing job #$jobId (finally).";
             }
         });
+    }
+
+    protected function failJob(string $jobId, SqsRecord $record , string $message = ''): void
+    {
+        try {
+            (new CliHandler())->handle([
+                'command' => "cloud/queue/fail {$jobId} --message={$message}",
+            ], $this->context, true);
+        } catch (\Throwable $e) {
+            echo "Exception thrown running cloud/queue/fail:\n";
+            echo $e->getMessage();
+
+            // Attempt to retry the whole message
+            $this->markAsFailed($record);
+
+            return;
+        }
     }
 }
