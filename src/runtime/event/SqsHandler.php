@@ -48,8 +48,6 @@ class SqsHandler extends \Bref\Event\Sqs\SqsHandler
                     $record,
                     $e->getMessage(),
                 );
-
-                return;
             } catch (ProcessTimedOutException $e) {
                 if ($cliHandler->shouldRetry()) {
                     echo "Job #$jobId timed out and WILL be retried via markAsFailed:\n";
