@@ -58,7 +58,7 @@ Most configuration (to Craft and the extension itself) is handled directly by Cl
 | `accessKey`       | `string`  | AWS access key, used for communicating with storage APIs.                                   |
 | `accessSecret`    | `string`  | AWS access secret, used in conjunction with the `accessKey`.                                |
 | `cdnBaseUrl`      | `string`  | Used when building URLs to [assets](#filesystem) and other build [artifacts](#artifacturl). |
-| `cdnSigningKey`   | `string`  | A secret value used to protect transform URLs against abuse.                                |
+| `signingKey`   | `string`  | A secret value used to protect transform URLs against abuse.                                |
 | `useAssetCdn`     | `boolean` | Whether or not to enable the CDN for uploaded assets.                                       |
 | `useArtifactCdn`  | `boolean` | Whether or not to enable the CDN for build artifacts and asset bundles.                     |
 | `environmentId`   | `string`  | UUID of the current environment.                                                            |

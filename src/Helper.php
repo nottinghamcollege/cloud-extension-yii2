@@ -129,7 +129,7 @@ SQL;
 
         return new Context([
             'keys' => [
-                'hmac' => Module::getInstance()->getConfig()->cdnSigningKey,
+                'hmac' => Module::getInstance()->getConfig()->signingKey,
             ],
             'algorithm' => 'hmac-sha256',
             'headers' => $headers->push('(request-target)')->all(),

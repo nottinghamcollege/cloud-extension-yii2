@@ -22,7 +22,7 @@ class Config extends BaseConfig
     public ?string $buildId = 'current';
     public ?string $accessKey = null;
     public ?string $accessSecret = null;
-    public ?string $cdnSigningKey = null;
+    public ?string $signingKey = null;
     public bool $useAssetBundleCdn = true;
     public ?string $previewDomain = null;
     public bool $useMutex = true;
