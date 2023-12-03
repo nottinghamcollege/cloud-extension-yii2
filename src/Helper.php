@@ -96,7 +96,6 @@ SQL;
                     'keyPrefix' => Module::getInstance()->getConfig()->environmentId . ':',
                     'redis' => [
                         'database' => 0,
-                        'useSSL' => true,
                     ] + Module::getInstance()->getConfig()->getRedisConfig(),
                     'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
                         ? Runtime::MAX_EXECUTION_SECONDS
