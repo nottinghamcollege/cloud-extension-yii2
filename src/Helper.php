@@ -135,4 +135,11 @@ SQL;
             'headers' => $headers->push('(request-target)')->all(),
         ]);
     }
+
+    public static function base64UrlEncode(string $data): string
+    {
+        $base64Url = strtr(base64_encode($data), '+/', '-_');
+
+        return rtrim($base64Url, '=');
+    }
 }

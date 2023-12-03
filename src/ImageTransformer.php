@@ -141,12 +141,13 @@ class ImageTransformer extends Component implements ImageTransformerInterface
         Craft::info("Signing transform: `{$data}`");
 
         // https://developers.cloudflare.com/workers/examples/signing-requests
-        // must convert "+" to "-" as urls encode "+" as " "
-        return str_replace('+', '-', base64_encode(hash_hmac(
+        $hash = hash_hmac(
             'sha256',
             $data,
             Module::getInstance()->getConfig()->signingKey,
             true,
-        )));
+        );
+
+        return Helper::base64UrlEncode($hash);
     }
 }
