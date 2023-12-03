@@ -15,8 +15,6 @@ use craft\mutex\Mutex;
 use craft\queue\Queue as CraftQueue;
 use HttpSignatures\Context;
 use Illuminate\Support\Collection;
-use yii\mutex\MysqlMutex;
-use yii\mutex\PgsqlMutex;
 use yii\web\DbSession;
 
 class Helper
@@ -93,9 +91,15 @@ SQL;
         $config['components']['mutex'] = function() {
             return Craft::createObject([
                 'class' => Mutex::class,
-                'mutex' => Craft::$app->getDb()->getDriverName() === 'pgsql'
-                    ? PgsqlMutex::class
-                    : MysqlMutex::class,
+                'mutex' => [
+                    'class' => \yii\redis\Mutex::class,
+                    'redis' => [
+                        'database' => 0,
+                    ] + Module::getInstance()->getConfig()->getRedisConfig(),
+                    'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
+                        ? Runtime::MAX_EXECUTION_SECONDS
+                        : 30,
+                ],
             ]);
         };
 

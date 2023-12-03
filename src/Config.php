@@ -22,6 +22,7 @@ class Config extends BaseConfig
     public ?string $buildId = 'current';
     public ?string $accessKey = null;
     public ?string $accessSecret = null;
+    public ?string $redisUrl = null;
     public ?string $signingKey = null;
     public bool $useAssetBundleCdn = true;
     public ?string $previewDomain = null;
@@ -141,6 +142,23 @@ class Config extends BaseConfig
         return (Uri::new())
             ->withHost($this->previewDomain)
             ->withScheme('https');
+    }
+
+    public function getRedisConfig(): ?array
+    {
+        if (!$this->redisUrl) {
+            return null;
+        }
+
+        $urlParts = parse_url($this->redisUrl);
+
+        return [
+            'scheme' => $urlParts['scheme'],
+            'hostname' => $urlParts['host'],
+            'port' => $urlParts['port'],
+            'username' => $urlParts['user'],
+            'password' => $urlParts['pass'],
+        ];
     }
 
     protected function defineRules(): array
