@@ -7,6 +7,7 @@ use craft\config\BaseConfig;
 use craft\helpers\App;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Uri;
+use yii\redis\Connection;
 
 /**
  * @method array s3ClientOptions(array $options)
@@ -153,6 +154,7 @@ class Config extends BaseConfig
         $urlParts = parse_url($this->redisUrl);
 
         return [
+            'class' => Connection::class,
             'scheme' => $urlParts['scheme'],
             'hostname' => $urlParts['host'],
             'port' => $urlParts['port'],

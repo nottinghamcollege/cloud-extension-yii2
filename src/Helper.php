@@ -93,6 +93,7 @@ SQL;
                 'class' => Mutex::class,
                 'mutex' => [
                     'class' => \yii\redis\Mutex::class,
+                    'keyPrefix' => Module::getInstance()->getConfig()->environmentId . ':',
                     'redis' => [
                         'database' => 0,
                     ] + Module::getInstance()->getConfig()->getRedisConfig(),
