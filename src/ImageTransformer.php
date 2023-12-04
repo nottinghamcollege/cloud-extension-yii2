@@ -138,12 +138,16 @@ class ImageTransformer extends Component implements ImageTransformerInterface
         $paramString = http_build_query($params);
         $data = "$path#?$paramString";
 
-        Craft::info("Signing transform: “{$data}”");
+        Craft::info("Signing transform: `{$data}`");
 
-        return base64_encode(hash_hmac(
+        // https://developers.cloudflare.com/workers/examples/signing-requests
+        $hash = hash_hmac(
             'sha256',
             $data,
-            Module::getInstance()->getConfig()->cdnSigningKey,
-        ));
+            Module::getInstance()->getConfig()->signingKey,
+            true,
+        );
+
+        return Helper::base64UrlEncode($hash);
     }
 }

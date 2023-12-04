@@ -5,27 +5,25 @@ namespace craft\cloud;
 use Craft;
 use craft\cache\DbCache;
 use craft\cloud\fs\BuildArtifactsFs;
-use craft\cloud\fs\CpResourcesFs;
 use craft\cloud\Helper as CloudHelper;
-use craft\cloud\queue\Queue;
+use craft\cloud\queue\SqsQueue;
+use craft\cloud\runtime\Runtime;
 use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
 use craft\mutex\Mutex;
 use craft\queue\Queue as CraftQueue;
+use HttpSignatures\Context;
+use Illuminate\Support\Collection;
 use yii\mutex\MysqlMutex;
 use yii\mutex\PgsqlMutex;
 use yii\web\DbSession;
 
 class Helper
 {
-    /**
-     * With local Bref, AWS_LAMBDA_RUNTIME_API is only set from web requests,
-     * while LAMBDA_TASK_ROOT is set for both.
-     */
     public static function isCraftCloud(): bool
     {
-        return App::env('AWS_LAMBDA_RUNTIME_API') || App::env('LAMBDA_TASK_ROOT');
+        return App::env('CRAFT_CLOUD') ?? App::env('AWS_LAMBDA_RUNTIME_API') ?? false;
     }
 
     public static function artifactUrl(string $path = ''): string
@@ -112,14 +110,47 @@ SQL;
             ]);
         };
 
-        $config['components']['queue'] = [
-            'class' => CraftQueue::class,
-            'proxyQueue' => Queue::class,
-        ];
+        $config['components']['queue'] = function() {
+            $ttr = Runtime::MAX_EXECUTION_SECONDS - 1;
 
-        $config['components']['assetManager'] = [
-            'class' => AssetManager::class,
-            'fs' => Craft::createObject(CpResourcesFs::class),
-        ];
+            return Craft::createObject([
+                'class' => CraftQueue::class,
+                'ttr' => $ttr,
+                'proxyQueue' => Module::getInstance()->getConfig()->useQueue ? [
+                    'class' => SqsQueue::class,
+                    'ttr' => $ttr,
+                    'url' => Module::getInstance()->getConfig()->sqsUrl,
+                    'region' => Module::getInstance()->getConfig()->getRegion(),
+                ] : null,
+            ]);
+        };
+
+        $config['components']['assetManager'] = function() {
+            $config = [
+                'class' => AssetManager::class,
+            ] + App::assetManagerConfig();
+
+            return Craft::createObject($config);
+        };
+    }
+
+    public static function createSigningContext(iterable $headers = []): Context
+    {
+        $headers = Collection::make($headers);
+
+        return new Context([
+            'keys' => [
+                'hmac' => Module::getInstance()->getConfig()->signingKey,
+            ],
+            'algorithm' => 'hmac-sha256',
+            'headers' => $headers->push('(request-target)')->all(),
+        ]);
+    }
+
+    public static function base64UrlEncode(string $data): string
+    {
+        $base64Url = strtr(base64_encode($data), '+/', '-_');
+
+        return rtrim($base64Url, '=');
     }
 }

@@ -11,17 +11,18 @@ class AssetsFs extends Fs
     public ?string $localFsUrl = '@web/craft-cloud/{handle}';
     protected ?string $expires = '1 years';
 
+    public function init(): void
+    {
+        $this->useLocalFs = !Module::getInstance()->getConfig()->getUseAssetCdn();
+        parent::init();
+    }
+
     /**
      * @inheritDoc
      */
     public static function displayName(): string
     {
         return 'Craft Cloud';
-    }
-
-    protected function useLocalFs(): bool
-    {
-        return !Module::getInstance()->getConfig()->getUseAssetCdn();
     }
 
     public function getPrefix(): string

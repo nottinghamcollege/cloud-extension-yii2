@@ -4,7 +4,11 @@ namespace craft\cloud\cli\controllers;
 
 use Craft;
 use craft\cloud\AssetBundlePublisher;
+use craft\cloud\AssetManager;
+use craft\cloud\Composer;
+use craft\cloud\Helper;
 use craft\console\Controller;
+use craft\helpers\App;
 use ReflectionClass;
 use yii\console\Exception;
 use yii\console\ExitCode;
@@ -13,30 +17,67 @@ use yii\web\AssetBundle;
 class AssetBundlesController extends Controller
 {
     public bool $quiet = false;
+    public ?string $to = null;
+
+    public function init(): void
+    {
+        $this->to = $this->to ?? Craft::$app->getConfig()->getGeneral()->resourceBasePath;
+
+        parent::init();
+    }
+
+    public function beforeAction($action): bool
+    {
+        if (Helper::isCraftCloud()) {
+            throw new Exception('Asset bundle publishing is not supported in a Craft Cloud environment.');
+        }
+
+        if (App::env('CRAFT_NO_DB')) {
+            Composer::getModuleAliases()
+                ->merge(Composer::getPluginAliases())
+                ->merge(Composer::getRootAliases())
+                ->each(function($path, $alias) {
+                    return Craft::setAlias($alias, $path);
+                });
+        }
+
+        return true;
+    }
 
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), match ($actionID) {
             'publish-bundle' => [
                 'quiet',
+                'to',
             ],
-            default => [],
+            default => [
+                'to',
+            ],
         });
     }
 
     public function actionPublishBundle(string $className): int
     {
         try {
-            $this->do("Publishing “{$className}”", function() use ($className) {
+            $this->do("Publishing `$className` to `$this->to`", function() use ($className) {
                 $rc = new ReflectionClass($className);
 
                 if (!$rc->isSubclassOf(AssetBundle::class) || !$rc->isInstantiable()) {
-                    throw new Exception('Not a valid asset bundle.');
+                    // TODO: enhance \craft\console\Controller::do to return
+                    // non-error responses (skip)
+                    return;
                 }
 
                 /** @var AssetBundle $assetBundle */
                 $assetBundle = Craft::createObject($className);
-                $assetManager = Craft::$app->getAssetManager();
+
+                // Intentionally not using the component, as it won't be loaded when run from the builder.
+                $assetManager = Craft::createObject([
+                    'class' => AssetManager::class,
+                    'basePath' => $this->to,
+                ] + App::assetManagerConfig());
+
                 $assetBundle->publish($assetManager);
             });
         } catch (\Throwable $e) {
@@ -51,6 +92,7 @@ class AssetBundlesController extends Controller
     public function actionPublish(): int
     {
         $publisher = new AssetBundlePublisher();
+        $publisher->to = $this->to;
         $publisher->wait();
 
         return ExitCode::OK;

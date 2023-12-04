@@ -5,21 +5,28 @@ namespace craft\cloud;
 use Craft;
 use craft\config\BaseConfig;
 use craft\helpers\App;
+use League\Uri\Contracts\UriInterface;
+use League\Uri\Uri;
 
 /**
  * @method array s3ClientOptions(array $options)
  */
 class Config extends BaseConfig
 {
+    public ?string $artifactBaseUrl = null;
     public array $s3ClientOptions = [];
     public string $cdnBaseUrl = 'https://cdn.craft.cloud';
     public ?string $sqsUrl = null;
     public ?string $projectId = null;
     public ?string $environmentId = null;
-    public ?string $buildId = null;
+    public ?string $buildId = 'current';
     public ?string $accessKey = null;
     public ?string $accessSecret = null;
-    public ?string $cdnSigningKey = null;
+    public ?string $signingKey = null;
+    public bool $useAssetBundleCdn = true;
+    public ?string $previewDomain = null;
+    public bool $useMutex = true;
+    public bool $useQueue = true;
     protected ?string $region = null;
     protected bool $useAssetCdn = true;
     protected bool $useArtifactCdn = true;
@@ -29,6 +36,9 @@ class Config extends BaseConfig
         if (!Helper::isCraftCloud()) {
             $this->useAssetCdn = false;
             $this->useArtifactCdn = false;
+            $this->useAssetBundleCdn = false;
+            $this->useMutex = false;
+            $this->useQueue = false;
         }
     }
 
@@ -54,7 +64,7 @@ class Config extends BaseConfig
 
     public function getUseAssetCdn(): bool
     {
-        return App::env('CRAFT_CLOUD_USE_ASSET_CDN') ?? ($this->useAssetCdn || Helper::isCraftCloud());
+        return App::env('CRAFT_CLOUD_USE_ASSET_CDN') ?? $this->useAssetCdn;
     }
 
     public function setUseAssetCdn(bool $value): static
@@ -75,7 +85,7 @@ class Config extends BaseConfig
 
     public function getUseArtifactCdn(): bool
     {
-        return App::env('CRAFT_CLOUD_USE_ARTIFACT_CDN') ?? ($this->useArtifactCdn || Helper::isCraftCloud());
+        return App::env('CRAFT_CLOUD_USE_ARTIFACT_CDN') ?? $this->useArtifactCdn;
     }
 
     public function setUseArtifactCdn(bool $value): static
@@ -115,18 +125,36 @@ class Config extends BaseConfig
         return $this->setRegion($value);
     }
 
+    public function getShortEnvironmentId(): ?string
+    {
+        return $this->environmentId
+            ? substr($this->environmentId, 0, 8)
+            : null;
+    }
+
+    public function getPreviewDomainUrl(): ?UriInterface
+    {
+        if (!$this->previewDomain) {
+            return null;
+        }
+
+        return (Uri::new())
+            ->withHost($this->previewDomain)
+            ->withScheme('https');
+    }
+
     protected function defineRules(): array
     {
         $rules = parent::defineRules();
 
         $rules[] = [
-            ['projectId', 'environmentId'],
+            ['environmentId', 'projectId'],
             'required',
-            'when' => fn(Config $model) => $model->getUseAssetCdn() || $model->getUseArtifactCdn(),
+            'when' => fn(Config $model) => $model->getUseAssetCdn(),
         ];
 
         $rules[] = [
-            'buildId',
+            ['environmentId', 'buildId'],
             'required',
             'when' => fn(Config $model) => $model->getUseArtifactCdn(),
         ];

@@ -6,8 +6,9 @@ use Craft;
 use craft\cloud\queue\TestJob;
 use craft\console\Controller;
 use craft\queue\Queue;
-use yii\console\Exception;
+use yii\console\Exception as CliException;
 use yii\console\ExitCode;
+use yii\queue\ExecEvent;
 
 class QueueController extends Controller
 {
@@ -32,22 +33,49 @@ class QueueController extends Controller
     public bool $throw = false;
 
     /**
-     * The exception message, when self::$throw is `true`
+     * The message to pass when manually failing a job
      */
-    public string $message = '';
+
+    /**
+     * The exception message:
+     * - when self::$throw is `true`
+     * - when manually failing a job
+     */
+    public ?string $message = null;
 
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), match ($actionID) {
-            'test-job' => [
+            'push-test-job' => [
                 'message',
                 'run',
                 'throw',
                 'seconds',
                 'count',
             ],
+            'fail' => [
+                'message',
+            ],
             default => [],
         });
+    }
+
+    public function actionFail(string $jobId): int
+    {
+        $this->do("Failing job #$jobId", function() use ($jobId) {
+            /** @var Queue $queue */
+            $queue = Craft::$app->getQueue();
+            $event = new ExecEvent([
+                'id' => $jobId,
+                'error' => $this->message ? new \yii\base\Exception($this->message) : null,
+
+                // Prevent retry
+                'attempt' => 1,
+            ]);
+            $queue->handleError($event);
+        });
+
+        return ExitCode::OK;
     }
 
     public function actionExec(string $jobId): int
@@ -58,18 +86,18 @@ class QueueController extends Controller
             $jobFound = $queue->executeJob($jobId);
 
             if (!$jobFound) {
-                throw new Exception('Job not found.');
+                throw new CliException('Job not found.');
             }
         });
 
         return ExitCode::OK;
     }
 
-    public function actionTestJob(): int
+    public function actionPushTestJob(): int
     {
         for ($i = 0; $i < $this->count; $i++) {
             $job = new TestJob([
-                'message' => $this->message,
+                'message' => $this->message ?? '',
                 'throw' => $this->throw,
                 'seconds' => $this->seconds,
             ]);
