@@ -156,11 +156,11 @@ class Config extends BaseConfig
         return [
             'class' => Connection::class,
             'useSSL' => true,
-            'scheme' => $urlParts['scheme'],
-            'hostname' => $urlParts['host'],
-            'port' => $urlParts['port'],
-            'username' => $urlParts['user'],
-            'password' => $urlParts['pass'],
+            'scheme' => $urlParts['scheme'] ?? null,
+            'hostname' => $urlParts['host'] ?? null,
+            'port' => $urlParts['port'] ?? null,
+            'username' => $urlParts['user'] ?? null,
+            'password' => $urlParts['pass'] ?? null,
         ];
     }
 
