@@ -53,7 +53,7 @@ class Helper
         if ($db->getIsMysql()) {
             // based on yii\db\mysql\Schema::findTableName()
             $sql = <<<SQL
-SHOW CREATE TABLES LIKE :tableName
+SHOW TABLES LIKE :tableName
 SQL;
         } else {
             // based on yii\db\pgsql\Schema::findTableName()
