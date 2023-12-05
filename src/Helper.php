@@ -55,8 +55,6 @@ class Helper
             $sql = <<<SQL
 SHOW CREATE TABLES LIKE :tableName
 SQL;
-
-            $sql = "";
         } else {
             // based on yii\db\pgsql\Schema::findTableName()
             $sql = <<<SQL
