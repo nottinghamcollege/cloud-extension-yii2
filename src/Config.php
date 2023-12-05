@@ -145,10 +145,10 @@ class Config extends BaseConfig
             ->withScheme('https');
     }
 
-    public function getRedisConfig(): ?array
+    public function getRedisConfig(): array
     {
         if (!$this->redisUrl) {
-            return null;
+            return [];
         }
 
         $urlParts = parse_url($this->redisUrl);
