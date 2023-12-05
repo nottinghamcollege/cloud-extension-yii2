@@ -12,7 +12,6 @@ use yii\base\Exception;
 
 class CliHandler implements Handler
 {
-    public const EXIT_CODE_TIMEOUT = 187;
     public const MAX_EXECUTION_BUFFER_SECONDS = 5;
     public ?Process $process = null;
     protected string $scriptPath = '/var/task/craft';
@@ -36,7 +35,6 @@ class CliHandler implements Handler
         $this->process = Process::fromShellCommandline($command, null, [
             'LAMBDA_INVOCATION_CONTEXT' => json_encode($context, JSON_THROW_ON_ERROR),
         ], null, $timeout);
-        $exitCode = null;
 
         echo "Function time remaining: {$remainingSeconds} seconds";
 
@@ -55,17 +53,13 @@ class CliHandler implements Handler
             echo "{$e->getMessage()}\n";
             echo "{$e->getTraceAsString()}\n";
 
-            $exitCode = $e instanceof ProcessTimedOutException
-                ? self::EXIT_CODE_TIMEOUT
-                : $exitCode;
-
             if ($throw) {
                 throw $e;
             }
         }
 
         return [
-            'exitCode' => $exitCode ?? $this->process->getExitCode(),
+            'exitCode' => $this->process->getExitCode(),
             'output' => $this->process->getErrorOutput() . $this->process->getOutput(),
             'runningTime' => $this->getTotalRunningTime(),
         ];
