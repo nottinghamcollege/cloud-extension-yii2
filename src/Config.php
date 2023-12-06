@@ -7,7 +7,6 @@ use craft\config\BaseConfig;
 use craft\helpers\App;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Uri;
-use yii\redis\Connection;
 
 /**
  * @method array s3ClientOptions(array $options)
@@ -27,7 +26,6 @@ class Config extends BaseConfig
     public ?string $signingKey = null;
     public bool $useAssetBundleCdn = true;
     public ?string $previewDomain = null;
-    public bool $useMutex = true;
     public bool $useQueue = true;
     protected ?string $region = null;
     protected bool $useAssetCdn = true;
@@ -143,25 +141,6 @@ class Config extends BaseConfig
         return (Uri::new())
             ->withHost($this->previewDomain)
             ->withScheme('https');
-    }
-
-    public function getRedisConfig(): ?array
-    {
-        if (!$this->redisUrl) {
-            return null;
-        }
-
-        $urlParts = parse_url($this->redisUrl);
-
-        return [
-            'class' => Connection::class,
-            'useSSL' => true,
-            'scheme' => $urlParts['scheme'],
-            'hostname' => $urlParts['host'],
-            'port' => $urlParts['port'],
-            'username' => $urlParts['user'],
-            'password' => $urlParts['pass'],
-        ];
     }
 
     protected function defineRules(): array

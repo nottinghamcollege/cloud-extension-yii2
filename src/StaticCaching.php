@@ -163,13 +163,6 @@ class StaticCaching extends \yii\base\Component
             $tag,
         ));
 
-        // TODO: remove this once Craft sets `public`
-        // https://github.com/craftcms/cms/pull/13922
-        $response->getHeaders()->setDefault(
-            HeaderEnum::CACHE_CONTROL->value,
-            "public, max-age=$duration",
-        );
-
         $response->setCacheHeaders($duration, false);
     }
 
