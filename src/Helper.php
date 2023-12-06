@@ -104,8 +104,9 @@ SQL;
                     'class' => \yii\redis\Mutex::class,
                     'keyPrefix' => Module::getInstance()->getConfig()->environmentId . ':',
                     'redis' => [
+                        'class' => Redis::class,
                         'database' => 0,
-                    ] + Module::getInstance()->getConfig()->getRedisConfig(),
+                    ],
                     'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
                         ? Runtime::MAX_EXECUTION_SECONDS
                         : 30,
