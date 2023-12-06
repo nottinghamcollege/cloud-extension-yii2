@@ -37,7 +37,6 @@ class Config extends BaseConfig
             $this->useAssetCdn = false;
             $this->useArtifactCdn = false;
             $this->useAssetBundleCdn = false;
-            $this->useMutex = false;
             $this->useQueue = false;
         }
     }
