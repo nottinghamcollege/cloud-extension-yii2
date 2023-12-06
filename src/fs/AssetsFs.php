@@ -7,8 +7,8 @@ use League\Uri\Components\HierarchicalPath;
 
 class AssetsFs extends Fs
 {
-    public ?string $localFsPath = '@webroot/craft-cloud/{handle}';
-    public ?string $localFsUrl = '@web/craft-cloud/{handle}';
+    public ?string $localFsPath = '@webroot/craft-cloud';
+    public ?string $localFsUrl = '@web/craft-cloud';
     protected ?string $expires = '1 years';
 
     public function init(): void

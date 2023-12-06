@@ -68,12 +68,8 @@ abstract class Fs extends FlysystemFs
         $this->localFs = $this->localFs ?? Craft::createObject([
             'class' => Local::class,
             'hasUrls' => $this->hasUrls,
-            'path' => $this->localFsPath
-                ? Craft::$app->getView()->renderObjectTemplate($this->localFsPath, $this)
-                : null,
-            'url' => $this->hasUrls && $this->localFsUrl
-                ? Craft::$app->getView()->renderObjectTemplate($this->localFsUrl, $this)
-                : null,
+            'path' => $this->localFsPath,
+            'url' => $this->localFsUrl,
         ]);
 
         return $this->localFs;
