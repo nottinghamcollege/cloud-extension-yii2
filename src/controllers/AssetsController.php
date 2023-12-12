@@ -18,17 +18,9 @@ use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
 
-class CloudController extends Controller
+class AssetsController extends Controller
 {
     use AssetsControllerTrait;
-
-    protected array|bool|int $allowAnonymous = ['debug'];
-
-    public function actionDebug(): Response
-    {
-        $success = phpinfo();
-        return $success ? $this->asSuccess() : $this->asFailure();
-    }
 
     public function actionGetUploadUrl(): Response
     {

@@ -120,7 +120,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
       try {
         let response = await Craft.sendActionRequest(
           'POST',
-          'cloud/get-upload-url',
+          'cloud/assets/get-upload-url',
           {
             data: formData,
           }
@@ -210,11 +210,11 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
   {
     defaults: {
       maxFileSize: null,
-      createAction: 'cloud/create-asset',
-      replaceAction: 'cloud/replace-file',
+      createAction: 'cloud/assets/create-asset',
+      replaceAction: 'cloud/assets/replace-file',
     },
   }
 );
 
 // Register it!
-Craft.registerUploaderClass('craft\\cloud\\fs\\AssetFs', Craft.CloudUploader);
+Craft.registerUploaderClass('craft\\cloud\\fs\\AssetsFs', Craft.CloudUploader);

@@ -328,12 +328,12 @@ abstract class Fs extends FlysystemFs
         try {
             $commandConfig = $this->addFileMetadataToConfig($config);
 
-            $command = $this->client->getCommand($command, [
+            $command = $this->getClient()->getCommand($command, [
                 'Bucket' => $this->getBucketName(),
                 'Key' => $this->prefixPath($path),
             ] + $commandConfig);
 
-            $request = $this->client->createPresignedRequest(
+            $request = $this->getClient()->createPresignedRequest(
                 $command,
                 $expiresAt,
             );
