@@ -94,7 +94,7 @@ class AssetsController extends Controller
         $elementsService = Craft::$app->getElements();
         $lastModifiedMs = (int) $this->request->getBodyParam('lastModified');
         $dateModified = $lastModifiedMs
-            ? DateTime::createFromFormat('U', (string)($lastModifiedMs / 1000))
+            ? DateTime::createFromFormat('U', (string) floor($lastModifiedMs / 1000))
             : new DateTime();
 
         if (!$filename) {
