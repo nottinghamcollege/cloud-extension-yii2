@@ -18,7 +18,7 @@ class SqsQueue extends \yii\queue\sqs\Queue
          * will consider the job processed. Once the transaction ends,
          * the job will exist and be indefinitely pending.
          */
-        Craft::$app->onAfterRequest(function() use ($message, $ttr, $delay) {
+        Craft::$app->getDb()->onAfterTransaction(function() use ($message, $ttr, $delay) {
 
             /**
              * @phpstan-ignore-next-line
