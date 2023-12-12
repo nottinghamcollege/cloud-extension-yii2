@@ -262,6 +262,7 @@ abstract class Fs extends FlysystemFs
         return $key ? new Credentials(
             $key,
             Module::getInstance()->getConfig()->accessSecret,
+            Module::getInstance()->getConfig()->accessToken,
         ) : null;
     }
 
