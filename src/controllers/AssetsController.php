@@ -150,8 +150,6 @@ class AssetsController extends Controller
         $targetFilename = Assets::prepareAssetName($originalFilename);
         $asset = new Asset();
         $asset->setFilename($filename);
-        $asset->folderId = $folder->id;
-        $asset->folderPath = $folder->path;
         $asset->setVolumeId($folder->volumeId);
         $asset->uploaderId = Craft::$app->getUser()->getId();
         $asset->avoidFilenameConflicts = true;
@@ -159,6 +157,9 @@ class AssetsController extends Controller
         $asset->size = $size;
         $asset->width = $width;
         $asset->height = $height;
+
+        // Setting newFolderId and not folderId, so that validation on newLocation occurs
+        $asset->newFolderId = $folder->id;
 
         if (!$selectionCondition) {
             $asset->newFilename = $targetFilename;
@@ -168,6 +169,7 @@ class AssetsController extends Controller
             $asset->title = Assets::filename2Title(pathinfo($originalFilename, PATHINFO_FILENAME));
         }
 
+        // Saving without Asset::SCENARIO_CREATE, as it requires a tempFilePath
         $saved = $elementsService->saveElement($asset);
 
         // In case of error, let user know about it.
