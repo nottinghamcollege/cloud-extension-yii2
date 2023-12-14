@@ -34,4 +34,19 @@ class AssetManager extends \craft\web\AssetManager
             $this->baseUrl = (new CpResourcesFs())->getRootUrl();
         }
     }
+
+    protected function hash($path): string
+    {
+        $dir = is_file($path) ? dirname($path) : $path;
+        $data = [
+            // @phpstan-ignore-next-line
+            Craft::alias($dir),
+            $this->linkAssets,
+        ];
+
+        return sprintf(
+            '%x',
+            crc32(implode('|', $data)),
+        );
+    }
 }
