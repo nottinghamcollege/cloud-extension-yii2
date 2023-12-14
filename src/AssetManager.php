@@ -40,8 +40,11 @@ class AssetManager extends \craft\web\AssetManager
         $dir = is_file($path) ? dirname($path) : $path;
 
         // @phpstan-ignore-next-line
-        return FileHelper::sanitizeFilename(Craft::alias($dir), [
-            'asciiOnly' => true,
-        ]);
+        $alias = Craft::alias($dir);
+
+        return FileHelper::sanitizeFilename(
+            preg_replace('/\/|@/', '-', $alias),
+            ['asciiOnly' => true]
+        );
     }
 }
