@@ -11,13 +11,16 @@ When installed, the extension automatically [bootstraps](https://www.yiiframewor
 - :cloud_with_lightning: **Cloud:** There’s no infrastructure settings to worry about—database, queue, cache, and session configuration is handled for you.
 - :computer: **Local development:** Craft runs normally, in your favorite [development environment](https://craftcms.com/docs/4.x/installation.html).
 
-:sparkles: To learn more about Cloud, check out [our website](https://craftcms.com/cloud)—or dive right in with [Craft Console](https://console.craftcms.com/cloud). Interested in everything the extension does to get your app ready for Cloud? Read our [Cloud module deep-dive](https://craftcms.com/knowledge-base/cloud-extension), in the knowledge base.
+:sparkles: To learn more about Cloud, check out [our website](https://craftcms.com/cloud)—or dive right in with [Craft Console](https://console.craftcms.com/cloud). Interested in everything the extension does to get your app ready for Cloud? Read our [Cloud extension deep-dive](https://craftcms.com/knowledge-base/cloud-extension), in the knowledge base.
 
 ## Installation
 
-The Cloud module can be installed in any existing Craft 4.5+ project by running `php craft setup/cloud`. Craft will install the [`craftcms/cloud` package](https://packagist.org/craftcms/cloud) and run the module’s own setup wizard.
+The Cloud extension can be installed in any existing Craft 4.5+ project by running `php craft setup/cloud`. Craft will add the `craftcms/cloud` package and run the extension’s own setup wizard.
 
-When you deploy a project to Cloud, the `cloud/up` command will run, wrapping Craft’s built-in [`up` command](https://craftcms.com/docs/4.x/console-commands.html#up) and adding the cache and session tables (if they’re not already present).
+> [!TIP]
+> This process includes the creation of a [`craft-cloud.yaml` configuration file](https://craftcms.com/knowledge-base/cloud-config) which helps Cloud understand your project’s structure and determines which versions of PHP and Node your project will use during builds and at runtime.
+
+When you [deploy](https://craftcms.com/knowledge-base/cloud-deployment) a project to Cloud, the `cloud/up` command will run, wrapping Craft’s built-in [`up` command](https://craftcms.com/docs/4.x/console-commands.html#up) and adding the cache and session tables (if they’re not already present).
 
 ## Filesystem
 
@@ -27,15 +30,29 @@ When setting up your project’s assets, use the provided **Craft Cloud** filesy
 
 ### Template Helpers
 
-The extension provides two new [Twig functions](https://craftcms.com/docs/4.x/dev/functions.html) and one global variable:
-
 #### `artifactUrl()`
 
 Generates a URL to a resource that was uploaded to the CDN during the build and deployment process.
 
+```twig
+{# Output a script tag with a build-specific URL: #}
+<script src="{{ artifactUrl('dist/js/app.js') }}"></script>
+
+{# You can also use the extension-provided alias: #}
+{% js '@artifactBaseUrl/dist/js/app.js' %}
+```
+
+Read more about [how to use artifact URLs](https://craftcms.com/knowledge-base/cloud-builds#artifact-uRLs).
+
 #### `isCraftCloud`
 
 `true` when the app detects it is running on Cloud infrastructure, `false` otherwise.
+
+```twig
+{% if isCraftCloud %}
+  Welcome to Cloud!
+{% endif %}
+```
 
 ### Aliases
 
@@ -43,28 +60,35 @@ The following aliases are available, in addition to [those provided by Craft](ht
 
 #### `@web`
 
-We override the `@web` alias to guarantee that the correct environment URL is used in all HTTP contexts.
+On Cloud, the `@web` alias is guaranteed to be the correct environment URL for each HTTP context, whether that be a [preview domain](https://craftcms.com/knowledge-base/cloud-domains#preview-domains) or [custom domain](https://craftcms.com/knowledge-base/cloud-domains#adding-a-domain).
 
 #### `@artifactBaseUrl`
 
-Equivalent to [`artifactsUrl()`](#artifactsUrl), this allows [Project Config](https://craftcms.com/docs/4.x/project-config.html) settings to take advantage of dynamically-determined CDN URLs.
+Equivalent to [`artifactUrl()`](#artifactUrl), this allows [Project Config](https://craftcms.com/docs/4.x/project-config.html) settings to take advantage of dynamic, build-specific CDN URLs.
 
 ## Configuration
 
 Most configuration (to Craft and the extension itself) is handled directly by Cloud infrastructure, through [environment overrides](https://craftcms.com/docs/4.x/config/#environment-overrides). These options are provided strictly for reference, and have limited utility outside the platform.
 
-| Option            | Type      | Description                                                                                 |
-| ----------------- | --------- | ------------------------------------------------------------------------------------------- |
-| `accessKey`       | `string`  | AWS access key, used for communicating with storage APIs.                                   |
-| `accessSecret`    | `string`  | AWS access secret, used in conjunction with the `accessKey`.                                |
-| `cdnBaseUrl`      | `string`  | Used when building URLs to [assets](#filesystem) and other build [artifacts](#artifacturl). |
-| `signingKey`   | `string`  | A secret value used to protect transform URLs against abuse.                                |
-| `useAssetCdn`     | `boolean` | Whether or not to enable the CDN for uploaded assets.                                       |
-| `useArtifactCdn`  | `boolean` | Whether or not to enable the CDN for build artifacts and asset bundles.                     |
-| `environmentId`   | `string`  | UUID of the current environment.                                                            |
-| `projectId`       | `string`  | UUID of the current project.                                                                |
-| `region`          | `string`  | The app region, chosen when creating the project.                                           |
-| `s3ClientOptions` | `array`   | Additional settings to pass to the `Aws\S3\S3Client` instance when accessing storage APIs.  |
-| `sqsUrl`          | `string`  | Determines how Craft communicates with the underlying queue provider.                       |
+| Option | Type | Description |
+| --- | --- | --- |
+| `artifactBaseUrl` | `string|null` | Directly set a fully-qualified URL to build artifacts. |
+| `s3ClientOptions` | `array` | Additional settings to pass to the `Aws\S3\S3Client` instance when accessing storage APIs. |
+| `cdnBaseUrl` | `string` | Used when building URLs to [assets](#filesystem) and other build [artifacts](#artifacturl). |
+| `sqsUrl` | `string` | Determines how Craft communicates with the underlying queue provider. |
+| `projectId` | `string` | UUID of the current project. |
+| `environmentId` | `string` | UUID of the current [environment](https://craftcms.com/knowledge-base/cloud-environments). |
+| `buildId` | `string` | UUID of the current [build](https://craftcms.com/knowledge-base/cloud-builds). |
+| `accessKey` | `string` | AWS access key, used for communicating with storage APIs. |
+| `accessSecret` | `string` | AWS access secret, used in conjunction with the `accessKey`. |
+| `accessToken` | `string` | AWS access token. |
+| `redisUrl` | `string` | Connection string for the environment’s Redis instance. |
+| `signingKey` | `string` | A secret value used to protect transform URLs against abuse. |
+| `useAssetBundleCdn` | `boolean` | Whether or not to enable the CDN for asset bundles. |
+| `previewDomain` | `string|null` | Set when accessing an environment from its [preview domain](https://craftcms.com/knowledge-base/cloud-domains#preview-domains). |
+| `useQueue` | `boolean` | Whether or not to use Cloud’s SQS-backed queue driver. |
+| `region` | `string` | The app region, chosen when creating the project. |
+| `useAssetCdn` | `boolean` | Whether or not to enable the CDN for uploaded assets. |
+| `useArtifactCdn` | `boolean` | Whether or not to enable the CDN for build artifacts and asset bundles. |
 
 These options can also be set via environment overrides beginning with `CRAFT_CLOUD_`.
