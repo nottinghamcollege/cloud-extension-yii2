@@ -71,10 +71,9 @@
     value: fs.localFsPath ?? null,
     errors: fs.getErrors('localFsPath') ?? null,
     required: true,
-    placeholder: "/path/to/folder"|t('app'),
-    tip: "You can include tags that output filesystem properties, such as `{ex}`. The **Subpath** setting is appended to this path."|t('app', { ex: '{handle}' })
+    placeholder: "@webroot/path/to/folder"|t('app'),
+    tip: "The **Subpath** setting is appended to this path."|t('app', { ex: '{handle}' })
 }) }}
-
 
 <div id="local-fs-url-field" class="{% if not fs.hasUrls %}hidden{% endif %}">
     {{ forms.autosuggestField({
@@ -88,8 +87,8 @@
         value: fs.localFsUrl ?? null,
         errors: fs.getErrors('localFsUrl') ?? null,
         required: true,
-        placeholder: "//example.com/path/to/folder",
-        tip: "You can include tags that output filesystem properties, such as `{ex}`. The **Subpath** setting is appended to this URL."|t('app', { ex: '{handle}' })
+        placeholder: "@web/path/to/folder",
+        tip: "The **Subpath** setting is appended to this URL."|t('app', { ex: '{handle}' })
     }) }}
 </div>
 
