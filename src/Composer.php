@@ -32,7 +32,7 @@ class Composer
         $packages = new Collection($data['packages'] ?? null);
 
         return $packages
-            ->where('type', 'yii-module')
+            ->whereIn('type', ['yii-module', 'craft-module'])
             ->flatMap(function($package) {
                 $packageName = $package['name'] ?? null;
 
