@@ -32,11 +32,15 @@ class Composer
         $packages = new Collection($data['packages'] ?? null);
 
         return $packages
-            ->whereIn('type', ['yii-module', 'craft-module'])
-            ->flatMap(function($package) {
+            ->flatMap(function(array $package) {
                 $packageName = $package['name'] ?? null;
+                $packageType = $package['type'] ?? null;
 
-                if (!$packageName) {
+                if (
+                    !$packageName ||
+                    !$packageType ||
+                    !preg_match('/^(craft|yii)/', $packageType)
+                ) {
                     return null;
                 }
 
