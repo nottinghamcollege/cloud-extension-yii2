@@ -43,10 +43,9 @@ class Helper
         $attributes = Collection::wrap($rule[0])
             ->reject(fn($attribute) => $attribute === $attributeToRemove);
 
-        if ($attributes->isEmpty()) {
-            return null;
-        }
-
+        // We may end up with a rule with an empty array of attributes.
+        // We still need to keep that rule around so any potential
+        // scenarios get defined from the 'on' key.
         $rule[0] = $attributes->all();
 
         return $rule;
@@ -56,7 +55,6 @@ class Helper
     {
         return Collection::make($rules)
             ->map(fn($rule) => Helper::removeAttributeFromRule($rule, $attributeToRemove))
-            ->filter()
             ->all();
     }
 
