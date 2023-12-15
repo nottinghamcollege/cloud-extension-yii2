@@ -65,7 +65,7 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
           const matches = file.name.match(/\.([a-z0-4_]+)$/i);
           const fileExtension = matches[1];
 
-          if (this._extensionList.includes(fileExtension.toLowerCase())) {
+          if (!this._extensionList.includes(fileExtension.toLowerCase())) {
             this._rejectedFiles.type.push('“' + file.name + '”');
             valid = false;
           }
@@ -99,13 +99,16 @@ Craft.CloudUploader = Craft.BaseUploader.extend(
 
       this.processErrorMessages();
 
-      this.element.dispatchEvent(new Event('fileuploadstart'));
+      if (this._validFileCounter > 0) {
+        this.element.dispatchEvent(new Event('fileuploadstart'));
 
-      for (const file of validFiles) {
-        await this.uploadFile(file);
-        this._inProgressCounter--;
+        for (const file of validFiles) {
+          await this.uploadFile(file);
+          this._inProgressCounter--;
+        }
       }
 
+      this._validFileCounter = 0;
       this._totalBytes = 0;
       this._uploadedBytes = 0;
       this._lastUploadedBytes = 0;

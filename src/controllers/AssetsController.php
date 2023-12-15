@@ -158,8 +158,12 @@ class AssetsController extends Controller
         $asset->width = $width;
         $asset->height = $height;
 
-        // Setting newFolderId and not folderId, so that validation on newLocation occurs
+        // Setting newFolderId, so that extension validation on newLocation occurs
         $asset->newFolderId = $folder->id;
+
+        // Setting these so that Asset::_relocateFile doesn't try to download
+        $asset->folderId = $folder->id;
+        $asset->folderPath = $folder->path;
 
         if (!$selectionCondition) {
             $asset->newFilename = $targetFilename;
@@ -169,7 +173,7 @@ class AssetsController extends Controller
             $asset->title = Assets::filename2Title(pathinfo($originalFilename, PATHINFO_FILENAME));
         }
 
-        // Saving without Asset::SCENARIO_CREATE, as it requires a tempFilePath
+        $asset->setScenario(Asset::SCENARIO_CREATE);
         $saved = $elementsService->saveElement($asset);
 
         // In case of error, let user know about it.
@@ -330,7 +334,7 @@ class AssetsController extends Controller
         $asset->avoidFilenameConflicts = true;
         $asset->setFilename($filename);
         $asset->newFilename = $targetFilename;
-
+        $asset->setScenario(Asset::SCENARIO_REPLACE);
         $saved = Craft::$app->getElements()->saveElement($asset);
 
         if ($assets->hasEventHandlers($assets::EVENT_AFTER_REPLACE_ASSET)) {

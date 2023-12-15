@@ -38,6 +38,28 @@ class Helper
         return $memoryLimit;
     }
 
+    public static function removeAttributeFromRule(array $rule, string $attributeToRemove): ?array
+    {
+        $attributes = Collection::wrap($rule[0])
+            ->reject(fn($attribute) => $attribute === $attributeToRemove);
+
+        if ($attributes->isEmpty()) {
+            return null;
+        }
+
+        $rule[0] = $attributes->all();
+
+        return $rule;
+    }
+
+    public static function removeAttributeFromRules(array $rules, string $attributeToRemove): array
+    {
+        return Collection::make($rules)
+            ->map(fn($rule) => Helper::removeAttributeFromRule($rule, $attributeToRemove))
+            ->filter()
+            ->all();
+    }
+
     /**
      * A version of tableExists that doesn't rely on the cache component
      */

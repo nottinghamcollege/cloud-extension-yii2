@@ -4,6 +4,7 @@ namespace craft\cloud;
 
 use Craft;
 use craft\base\Event;
+use craft\base\Model;
 use craft\cloud\fs\AssetsFs;
 use craft\cloud\fs\StorageFs;
 use craft\cloud\fs\TmpFs;
@@ -11,6 +12,8 @@ use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\cloud\web\ResponseBehavior;
 use craft\console\Application as ConsoleApplication;
 use craft\debug\Module as DebugModule;
+use craft\elements\Asset;
+use craft\events\DefineRulesEvent;
 use craft\events\RegisterComponentTypesEvent;
 use craft\events\RegisterTemplateRootsEvent;
 use craft\fs\Temp;
@@ -55,7 +58,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ? 'craft\\cloud\\cli\\controllers'
             : 'craft\\cloud\\controllers';
 
-        $this->registerEventHandlers();
+        $this->registerGlobalEventHandlers();
         $this->validateConfig();
     }
 
@@ -94,43 +97,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         $this->_config = Craft::configure($config, App::envConfig(Config::class, 'CRAFT_CLOUD_'));
 
         return $this->_config;
-    }
-
-    protected function registerEventHandlers(): void
-    {
-        Event::on(
-            ImageTransforms::class,
-            ImageTransforms::EVENT_REGISTER_IMAGE_TRANSFORMERS,
-            static function(RegisterComponentTypesEvent $event) {
-                $event->types[] = ImageTransformer::class;
-            }
-        );
-
-        Event::on(
-            FsService::class,
-            FsService::EVENT_REGISTER_FILESYSTEM_TYPES,
-            static function(RegisterComponentTypesEvent $event) {
-                $event->types[] = AssetsFs::class;
-            }
-        );
-
-        Event::on(
-            View::class,
-            View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
-            function(RegisterTemplateRootsEvent $e) {
-                $e->roots[$this->id] = sprintf('%s/templates', $this->getBasePath());
-            }
-        );
-
-        Event::on(
-            CraftVariable::class,
-            CraftVariable::EVENT_INIT,
-            function(\yii\base\Event $e) {
-                /** @var CraftVariable $craftVariable */
-                $craftVariable = $e->sender;
-                $craftVariable->set('cloud', Module::class);
-            }
-        );
     }
 
     protected function bootstrapCloud(ConsoleApplication|WebApplication $app): void
@@ -207,6 +173,48 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             'staticCaching' => StaticCaching::class,
         ]);
 
+        $this->registerCloudEventHandlers();
+    }
+
+    protected function registerGlobalEventHandlers(): void
+    {
+        Event::on(
+            ImageTransforms::class,
+            ImageTransforms::EVENT_REGISTER_IMAGE_TRANSFORMERS,
+            static function(RegisterComponentTypesEvent $event) {
+                $event->types[] = ImageTransformer::class;
+            }
+        );
+
+        Event::on(
+            FsService::class,
+            FsService::EVENT_REGISTER_FILESYSTEM_TYPES,
+            static function(RegisterComponentTypesEvent $event) {
+                $event->types[] = AssetsFs::class;
+            }
+        );
+
+        Event::on(
+            View::class,
+            View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
+            function(RegisterTemplateRootsEvent $e) {
+                $e->roots[$this->id] = sprintf('%s/templates', $this->getBasePath());
+            }
+        );
+
+        Event::on(
+            CraftVariable::class,
+            CraftVariable::EVENT_INIT,
+            function(\yii\base\Event $e) {
+                /** @var CraftVariable $craftVariable */
+                $craftVariable = $e->sender;
+                $craftVariable->set('cloud', Module::class);
+            }
+        );
+    }
+
+    protected function registerCloudEventHandlers(): void
+    {
         Event::on(
             View::class,
             View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
@@ -229,6 +237,14 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             ClearCaches::class,
             ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
             [$this->get('staticCaching'), 'handleRegisterCacheOptions'],
+        );
+
+        Event::on(
+            Asset::class,
+            Model::EVENT_DEFINE_RULES,
+            function(DefineRulesEvent $e) {
+                $e->rules = Helper::removeAttributeFromRules($e->rules, 'tempFilePath');
+            }
         );
     }
 
