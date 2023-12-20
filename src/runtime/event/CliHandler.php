@@ -4,7 +4,7 @@ namespace craft\cloud\runtime\event;
 
 use Bref\Context\Context;
 use Bref\Event\Handler;
-use craft\cloud\runtime\Runtime;
+use craft\cloud\Module;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Symfony\Component\Process\Exception\ProcessTimedOutException;
 use Symfony\Component\Process\Process;
@@ -80,7 +80,7 @@ class CliHandler implements Handler
 
     public function shouldRetry(): bool
     {
-        $diff = Runtime::MAX_EXECUTION_SECONDS - $this->getTotalRunningTime();
+        $diff = Module::getInstance()->getConfig()->getMaxSeconds() - $this->getTotalRunningTime();
 
         return $diff > static::MAX_EXECUTION_BUFFER_SECONDS;
     }

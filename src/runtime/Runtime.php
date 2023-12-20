@@ -16,8 +16,6 @@ use Throwable;
  */
 class Runtime
 {
-    public const MAX_EXECUTION_SECONDS = 60 * 15;
-
     public static function run(): void
     {
         // In the FPM runtime process (our process) we want to log all errors and warnings

@@ -7,7 +7,6 @@ use craft\cache\DbCache;
 use craft\cloud\fs\BuildArtifactsFs;
 use craft\cloud\Helper as CloudHelper;
 use craft\cloud\queue\SqsQueue;
-use craft\cloud\runtime\Runtime;
 use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
@@ -127,15 +126,13 @@ SQL;
                         'class' => Redis::class,
                         'database' => 0,
                     ],
-                    'expire' => Craft::$app->getRequest()->getIsConsoleRequest()
-                        ? Runtime::MAX_EXECUTION_SECONDS
-                        : 30,
+                    'expire' => Module::getInstance()->getConfig()->getMaxSeconds(),
                 ],
             ]);
         };
 
         $config['components']['queue'] = function() {
-            $ttr = Runtime::MAX_EXECUTION_SECONDS - 1;
+            $ttr = Module::getInstance()->getConfig()->getMaxSeconds() - 1;
 
             return Craft::createObject([
                 'class' => CraftQueue::class,

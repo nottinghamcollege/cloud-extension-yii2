@@ -5,6 +5,7 @@ namespace craft\cloud;
 use Craft;
 use craft\config\BaseConfig;
 use craft\helpers\App;
+use craft\helpers\ConfigHelper;
 use League\Uri\Contracts\UriInterface;
 use League\Uri\Uri;
 
@@ -72,6 +73,22 @@ class Config extends BaseConfig
         $this->useAssetCdn = $value;
 
         return $this;
+    }
+
+    /**
+     * Technically, this is the limit of the combined request and response.
+     * @see  https://docs.aws.amazon.com/lambda/latest/dg/gettingstarted-limits.html#function-configuration-deployment-and-execution
+     */
+    public function getMaxBytes(): float|int
+    {
+        return ConfigHelper::sizeInBytes(
+            ini_get('upload_max_filesize'),
+        );
+    }
+
+    public function getMaxSeconds(): int
+    {
+        return (int) ini_get('max_execution_time') ?: 900;
     }
 
     /**
