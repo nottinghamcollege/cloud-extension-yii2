@@ -29,4 +29,15 @@ class InfoController extends Controller
         ]);
         return ExitCode::OK;
     }
+
+    public function actionPhpInfo(): int
+    {
+        ob_start();
+        phpinfo(INFO_ALL);
+        $phpInfoStr = ob_get_clean();
+
+        $this->stdout($phpInfoStr);
+
+        return ExitCode::OK;
+    }
 }
