@@ -53,10 +53,7 @@ class ResponseBehavior extends Behavior
     {
         $this->joinMultiValueHeaders();
         $this->gzip();
-
-        if ($this->owner->stream) {
-            $this->serveBinaryFromS3();
-        }
+        $this->serveBinaryFromS3();
     }
 
     /**
@@ -64,6 +61,10 @@ class ResponseBehavior extends Behavior
      */
     protected function serveBinaryFromS3(): void
     {
+        if (!$this->owner->stream) {
+            return;
+        }
+
         /** @var TmpFs $fs */
         $fs = Craft::createObject([
             'class' => TmpFs::class,
