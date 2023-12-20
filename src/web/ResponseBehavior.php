@@ -34,13 +34,26 @@ class ResponseBehavior extends Behavior
         ];
     }
 
+    public function gzip(): void
+    {
+        $accepts = preg_split(
+            '/\s*\,\s*/',
+            Craft::$app->getRequest()->getHeaders()->get('Accept-Encoding') ?? ''
+        );
+
+        if (Collection::make($accepts)->doesntContain('gzip')) {
+            return;
+        }
+
+        $this->owner->content = gzencode($this->owner->content, 9);
+        $this->owner->getHeaders()->set('Content-Encoding', 'gzip');
+    }
+
     public function afterPrepare(Event $event): void
     {
         $this->joinMultiValueHeaders();
-
-        if ($this->owner->stream) {
-            $this->serveBinaryFromS3();
-        }
+        $this->gzip();
+        $this->serveBinaryFromS3();
     }
 
     /**
@@ -48,6 +61,10 @@ class ResponseBehavior extends Behavior
      */
     protected function serveBinaryFromS3(): void
     {
+        if (!$this->owner->stream) {
+            return;
+        }
+
         /** @var TmpFs $fs */
         $fs = Craft::createObject([
             'class' => TmpFs::class,
