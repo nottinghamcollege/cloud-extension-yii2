@@ -15,7 +15,6 @@ use League\Uri\Uri;
 class Config extends BaseConfig
 {
     public ?string $artifactBaseUrl = null;
-    public array $s3ClientOptions = [];
     public string $cdnBaseUrl = 'https://cdn.craft.cloud';
     public ?string $sqsUrl = null;
     public ?string $projectId = null;
@@ -29,7 +28,9 @@ class Config extends BaseConfig
     public bool $useAssetBundleCdn = true;
     public ?string $previewDomain = null;
     public bool $useQueue = true;
+    public ?string $s3Endpoint = null;
     protected ?string $region = null;
+    protected array $s3ClientOptions = [];
     protected bool $useAssetCdn = true;
     protected bool $useArtifactCdn = true;
 
@@ -61,6 +62,21 @@ class Config extends BaseConfig
         }
 
         return parent::__call($name, $params);
+    }
+
+    public function getS3ClientOptions(): array
+    {
+        return $this->s3ClientOptions + array_filter([
+            'use_path_style_endpoint' => (bool) $this->s3Endpoint,
+            'endpoint' => $this->s3Endpoint,
+        ]);
+    }
+
+    public function setS3ClientOptions(array $s3ClientOptions): static
+    {
+        $this->s3ClientOptions = $s3ClientOptions;
+
+        return $this;
     }
 
     public function getUseAssetCdn(): bool
