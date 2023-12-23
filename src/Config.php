@@ -28,7 +28,7 @@ class Config extends BaseConfig
     public bool $useAssetBundleCdn = true;
     public ?string $previewDomain = null;
     public bool $useQueue = true;
-    public ?string $s3Endpoint = null;
+    public ?string $storageEndpoint = null;
     protected ?string $region = null;
     protected array $s3ClientOptions = [];
     protected bool $useAssetCdn = true;
@@ -67,8 +67,8 @@ class Config extends BaseConfig
     public function getS3ClientOptions(): array
     {
         return $this->s3ClientOptions + array_filter([
-            'use_path_style_endpoint' => (bool) $this->s3Endpoint,
-            'endpoint' => $this->s3Endpoint,
+            'use_path_style_endpoint' => (bool) $this->storageEndpoint,
+            'endpoint' => $this->storageEndpoint,
         ]);
     }
 

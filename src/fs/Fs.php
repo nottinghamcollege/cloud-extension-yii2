@@ -275,7 +275,7 @@ abstract class Fs extends FlysystemFs
                 'http_handler' => new GuzzleHandler(Craft::createGuzzleClient()),
                 'credentials' => $this->createCredentials(),
             ],
-            Module::getInstance()->getConfig()->s3ClientOptions,
+            Module::getInstance()->getConfig()->getS3ClientOptions(),
             $config
         );
 
