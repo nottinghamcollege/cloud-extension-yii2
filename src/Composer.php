@@ -11,18 +11,9 @@ class Composer
 {
     public static function getPluginAliases(): Collection
     {
-        $path = HierarchicalPath::fromAbsolute(
-            Craft::$app->getVendorPath(),
-            'craftcms/plugins.php',
-        );
+        $pluginInfo = Craft::$app->getPlugins()->getComposerPluginInfo();
 
-        if (!file_exists($path)) {
-            return new Collection();
-        }
-
-        $plugins = require $path;
-
-        return Collection::make($plugins)
+        return Collection::make($pluginInfo)
             ->flatMap(fn(array $plugin) => $plugin['aliases'] ?? []);
     }
 
