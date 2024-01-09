@@ -10,7 +10,6 @@ use craft\cloud\queue\SqsQueue;
 use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
-use craft\mutex\Mutex;
 use craft\queue\Queue as CraftQueue;
 use HttpSignatures\Context;
 use Illuminate\Support\Collection;
@@ -114,21 +113,6 @@ SQL;
             ] : App::cacheConfig();
 
             return Craft::createObject($config);
-        };
-
-        $config['components']['mutex'] = function() {
-            return Craft::createObject([
-                'class' => Mutex::class,
-                'mutex' => [
-                    'class' => \yii\redis\Mutex::class,
-                    'keyPrefix' => Module::getInstance()->getConfig()->environmentId . ':',
-                    'redis' => [
-                        'class' => Redis::class,
-                        'database' => 0,
-                    ],
-                    'expire' => Module::getInstance()->getConfig()->getMaxSeconds(),
-                ],
-            ]);
         };
 
         $config['components']['queue'] = function() {
