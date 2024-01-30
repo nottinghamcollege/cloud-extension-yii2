@@ -134,7 +134,6 @@ abstract class Fs extends FlysystemFs
         $behaviors['parser'] = [
             'class' => EnvAttributeParserBehavior::class,
             'attributes' => [
-                'subpath',
                 'localFsPath',
                 'localFsUrl',
             ],
