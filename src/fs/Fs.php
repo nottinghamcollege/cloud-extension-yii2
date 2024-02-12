@@ -215,7 +215,7 @@ abstract class Fs extends FlysystemFs
         }
 
         if (!$this->hasUrls) {
-            $config['Tagging'] = sprintf('%s=1', Visibility::PRIVATE);
+            $config['Metadata']['visibility'] = Visibility::PRIVATE;
         }
 
         return parent::addFileMetadataToConfig($config);
