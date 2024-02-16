@@ -13,7 +13,6 @@ use craft\flysystem\base\FlysystemFs;
 use craft\fs\Local;
 use craft\helpers\Assets;
 use craft\helpers\DateTimeHelper;
-use craft\helpers\StringHelper;
 use DateTime;
 use DateTimeInterface;
 use Generator;
@@ -24,8 +23,8 @@ use League\Flysystem\UnableToCreateDirectory;
 use League\Flysystem\UnableToMoveFile;
 use League\Flysystem\Visibility;
 use League\Uri\Components\HierarchicalPath;
-use League\Uri\Components\Path;
-use League\Uri\Uri;
+use League\Uri\Contracts\UriInterface;
+use League\Uri\Modifier;
 use Throwable;
 use yii\base\InvalidConfigException;
 
@@ -97,8 +96,7 @@ abstract class Fs extends FlysystemFs
         }
     }
 
-    // TODO: return URI type
-    public function createUrl(string $path = ''): string
+    public function createUrl(string $path = ''): UriInterface
     {
         $baseUrl = $this->useLocalFs
             ? $this->getLocalFs()->getRootUrl()
@@ -111,13 +109,13 @@ abstract class Fs extends FlysystemFs
         // If an alias is unparsed by now, we have to fall back to a root relative URL.
         // This likely means this is a console request and @web isn't set.
         if (str_starts_with($baseUrl, '@')) {
-            return Path::new($this->prefixPath($path))->withLeadingSlash();
+            $baseUrl = '/';
         }
 
-        return Uri::fromBaseUri(
-            $this->prefixPath($path),
-            StringHelper::ensureRight($baseUrl, '/'),
-        );
+        return Modifier::from($baseUrl)
+            ->appendSegment($this->prefixPath($path))
+            ->removeEmptySegments()
+            ->getUri();
     }
 
     /**
