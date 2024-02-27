@@ -4,7 +4,6 @@ namespace craft\cloud\web;
 
 use Craft;
 use craft\cloud\fs\TmpFs;
-use craft\cloud\HeaderEnum;
 use craft\web\Response;
 use Illuminate\Support\Collection;
 use yii\base\Behavior;
@@ -17,16 +16,6 @@ use yii\web\ServerErrorHttpException;
  */
 class ResponseBehavior extends Behavior
 {
-    protected array $csvHeaders = [];
-
-    public function init(): void
-    {
-        $this->csvHeaders = [
-            HeaderEnum::CACHE_TAG->value,
-            HeaderEnum::CACHE_PURGE->value,
-        ];
-    }
-
     public function events(): array
     {
         return [

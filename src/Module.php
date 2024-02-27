@@ -35,6 +35,7 @@ use yii\log\Target;
 
 /**
  * @property-read Config $config
+ * @property-read StaticCaching $staticCaching
  * @property ?string $id When auto-bootstrapped as an extension, this can be `null`.
  */
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
@@ -152,6 +153,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 ]);
             })
             ->all();
+
 
         Craft::$container->set(
             Temp::class,

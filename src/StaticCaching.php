@@ -79,7 +79,7 @@ class StaticCaching extends \yii\base\Component
     public function purgeAll(): void
     {
         $headers = Collection::make([
-            HeaderEnum::CACHE_PURGE->value => '*',
+            HeaderEnum::CACHE_PURGE_HOST->value => '*',
         ]);
 
         if (Craft::$app->getRequest()->getIsConsoleRequest()) {
@@ -196,7 +196,7 @@ class StaticCaching extends \yii\base\Component
         $headers = Craft::$app->getResponse()->getHeaders();
 
         $tagsForHeader->each(fn(string $tag) => $headers->add(
-            HeaderEnum::CACHE_PURGE->value,
+            HeaderEnum::CACHE_PURGE_TAG->value,
             $tag,
         ));
     }
