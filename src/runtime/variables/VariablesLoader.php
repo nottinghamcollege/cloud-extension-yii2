@@ -19,8 +19,10 @@ class VariablesLoader
         }
 
         foreach ($vars as $key => $value) {
-            $_SERVER[$key] = $_ENV[$key] = $value;
-            putenv("$key=$value");
+            if (is_string($key) && is_scalar($value)) {
+                $_SERVER[$key] = $_ENV[$key] = $value;
+                putenv("$key=$value");
+            }
         }
     }
 }
