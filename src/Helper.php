@@ -11,8 +11,11 @@ use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
 use craft\queue\Queue as CraftQueue;
+use GuzzleHttp\Psr7\Request;
 use HttpSignatures\Context;
 use Illuminate\Support\Collection;
+use Psr\Http\Message\ResponseInterface;
+use yii\base\Exception;
 use yii\web\DbSession;
 
 class Helper
@@ -92,6 +95,12 @@ SQL;
             return;
         }
 
+        // Make sure the app has an ID and it isn't the default
+        if (!$config['id'] || $config['id'] === 'CraftCMS') {
+            $projectId = App::env('CRAFT_CLOUD_PROJECT_ID');
+            $config['id'] = "CraftCMS--$projectId";
+        }
+
         if ($appType === 'web') {
             $config['components']['session'] = function() {
                 $config = App::sessionConfig();
@@ -157,5 +166,47 @@ SQL;
         $base64Url = strtr(base64_encode($data), '+/', '-_');
 
         return rtrim($base64Url, '=');
+    }
+
+    public static function makeCdnApiRequest(Collection $headers): ResponseInterface
+    {
+        if (!Helper::isCraftCloud()) {
+            throw new Exception('CDN API requests are only supported in a Craft Cloud environment.');
+        }
+
+        $context = Helper::createSigningContext($headers->keys());
+        $request = new Request(
+            'HEAD',
+            (string) Module::getInstance()->getConfig()->cdnBaseUrl,
+            $headers->all(),
+        );
+
+        return Craft::createGuzzleClient()->send(
+            $context->signer()->sign($request)
+        );
+    }
+
+    public static function makeGatewayApiRequest(Collection $headers): ResponseInterface
+    {
+        if (!Helper::isCraftCloud()) {
+            throw new Exception('Gateway API requests are only supported in a Craft Cloud environment.');
+        }
+
+        $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
+
+        if (!$url) {
+            throw new Exception('Gateway API requests require a configured preview domain.');
+        }
+
+        $context = Helper::createSigningContext($headers->keys());
+        $request = new Request(
+            'HEAD',
+            (string) $url,
+            $headers->all(),
+        );
+
+        return Craft::createGuzzleClient()->send(
+            $context->signer()->sign($request)
+        );
     }
 }

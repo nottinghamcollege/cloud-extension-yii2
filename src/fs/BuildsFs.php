@@ -5,17 +5,10 @@ namespace craft\cloud\fs;
 use craft\cloud\Module;
 use League\Uri\Components\HierarchicalPath;
 
-abstract class BuildsFs extends Fs
+abstract class BuildsFs extends CdnFs
 {
-    protected ?string $expires = '1 years';
-    public bool $hasUrls = true;
-
     public function getPrefix(): string
     {
-        if (!Module::getInstance()->getConfig()->getUseArtifactCdn()) {
-            return '';
-        }
-
         return HierarchicalPath::fromRelative(
             parent::getPrefix(),
             'builds',
