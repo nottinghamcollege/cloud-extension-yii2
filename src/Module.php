@@ -35,7 +35,7 @@ use yii\log\Target;
 
 /**
  * @property-read Config $config
- * @property-read StaticCaching $staticCaching
+ * @property-read StaticCache $staticCache
  * @property ?string $id When auto-bootstrapped as an extension, this can be `null`.
  */
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
@@ -174,7 +174,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         );
 
         $this->setComponents([
-            'staticCaching' => StaticCaching::class,
+            'staticCache' => StaticCache::class,
         ]);
 
         $this->registerCloudEventHandlers();
@@ -222,25 +222,25 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         Event::on(
             View::class,
             View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
-            [$this->get('staticCaching'), 'handleBeforeRenderPageTemplate'],
+            [$this->get('staticCache'), 'handleBeforeRenderPageTemplate'],
         );
 
         Event::on(
             View::class,
             View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
-            [$this->get('staticCaching'), 'handleAfterRenderPageTemplate'],
+            [$this->get('staticCache'), 'handleAfterRenderPageTemplate'],
         );
 
         Event::on(
             Elements::class,
             Elements::EVENT_INVALIDATE_CACHES,
-            [$this->get('staticCaching'), 'handleInvalidateCaches'],
+            [$this->get('staticCache'), 'handleInvalidateCaches'],
         );
 
         Event::on(
             ClearCaches::class,
             ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
-            [$this->get('staticCaching'), 'handleRegisterCacheOptions'],
+            [$this->get('staticCache'), 'handleRegisterCacheOptions'],
         );
 
         Event::on(

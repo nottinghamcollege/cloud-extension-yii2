@@ -9,13 +9,11 @@ use craft\events\TemplateEvent;
 use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
-use GuzzleHttp\Psr7\Request;
 use Illuminate\Support\Collection;
 use samdark\log\PsrMessage;
-use yii\base\Exception;
 use yii\caching\TagDependency;
 
-class StaticCaching extends \yii\base\Component
+class StaticCache extends \yii\base\Component
 {
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
     {
@@ -83,18 +81,7 @@ class StaticCaching extends \yii\base\Component
         ]);
 
         if (Craft::$app->getRequest()->getIsConsoleRequest()) {
-            $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
-
-            if (!$url) {
-                throw new Exception('Unable to purge cache from the CLI without a preview domain.');
-            }
-
-            $context = Helper::createSigningContext($headers->keys());
-            $request = new Request('HEAD', (string) $url, $headers->all());
-            Craft::createGuzzleClient()->send(
-                $context->signer()->sign($request)
-            );
-
+            Helper::makeGatewayApiRequest($headers);
             return;
         }
 

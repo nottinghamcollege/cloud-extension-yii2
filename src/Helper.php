@@ -11,8 +11,11 @@ use craft\db\Table;
 use craft\helpers\App;
 use craft\helpers\ConfigHelper;
 use craft\queue\Queue as CraftQueue;
+use GuzzleHttp\Psr7\Request;
 use HttpSignatures\Context;
 use Illuminate\Support\Collection;
+use Psr\Http\Message\ResponseInterface;
+use yii\base\Exception;
 use yii\web\DbSession;
 
 class Helper
@@ -163,5 +166,25 @@ SQL;
         $base64Url = strtr(base64_encode($data), '+/', '-_');
 
         return rtrim($base64Url, '=');
+    }
+
+    public static function makeGatewayApiRequest(Collection $headers): ResponseInterface
+    {
+        $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
+
+        if (!$url) {
+            throw new Exception('Unable to make API requests without a preview domain.');
+        }
+
+        $context = Helper::createSigningContext($headers->keys());
+        $request = new Request(
+            'HEAD',
+            (string) $url,
+            $headers->all(),
+        );
+
+        return Craft::createGuzzleClient()->send(
+            $context->signer()->sign($request)
+        );
     }
 }
