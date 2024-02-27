@@ -34,8 +34,6 @@ use yii\base\InvalidConfigException;
 use yii\log\Target;
 
 /**
- * @property-read Config $config
- * @property-read StaticCache $staticCache
  * @property ?string $id When auto-bootstrapped as an extension, this can be `null`.
  */
 class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
@@ -175,6 +173,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $this->setComponents([
             'staticCache' => StaticCache::class,
+            'cdn' => Cdn::class,
         ]);
 
         $this->registerCloudEventHandlers();
@@ -260,5 +259,15 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $firstErrors = $config->getFirstErrors();
             throw new InvalidConfigException(reset($firstErrors) ?: '');
         }
+    }
+
+    public function getCdn(): Cdn
+    {
+        return $this->get('cdn');
+    }
+
+    public function getStaticCache(): StaticCache
+    {
+        return $this->get('staticCache');
     }
 }

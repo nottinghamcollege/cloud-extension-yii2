@@ -198,8 +198,7 @@ abstract class Fs extends FlysystemFs
      */
     protected function invalidateCdnPath(string $path): bool
     {
-        // TODO: cloudflare
-        return false;
+        return true;
     }
 
     /**

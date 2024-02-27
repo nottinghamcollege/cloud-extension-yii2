@@ -168,12 +168,34 @@ SQL;
         return rtrim($base64Url, '=');
     }
 
+    public static function makeCdnApiRequest(Collection $headers): ResponseInterface
+    {
+        if (!Helper::isCraftCloud()) {
+            throw new Exception('CDN API requests are only supported in a Craft Cloud environment.');
+        }
+
+        $context = Helper::createSigningContext($headers->keys());
+        $request = new Request(
+            'HEAD',
+            (string) Module::getInstance()->getConfig()->cdnBaseUrl,
+            $headers->all(),
+        );
+
+        return Craft::createGuzzleClient()->send(
+            $context->signer()->sign($request)
+        );
+    }
+
     public static function makeGatewayApiRequest(Collection $headers): ResponseInterface
     {
+        if (!Helper::isCraftCloud()) {
+            throw new Exception('Gateway API requests are only supported in a Craft Cloud environment.');
+        }
+
         $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
 
         if (!$url) {
-            throw new Exception('Unable to make API requests without a preview domain.');
+            throw new Exception('Gateway API requests require a configured preview domain.');
         }
 
         $context = Helper::createSigningContext($headers->keys());
