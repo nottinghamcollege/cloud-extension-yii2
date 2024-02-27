@@ -4,7 +4,7 @@ namespace craft\cloud\runtime\variables;
 
 class VariablesLoader
 {
-    public const FILENAME = '/var/task/.env.php';
+    public const FILENAME = '/opt/craft-cloud/.env.php';
 
     public static function load(): void
     {
