@@ -174,6 +174,10 @@ SQL;
             throw new Exception('CDN API requests are only supported in a Craft Cloud environment.');
         }
 
+        if (Module::getInstance()->getConfig()->getDevMode()) {
+            $headers->put(HeaderEnum::DEV_MODE->value, '1');
+        }
+
         $context = Helper::createSigningContext($headers->keys());
         $request = new Request(
             'HEAD',
@@ -190,6 +194,10 @@ SQL;
     {
         if (!Helper::isCraftCloud()) {
             throw new Exception('Gateway API requests are only supported in a Craft Cloud environment.');
+        }
+
+        if (Module::getInstance()->getConfig()->getDevMode()) {
+            $headers->put(HeaderEnum::DEV_MODE->value, '1');
         }
 
         $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
