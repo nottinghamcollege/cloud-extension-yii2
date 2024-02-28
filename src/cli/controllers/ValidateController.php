@@ -7,6 +7,8 @@ use yii\console\ExitCode;
 
 class ValidateController extends Controller
 {
+    public $defaultAction = 'plan';
+
     public function actionPlan(string $plan): int
     {
         $this->do('Validating Plan', function() {
