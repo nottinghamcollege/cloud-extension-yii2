@@ -77,7 +77,7 @@ class StaticCache extends \yii\base\Component
     public function purgeAll(): void
     {
         $headers = Collection::make([
-            HeaderEnum::CACHE_PURGE_HOST->value => '*',
+            HeaderEnum::CACHE_PURGE_PREFIX->value => '/',
         ]);
 
         if (Craft::$app->getRequest()->getIsConsoleRequest()) {

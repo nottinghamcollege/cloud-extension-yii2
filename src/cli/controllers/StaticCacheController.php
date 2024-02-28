@@ -10,19 +10,6 @@ use yii\console\ExitCode;
 
 class StaticCacheController extends Controller
 {
-    public function actionPurgeHosts(string ...$hosts): int
-    {
-        $this->do('Purging hosts', function() use ($hosts) {
-            $headers = Collection::make([
-                HeaderEnum::CACHE_PURGE_HOST->value => implode(',', $hosts),
-            ]);
-
-            Helper::makeGatewayApiRequest($headers);
-        });
-
-        return ExitCode::OK;
-    }
-
     public function actionPurgePrefixes(string ...$prefixes): int
     {
         $this->do('Purging prefixes', function() use ($prefixes) {
