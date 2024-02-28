@@ -3,8 +3,8 @@
 namespace craft\cloud\cli\controllers;
 
 use Craft;
-use craft\cloud\AssetBundlePublisher;
 use craft\cloud\AssetManager;
+use craft\cloud\cli\AssetBundlePublisher;
 use craft\cloud\Composer;
 use craft\cloud\Helper;
 use craft\console\Controller;
@@ -18,6 +18,7 @@ class AssetBundlesController extends Controller
 {
     public bool $quiet = false;
     public ?string $to = null;
+    public $defaultAction = 'publish';
 
     public function init(): void
     {
