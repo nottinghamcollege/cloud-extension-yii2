@@ -18,7 +18,6 @@ class AssetBundlesController extends Controller
 {
     public bool $quiet = false;
     public ?string $to = null;
-    public $defaultAction = 'publish';
 
     public function init(): void
     {
