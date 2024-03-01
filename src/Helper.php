@@ -25,11 +25,6 @@ class Helper
         return App::env('CRAFT_CLOUD') ?? App::env('AWS_LAMBDA_RUNTIME_API') ?? false;
     }
 
-    public static function isCraftCloudBuild(): bool
-    {
-        return App::env('CRAFT_CLOUD_BUILD') ?? false;
-    }
-
     public static function artifactUrl(string $path = ''): string
     {
         return (new BuildArtifactsFs())->createUrl($path);
