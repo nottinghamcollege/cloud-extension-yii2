@@ -6,9 +6,11 @@ use Craft;
 use craft\cloud\AssetBundlePublisher;
 use craft\cloud\AssetManager;
 use craft\cloud\Composer;
+use craft\cloud\Helper;
 use craft\console\Controller;
 use craft\helpers\App;
 use ReflectionClass;
+use yii\console\Exception;
 use yii\console\ExitCode;
 use yii\web\AssetBundle;
 
@@ -26,6 +28,10 @@ class AssetBundlesController extends Controller
 
     public function beforeAction($action): bool
     {
+        if (!Helper::isCraftCloudBuild()) {
+            throw new Exception('Asset bundle publishing is only allowed in build environments.');
+        }
+
         if (App::env('CRAFT_NO_DB')) {
             Composer::getModuleAliases()
                 ->merge(Composer::getPluginAliases())
