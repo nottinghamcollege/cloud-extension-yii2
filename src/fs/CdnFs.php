@@ -15,7 +15,9 @@ class CdnFs extends Fs
     protected function invalidateCdnPath(string $path): bool
     {
         try {
-            Module::getInstance()->getCdn()->purgePrefixes([$path]);
+            Module::getInstance()->getCdn()->purgeTags([
+                $this->prefixPath($path),
+            ]);
             return true;
         } catch (\Throwable $e) {
             return false;
