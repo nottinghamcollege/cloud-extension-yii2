@@ -10,5 +10,5 @@ enum HeaderEnum: string
     case CACHE_CONTROL = 'Cache-Control';
     case AUTHORIZATION = 'Authorization';
     case DEV_MODE = 'Dev-Mode';
-    case CONTEXT = 'Context';
+    case REQUEST_TYPE = 'Request-Type';
 }

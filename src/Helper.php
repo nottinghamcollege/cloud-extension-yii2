@@ -174,7 +174,7 @@ SQL;
             throw new Exception('Gateway API requests are only supported in a Craft Cloud environment.');
         }
 
-        $headers->put(HeaderEnum::CONTEXT->value, 'api');
+        $headers->put(HeaderEnum::REQUEST_TYPE->value, 'api');
 
         if (Module::getInstance()->getConfig()->getDevMode()) {
             $headers->put(HeaderEnum::DEV_MODE->value, '1');
