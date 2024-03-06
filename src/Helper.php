@@ -168,22 +168,25 @@ SQL;
         return rtrim($base64Url, '=');
     }
 
-    public static function makeGatewayApiRequest(Collection $headers): ResponseInterface
+    public static function makeGatewayApiRequest(iterable $headers): ResponseInterface
     {
         if (!Helper::isCraftCloud()) {
             throw new Exception('Gateway API requests are only supported in a Craft Cloud environment.');
         }
 
-        $headers->put(HeaderEnum::REQUEST_TYPE->value, 'api');
+        $headers = Collection::make($headers)
+            ->put(HeaderEnum::REQUEST_TYPE->value, 'api');
 
         if (Module::getInstance()->getConfig()->getDevMode()) {
             $headers->put(HeaderEnum::DEV_MODE->value, '1');
         }
 
-        $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
+        $url = Craft::$app->getRequest()->getIsConsoleRequest()
+            ? Module::getInstance()->getConfig()->getPreviewDomainUrl()
+            : Craft::$app->getRequest()->getHostInfo();
 
         if (!$url) {
-            throw new Exception('Gateway API requests require a configured preview domain.');
+            throw new Exception('Gateway API requests require a URL.');
         }
 
         $context = Helper::createSigningContext($headers->keys());
