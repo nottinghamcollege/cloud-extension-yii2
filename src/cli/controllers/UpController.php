@@ -11,14 +11,6 @@ class UpController extends Controller
 {
     public const EVENT_BEFORE_UP = 'beforeUp';
     public const EVENT_AFTER_UP = 'afterUp';
-    public bool $clearStaticCaches = true;
-
-    public function options($actionID): array
-    {
-        return parent::options($actionID) + [
-            'clear-static-caches',
-        ];
-    }
 
     public function actionIndex(): int
     {
@@ -34,10 +26,7 @@ class UpController extends Controller
 
         if (Craft::$app->getIsInstalled()) {
             $this->run('/up');
-
-            if ($this->clearStaticCaches) {
-                $this->run('/clear-caches/cloud-static-caches');
-            }
+            $this->run('/clear-caches/cloud-static-caches');
         }
 
         $event = new CancelableEvent();
