@@ -157,7 +157,7 @@ SQL;
                 'hmac' => Module::getInstance()->getConfig()->signingKey,
             ],
             'algorithm' => 'hmac-sha256',
-            'headers' => $headers->push('(request-target)')->all(),
+            'headers' => $headers->all(),
         ]);
     }
 
