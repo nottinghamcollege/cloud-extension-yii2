@@ -173,7 +173,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $this->setComponents([
             'staticCache' => StaticCache::class,
-            'cdn' => Cdn::class,
         ]);
 
         $this->registerCloudEventHandlers();
@@ -259,11 +258,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $firstErrors = $config->getFirstErrors();
             throw new InvalidConfigException(reset($firstErrors) ?: '');
         }
-    }
-
-    public function getCdn(): Cdn
-    {
-        return $this->get('cdn');
     }
 
     public function getStaticCache(): StaticCache

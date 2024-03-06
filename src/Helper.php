@@ -5,7 +5,6 @@ namespace craft\cloud;
 use Craft;
 use craft\cache\DbCache;
 use craft\cloud\fs\BuildArtifactsFs;
-use craft\cloud\fs\CdnFs;
 use craft\cloud\Helper as CloudHelper;
 use craft\cloud\queue\SqsQueue;
 use craft\db\Table;
@@ -169,33 +168,13 @@ SQL;
         return rtrim($base64Url, '=');
     }
 
-    public static function makeCdnApiRequest(Collection $headers): ResponseInterface
-    {
-        if (!Helper::isCraftCloud()) {
-            throw new Exception('CDN API requests are only supported in a Craft Cloud environment.');
-        }
-
-        if (Module::getInstance()->getConfig()->getDevMode()) {
-            $headers->put(HeaderEnum::DEV_MODE->value, '1');
-        }
-
-        $context = Helper::createSigningContext($headers->keys());
-        $request = new Request(
-            'HEAD',
-            (new CdnFs())->createUrl('api'),
-            $headers->all(),
-        );
-
-        return Craft::createGuzzleClient()->send(
-            $context->signer()->sign($request)
-        );
-    }
-
     public static function makeGatewayApiRequest(Collection $headers): ResponseInterface
     {
         if (!Helper::isCraftCloud()) {
             throw new Exception('Gateway API requests are only supported in a Craft Cloud environment.');
         }
+
+        $headers->put(HeaderEnum::CONTEXT->value, 'api');
 
         if (Module::getInstance()->getConfig()->getDevMode()) {
             $headers->put(HeaderEnum::DEV_MODE->value, '1');
