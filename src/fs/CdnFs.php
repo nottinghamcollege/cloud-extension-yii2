@@ -18,7 +18,7 @@ class CdnFs extends Fs
     {
         try {
             Helper::makeGatewayApiRequest(Collection::make([
-                HeaderEnum::CACHE_PURGE_TAG->value => $path,
+                HeaderEnum::CACHE_PURGE_TAG->value => $this->prefixPath($path),
             ]));
 
             return true;
