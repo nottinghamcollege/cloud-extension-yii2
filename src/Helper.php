@@ -14,6 +14,7 @@ use craft\queue\Queue as CraftQueue;
 use GuzzleHttp\Psr7\Request;
 use HttpSignatures\Context;
 use Illuminate\Support\Collection;
+use League\Uri\Uri;
 use Psr\Http\Message\ResponseInterface;
 use yii\base\Exception;
 use yii\web\DbSession;
@@ -181,7 +182,7 @@ SQL;
         $context = Helper::createSigningContext($headers->keys());
         $request = new Request(
             'HEAD',
-            (string) Module::getInstance()->getConfig()->cdnBaseUrl,
+            Uri::fromBaseUri('api', Module::getInstance()->getConfig()->cdnBaseUrl),
             $headers->all(),
         );
 
