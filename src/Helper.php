@@ -5,6 +5,7 @@ namespace craft\cloud;
 use Craft;
 use craft\cache\DbCache;
 use craft\cloud\fs\BuildArtifactsFs;
+use craft\cloud\fs\CdnFs;
 use craft\cloud\Helper as CloudHelper;
 use craft\cloud\queue\SqsQueue;
 use craft\db\Table;
@@ -14,7 +15,6 @@ use craft\queue\Queue as CraftQueue;
 use GuzzleHttp\Psr7\Request;
 use HttpSignatures\Context;
 use Illuminate\Support\Collection;
-use League\Uri\Uri;
 use Psr\Http\Message\ResponseInterface;
 use yii\base\Exception;
 use yii\web\DbSession;
@@ -182,7 +182,7 @@ SQL;
         $context = Helper::createSigningContext($headers->keys());
         $request = new Request(
             'HEAD',
-            Uri::fromBaseUri('api', Module::getInstance()->getConfig()->cdnBaseUrl),
+            (new CdnFs())->createUrl('api'),
             $headers->all(),
         );
 
