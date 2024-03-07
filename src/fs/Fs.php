@@ -214,7 +214,9 @@ abstract class Fs extends FlysystemFs
             $config['CacheControl'] = "max-age=$diff";
         }
 
-        $config['Metadata']['visibility'] = $this->hasUrls ? Visibility::PRIVATE : Visibility::PUBLIC;
+        $config['Metadata']['visibility'] = $this->hasUrls
+            ? Visibility::PRIVATE
+            : Visibility::PUBLIC;
 
         return parent::addFileMetadataToConfig($config);
     }
