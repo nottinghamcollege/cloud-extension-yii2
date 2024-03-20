@@ -10,12 +10,20 @@ use yii\console\ExitCode;
 
 class AssetsController extends Controller
 {
-    public array $volumes = [];
+    /**
+     * @var array<string>|null
+     */
+    public ?array $volume = null;
+
+    /**
+     * @var array<int>|null
+     */
+    public ?array $assetId = null;
 
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), match ($actionID) {
-            'replace-metadata' => ['volumes'],
+            'replace-metadata' => ['volume', 'assetId'],
             default => []
         });
     }
@@ -23,13 +31,15 @@ class AssetsController extends Controller
     public function actionReplaceMetadata(): int
     {
         $assets = Asset::find()
-            ->volume($this->volumes)
+            ->volume($this->volume)
+            ->id($this->assetId)
             ->collect();
 
-        $this->do('Replacing metadata', function() use ($assets) {
-            $assets->each(function(Asset $asset) {
-                $this->replaceAssetMetadata($asset);
-            });
+        $assets->each(function(Asset $asset) {
+            $this->do(
+                "Replacing metadata for `$asset->path`",
+                fn() => $this->replaceAssetMetadata($asset),
+            );
         });
 
         return ExitCode::OK;
