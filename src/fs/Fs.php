@@ -213,7 +213,7 @@ abstract class Fs extends FlysystemFs
             // @see https://github.com/aws/aws-sdk-php/issues/1691
             $config['Metadata']['max-age'] = $diff;
         }
-        $config['MetadataDirective'] = 'REPLACE';
+
         $config['Metadata']['visibility'] = $this->hasUrls
             ? Visibility::PUBLIC
             : Visibility::PRIVATE;

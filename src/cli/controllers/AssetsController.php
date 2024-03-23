@@ -5,6 +5,7 @@ namespace craft\cloud\cli\controllers;
 use craft\cloud\fs\Fs;
 use craft\console\Controller;
 use craft\elements\Asset;
+use craft\helpers\FileHelper;
 use yii\base\Exception;
 use yii\console\ExitCode;
 
@@ -53,7 +54,13 @@ class AssetsController extends Controller
             throw new Exception('Invalid filesystem type.');
         }
 
-        $pathInFs = $fs->prefixPath($asset->getPath());
-        $fs->replaceMetadata($pathInFs);
+        $path = $asset->getPath();
+
+        $config = [
+            'ContentType' => FileHelper::getMimeType($path),
+            'MetadataDirective' => 'REPLACE',
+        ];
+
+        $fs->replaceMetadata($path, $config);
     }
 }
