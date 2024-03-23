@@ -13,7 +13,9 @@ use craft\helpers\Assets;
 use craft\helpers\Db;
 use craft\web\Controller;
 use DateTime;
+use yii\base\Event;
 use yii\base\Exception;
+use yii\base\Model;
 use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -175,7 +177,7 @@ class AssetsController extends Controller
         }
 
         $asset->setScenario(Asset::SCENARIO_CREATE);
-        $saved = $elementsService->saveElement($asset);
+        $saved = $this->saveAsset($asset);
 
         // In case of error, let user know about it.
         if (!$saved) {
@@ -340,7 +342,8 @@ class AssetsController extends Controller
         $asset->setScenario(Asset::SCENARIO_REPLACE);
         $asset->setFilename($filename);
         $asset->newFilename = $targetFilename;
-        $saved = Craft::$app->getElements()->saveElement($asset);
+
+        $saved = $this->saveAsset($asset);
 
         $asset->getVolume()->deleteFile($oldPath);
 
@@ -358,5 +361,18 @@ class AssetsController extends Controller
         }
 
         return $saved;
+    }
+
+    protected function saveAsset(Asset $asset): bool
+    {
+        $asset->setScenario(Asset::SCENARIO_CREATE);
+
+        // Set tempFilePath to pass required validation, but unset immediately after
+        $asset->tempFilePath = '__tempFilePath__';
+        $asset->on(Model::EVENT_AFTER_VALIDATE, function(Event $event) {
+            $event->sender->tempFilePath = null;
+        });
+
+        return Craft::$app->getElements()->saveElement($asset);
     }
 }
