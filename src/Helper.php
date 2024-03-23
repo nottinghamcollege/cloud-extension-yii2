@@ -157,7 +157,7 @@ SQL;
                 'hmac' => Module::getInstance()->getConfig()->signingKey,
             ],
             'algorithm' => 'hmac-sha256',
-            'headers' => $headers->push('(request-target)')->all(),
+            'headers' => $headers->all(),
         ]);
     }
 
@@ -178,42 +178,25 @@ SQL;
         return true;
     }
 
-    public static function makeCdnApiRequest(Collection $headers): ResponseInterface
-    {
-        if (!Helper::isCraftCloud()) {
-            throw new Exception('CDN API requests are only supported in a Craft Cloud environment.');
-        }
-
-        if (Module::getInstance()->getConfig()->getDevMode()) {
-            $headers->put(HeaderEnum::DEV_MODE->value, '1');
-        }
-
-        $context = Helper::createSigningContext($headers->keys());
-        $request = new Request(
-            'HEAD',
-            (string) Module::getInstance()->getConfig()->cdnBaseUrl,
-            $headers->all(),
-        );
-
-        return Craft::createGuzzleClient()->send(
-            $context->signer()->sign($request)
-        );
-    }
-
-    public static function makeGatewayApiRequest(Collection $headers): ResponseInterface
+    public static function makeGatewayApiRequest(iterable $headers): ResponseInterface
     {
         if (!Helper::isCraftCloud()) {
             throw new Exception('Gateway API requests are only supported in a Craft Cloud environment.');
         }
 
+        $headers = Collection::make($headers)
+            ->put(HeaderEnum::REQUEST_TYPE->value, 'api');
+
         if (Module::getInstance()->getConfig()->getDevMode()) {
             $headers->put(HeaderEnum::DEV_MODE->value, '1');
         }
 
-        $url = Module::getInstance()->getConfig()->getPreviewDomainUrl();
+        $url = Craft::$app->getRequest()->getIsConsoleRequest()
+            ? Module::getInstance()->getConfig()->getPreviewDomainUrl()
+            : Craft::$app->getRequest()->getHostInfo();
 
         if (!$url) {
-            throw new Exception('Gateway API requests require a configured preview domain.');
+            throw new Exception('Gateway API requests require a URL.');
         }
 
         $context = Helper::createSigningContext($headers->keys());

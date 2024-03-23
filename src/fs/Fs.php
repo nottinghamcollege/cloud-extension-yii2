@@ -85,10 +85,6 @@ abstract class Fs extends FlysystemFs
      */
     public function getRootUrl(): ?string
     {
-        if (!$this->hasUrls) {
-            return null;
-        }
-
         try {
             return $this->createUrl();
         } catch (FsException $e) {
@@ -211,12 +207,16 @@ abstract class Fs extends FlysystemFs
             $now = new DateTime();
             $expires->modify('+' . $this->getExpires());
             $diff = (int)$expires->format('U') - (int)$now->format('U');
-            $config['CacheControl'] = "max-age=$diff";
+
+            // Setting this in metadata instead of `CacheControl` because
+            // `CacheControl` is not respected by S3 when using presigned PUT URLs.
+            // @see https://github.com/aws/aws-sdk-php/issues/1691
+            $config['Metadata']['max-age'] = $diff;
         }
 
-        if (!$this->hasUrls) {
-            $config['Tagging'] = sprintf('%s=1', Visibility::PRIVATE);
-        }
+        $config['Metadata']['visibility'] = $this->hasUrls
+            ? Visibility::PUBLIC
+            : Visibility::PRIVATE;
 
         return parent::addFileMetadataToConfig($config);
     }
@@ -542,5 +542,22 @@ abstract class Fs extends FlysystemFs
         }
 
         parent::deleteDirectory($path);
+    }
+
+    public function replaceMetadata(string $path, array $config = []): void
+    {
+        if ($this->useLocalFs) {
+            return;
+        }
+
+        try {
+            $this->filesystem()->copy(
+                $path,
+                $path,
+                $this->addFileMetadataToConfig($config),
+            );
+        } catch (FilesystemException|UnableToCopyFile $exception) {
+            throw new FsException($exception->getMessage(), 0, $exception);
+        }
     }
 }

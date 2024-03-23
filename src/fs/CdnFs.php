@@ -2,7 +2,9 @@
 
 namespace craft\cloud\fs;
 
-use craft\cloud\Module;
+use craft\cloud\HeaderEnum;
+use craft\cloud\Helper;
+use Illuminate\Support\Collection;
 
 class CdnFs extends Fs
 {
@@ -15,7 +17,10 @@ class CdnFs extends Fs
     protected function invalidateCdnPath(string $path): bool
     {
         try {
-            Module::getInstance()->getCdn()->purgePrefixes([$path]);
+            Helper::makeGatewayApiRequest(Collection::make([
+                HeaderEnum::CACHE_PURGE_TAG->value => $this->prefixPath($path),
+            ]));
+
             return true;
         } catch (\Throwable $e) {
             return false;

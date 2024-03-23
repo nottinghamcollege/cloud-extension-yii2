@@ -95,6 +95,10 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 FallbackTransformer::class,
                 ImageTransformer::class,
             );
+
+            if ($app->getRequest()->getIsCpRequest()) {
+                $app->getView()->registerAssetBundle(UploaderAsset::class);
+            }
         }
     }
 
@@ -132,10 +136,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $app->getRequest()->secureHeaders = Collection::make($app->getRequest()->secureHeaders)
                 ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
                 ->all();
-
-            if ($app->getRequest()->getIsCpRequest()) {
-                $app->getView()->registerAssetBundle(UploaderAsset::class);
-            }
         }
 
         /** @var Dispatcher $dispatcher */
@@ -173,7 +173,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
         $this->setComponents([
             'staticCache' => StaticCache::class,
-            'cdn' => Cdn::class,
         ]);
 
         $this->registerCloudEventHandlers();
@@ -259,11 +258,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $firstErrors = $config->getFirstErrors();
             throw new InvalidConfigException(reset($firstErrors) ?: '');
         }
-    }
-
-    public function getCdn(): Cdn
-    {
-        return $this->get('cdn');
     }
 
     public function getStaticCache(): StaticCache

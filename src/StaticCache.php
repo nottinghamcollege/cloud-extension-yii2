@@ -94,6 +94,8 @@ class StaticCache extends \yii\base\Component
 
     protected function prepareTags(iterable $tags): Collection
     {
+        Craft::info(new PsrMessage('Preparing tags', Collection::make($tags)->all()));
+
         // Header value can't exceed 16KB
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
         $bytes = 0;

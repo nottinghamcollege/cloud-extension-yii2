@@ -13,7 +13,9 @@ use craft\helpers\Assets;
 use craft\helpers\Db;
 use craft\web\Controller;
 use DateTime;
+use yii\base\Event;
 use yii\base\Exception;
+use yii\base\Model;
 use yii\web\BadRequestHttpException;
 use yii\web\NotFoundHttpException;
 use yii\web\Response;
@@ -75,6 +77,7 @@ class AssetsController extends Controller
         return $this->asJson([
             'url' => $url,
             'originalFilename' => $originalFilename,
+            'targetFilename' => Assets::prepareAssetName($originalFilename),
             'filename' => $filename,
             'bucket' => $fs->getBucketName(),
             'key' => $fs->prefixPath($filename),
@@ -88,6 +91,7 @@ class AssetsController extends Controller
 
         $filename = $this->request->getRequiredBodyParam('filename');
         $originalFilename = $this->request->getRequiredBodyParam('originalFilename');
+        $targetFilename = $this->request->getRequiredBodyParam('targetFilename');
         $size = $this->request->getBodyParam('size');
         $width = $this->request->getBodyParam('width');
         $height = $this->request->getBodyParam('height');
@@ -147,7 +151,6 @@ class AssetsController extends Controller
         // Check the permissions to upload in the resolved folder.
         $this->requireVolumePermissionByFolder('saveAssets', $folder);
 
-        $targetFilename = Assets::prepareAssetName($originalFilename);
         $asset = new Asset();
         $asset->setFilename($filename);
         $asset->setVolumeId($folder->volumeId);
@@ -169,12 +172,12 @@ class AssetsController extends Controller
             $asset->newFilename = $targetFilename;
         }
 
-        if (isset($originalFilename)) {
+        if ($originalFilename) {
             $asset->title = Assets::filename2Title(pathinfo($originalFilename, PATHINFO_FILENAME));
         }
 
         $asset->setScenario(Asset::SCENARIO_CREATE);
-        $saved = $elementsService->saveElement($asset);
+        $saved = $this->saveAsset($asset);
 
         // In case of error, let user know about it.
         if (!$saved) {
@@ -212,7 +215,9 @@ class AssetsController extends Controller
                 'filename' => $asset->conflictingFilename,
                 'conflictingAssetId' => $conflictingAsset->id ?? null,
                 'suggestedFilename' => $asset->suggestedFilename,
-                'conflictingAssetUrl' => ($conflictingAsset && $conflictingAsset->getVolume()->getFs()->hasUrls) ? $conflictingAsset->getUrl() : null,
+                'conflictingAssetUrl' => ($conflictingAsset && $conflictingAsset->getVolume()->getFs()->hasUrls)
+                    ? $conflictingAsset->getUrl()
+                    : null,
             ]);
         }
 
@@ -229,16 +234,13 @@ class AssetsController extends Controller
         $assetId = $this->request->getBodyParam('assetId');
         $sourceAssetId = $this->request->getBodyParam('sourceAssetId');
         $filename = $this->request->getBodyParam('filename');
-        $originalFilename = $this->request->getBodyParam('originalFilename');
-        $targetFilename = $originalFilename ? Assets::prepareAssetName($originalFilename) : null;
+        $targetFilename = $this->request->getBodyParam('targetFilename');
         $assets = Craft::$app->getAssets();
 
         // Must have at least one existing asset (source or target).
         // Must have either target asset or target filename.
         // Must have either uploaded file or source asset.
-        if ((empty($assetId) && empty($sourceAssetId)) ||
-            (empty($assetId) && empty($targetFilename))
-        ) {
+        if (empty($assetId) && empty($sourceAssetId) && empty($targetFilename)) {
             throw new BadRequestHttpException('Incorrect combination of parameters.');
         }
 
@@ -266,6 +268,10 @@ class AssetsController extends Controller
 
             // See if we can find an Asset to replace.
             if ($assetToReplace === null) {
+                if ($targetFilename === null) {
+                    throw new Exception('No target filename provided.');
+                }
+
                 // Make sure the extension didn't change
                 if (pathinfo($targetFilename, PATHINFO_EXTENSION) !== $sourceAsset->getExtension()) {
                     throw new Exception($targetFilename . ' doesn\'t have the original file extension.');
@@ -290,7 +296,7 @@ class AssetsController extends Controller
                 );
                 Craft::$app->getElements()->deleteElement($sourceAsset);
             } else {
-                // TODO: when/how does this occur?
+                // TODO: when/how does this occur? (possible dead-code)
                 // If all we have is the filename, then make sure that the destination is empty and go for it.
                 $volume = $sourceAsset->getVolume();
                 $volume->deleteFile(rtrim($sourceAsset->folderPath, '/') . '/' . $targetFilename);
@@ -330,12 +336,22 @@ class AssetsController extends Controller
             $targetFilename = $event->filename ?: $targetFilename;
         }
 
+        $oldPath = $asset->getPath();
         $asset->uploaderId = Craft::$app->getUser()->getId();
         $asset->avoidFilenameConflicts = true;
+        $asset->setScenario(Asset::SCENARIO_REPLACE);
         $asset->setFilename($filename);
         $asset->newFilename = $targetFilename;
-        $asset->setScenario(Asset::SCENARIO_REPLACE);
-        $saved = Craft::$app->getElements()->saveElement($asset);
+
+        $saved = $this->saveAsset($asset);
+
+        $asset->getVolume()->deleteFile($oldPath);
+
+        // Try again, in case the resulting filename has a tmp suffix from `avoidFilenameConflicts`
+        if ($saved && $oldPath !== $asset->getPath()) {
+            $asset->newFilename = $targetFilename;
+            $saved = Craft::$app->getElements()->saveElement($asset);
+        }
 
         if ($assets->hasEventHandlers($assets::EVENT_AFTER_REPLACE_ASSET)) {
             $assets->trigger($assets::EVENT_AFTER_REPLACE_ASSET, new ReplaceAssetEvent([
@@ -345,5 +361,18 @@ class AssetsController extends Controller
         }
 
         return $saved;
+    }
+
+    protected function saveAsset(Asset $asset): bool
+    {
+        $asset->setScenario(Asset::SCENARIO_CREATE);
+
+        // Set tempFilePath to pass required validation, but unset immediately after
+        $asset->tempFilePath = '__tempFilePath__';
+        $asset->on(Model::EVENT_AFTER_VALIDATE, function(Event $event) {
+            $event->sender->tempFilePath = null;
+        });
+
+        return Craft::$app->getElements()->saveElement($asset);
     }
 }
