@@ -3,6 +3,7 @@
 namespace craft\cloud;
 
 use Craft;
+use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
 use craft\cloud\fs\AssetsFs;
@@ -217,25 +218,37 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
         Event::on(
             View::class,
             View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
-            [$this->get('staticCache'), 'handleBeforeRenderPageTemplate'],
+            [$this->getStaticCache(), 'handleBeforeRenderPageTemplate'],
         );
 
         Event::on(
             View::class,
             View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
-            [$this->get('staticCache'), 'handleAfterRenderPageTemplate'],
+            [$this->getStaticCache(), 'handleAfterRenderPageTemplate'],
         );
 
         Event::on(
             Elements::class,
             Elements::EVENT_INVALIDATE_CACHES,
-            [$this->get('staticCache'), 'handleInvalidateCaches'],
+            [$this->getStaticCache(), 'handleInvalidateCaches'],
         );
 
         Event::on(
             ClearCaches::class,
             ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
-            [$this->get('staticCache'), 'handleRegisterCacheOptions'],
+            [$this->getStaticCache(), 'handleRegisterCacheOptions'],
+        );
+
+        Event::on(
+            Element::class,
+            Element::EVENT_AFTER_SAVE,
+            [$this->getStaticCache(), 'handleAfterUpdate'],
+        );
+
+        Event::on(
+            Element::class,
+            Element::EVENT_AFTER_DELETE,
+            [$this->getStaticCache(), 'handleAfterUpdate'],
         );
 
         Event::on(
