@@ -12,7 +12,6 @@ use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
-use League\Uri\Uri;
 use samdark\log\PsrMessage;
 use yii\base\Event;
 use yii\caching\TagDependency;
@@ -108,7 +107,6 @@ class StaticCache extends \yii\base\Component
     public function purgePrefixes(string ...$prefixes): void
     {
         $prefixesForHeader = Collection::make($prefixes)
-            ->map(fn(string $prefix) => $this->urlToPrefix($prefix))
             ->filter()
             ->unique()
             ->values();
@@ -169,18 +167,6 @@ class StaticCache extends \yii\base\Component
                 HeaderEnum::CACHE_PURGE_TAG->value => $tagsForHeader->implode(','),
             ]);
         }
-    }
-
-    protected function urlToPrefix(string $url): string
-    {
-        $uri = Uri::new($url);
-        $host = $uri->getHost();
-
-        if (!$host) {
-            throw new \InvalidArgumentException('Invalid URL');
-        }
-
-        return $host . $uri->getPath();
     }
 
     protected function prepareTags(iterable $tags): Collection
