@@ -69,7 +69,7 @@ class StaticCache extends \yii\base\Component
             return;
         }
 
-        $url = $element->url ?? null;
+        $url = $element->getUrl();
 
         if (!$url) {
             return;
@@ -107,13 +107,10 @@ class StaticCache extends \yii\base\Component
 
     public function purgePrefixes(string ...$prefixes): void
     {
-        $headers = Craft::$app->getResponse()->getHeaders();
-
         $prefixesForHeader = Collection::make($prefixes)
             ->map(fn(string $prefix) => $this->urlToPrefix($prefix))
             ->filter()
             ->unique()
-            ->diff($headers->get(HeaderEnum::CACHE_PURGE_PREFIX->value, first: false))
             ->values();
 
         if ($prefixesForHeader->isEmpty()) {
@@ -121,6 +118,12 @@ class StaticCache extends \yii\base\Component
         }
 
         if (Craft::$app->getResponse() instanceof WebResponse) {
+            $headers = Craft::$app->getResponse()->getHeaders();
+
+            $prefixesForHeader = $prefixesForHeader
+                ->diff($headers->get(HeaderEnum::CACHE_PURGE_PREFIX->value, first: false))
+                ->values();
+
             Craft::info(new PsrMessage('Adding cache purge prefixes to response', $prefixesForHeader->all()));
 
             $prefixesForHeader->each(fn(string $prefix) => $headers->add(
@@ -136,24 +139,25 @@ class StaticCache extends \yii\base\Component
 
     public function purgeTags(string ...$tags): void
     {
-        $headers = Craft::$app->getResponse()->getHeaders();
-
         if ($this->shouldIgnoreTags($tags)) {
             Craft::info(new PsrMessage('Ignoring cache tags', $tags));
 
             return;
         }
 
-        $tagsForHeader = $this
-            ->prepareTags($tags)
-            ->diff($headers->get(HeaderEnum::CACHE_PURGE_TAG->value, first: false))
-            ->values();
+        $tagsForHeader = $this->prepareTags($tags);
 
         if ($tagsForHeader->isEmpty()) {
             return;
         }
 
         if (Craft::$app->getResponse() instanceof WebResponse) {
+            $headers = Craft::$app->getResponse()->getHeaders();
+
+            $tagsForHeader = $tagsForHeader
+                ->diff($headers->get(HeaderEnum::CACHE_PURGE_TAG->value, first: false))
+                ->values();
+
             Craft::info(new PsrMessage('Adding cache purge tags to response', $tagsForHeader->all()));
 
             $tagsForHeader->each(fn(string $tag) => $headers->add(
