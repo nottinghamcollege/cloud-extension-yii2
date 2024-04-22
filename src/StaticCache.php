@@ -3,16 +3,18 @@
 namespace craft\cloud;
 
 use Craft;
+use craft\base\Element;
 use craft\events\InvalidateElementCachesEvent;
-use craft\events\ModelEvent;
 use craft\events\RegisterCacheOptionsEvent;
 use craft\events\TemplateEvent;
+use craft\helpers\ElementHelper;
 use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
 use League\Uri\Uri;
 use samdark\log\PsrMessage;
+use yii\base\Event;
 use yii\caching\TagDependency;
 
 class StaticCache extends \yii\base\Component
@@ -58,9 +60,16 @@ class StaticCache extends \yii\base\Component
         }
     }
 
-    public function handleAfterUpdate(ModelEvent $event): void
+    public function handleAfterUpdate(Event $event): void
     {
-        $url = $event->sender->url ?? null;
+        /** @var Element $element */
+        $element = $event->sender;
+
+        if (ElementHelper::isDraftOrRevision($element)) {
+            return;
+        }
+
+        $url = $element->url ?? null;
 
         if (!$url) {
             return;
@@ -98,10 +107,14 @@ class StaticCache extends \yii\base\Component
 
     public function purgePrefixes(string ...$prefixes): void
     {
+        $headers = Craft::$app->getResponse()->getHeaders();
+
         $prefixesForHeader = Collection::make($prefixes)
             ->map(fn(string $prefix) => $this->urlToPrefix($prefix))
             ->filter()
-            ->unique();
+            ->unique()
+            ->diff($headers->get(HeaderEnum::CACHE_PURGE_PREFIX->value, first: false))
+            ->values();
 
         if ($prefixesForHeader->isEmpty()) {
             return;
@@ -110,11 +123,10 @@ class StaticCache extends \yii\base\Component
         if (Craft::$app->getResponse() instanceof WebResponse) {
             Craft::info(new PsrMessage('Adding cache purge prefixes to response', $prefixesForHeader->all()));
 
-            $prefixesForHeader->each(function(string $prefix) {
-                Craft::$app->getResponse()
-                    ->getHeaders()
-                    ->add(HeaderEnum::CACHE_PURGE_PREFIX->value, $prefix);
-            });
+            $prefixesForHeader->each(fn(string $prefix) => $headers->add(
+                HeaderEnum::CACHE_PURGE_PREFIX->value,
+                $prefix,
+            ));
         } else {
             Helper::makeGatewayApiRequest([
                 HeaderEnum::CACHE_PURGE_PREFIX->value => $prefixesForHeader->implode(','),
@@ -124,13 +136,18 @@ class StaticCache extends \yii\base\Component
 
     public function purgeTags(string ...$tags): void
     {
+        $headers = Craft::$app->getResponse()->getHeaders();
+
         if ($this->shouldIgnoreTags($tags)) {
             Craft::info(new PsrMessage('Ignoring cache tags', $tags));
 
             return;
         }
 
-        $tagsForHeader = $this->prepareTags($tags);
+        $tagsForHeader = $this
+            ->prepareTags($tags)
+            ->diff($headers->get(HeaderEnum::CACHE_PURGE_TAG->value, first: false))
+            ->values();
 
         if ($tagsForHeader->isEmpty()) {
             return;
@@ -139,12 +156,10 @@ class StaticCache extends \yii\base\Component
         if (Craft::$app->getResponse() instanceof WebResponse) {
             Craft::info(new PsrMessage('Adding cache purge tags to response', $tagsForHeader->all()));
 
-            $tagsForHeader->each(function(string $tag) {
-                Craft::$app->getResponse()->getHeaders()->add(
-                    HeaderEnum::CACHE_TAG->value,
-                    $tag,
-                );
-            });
+            $tagsForHeader->each(fn(string $tag) => $headers->add(
+                HeaderEnum::CACHE_PURGE_TAG->value,
+                $tag,
+            ));
         } else {
             Helper::makeGatewayApiRequest([
                 HeaderEnum::CACHE_PURGE_TAG->value => $tagsForHeader->implode(','),
@@ -202,6 +217,7 @@ class StaticCache extends \yii\base\Component
     protected function addCacheTagsToResponse(array $tags, $duration = null): void
     {
         $response = Craft::$app->getResponse();
+        $headers = $response->getHeaders();
 
         if (
             $response->isServerError ||
@@ -213,7 +229,10 @@ class StaticCache extends \yii\base\Component
             return;
         }
 
-        $tagsForHeader = $this->prepareTags($tags);
+        $tagsForHeader = $this
+            ->prepareTags($tags)
+            ->diff($headers->get(HeaderEnum::CACHE_TAG->value, first: false))
+            ->values();
 
         if ($duration === null || $tagsForHeader->isEmpty()) {
             return;
@@ -221,7 +240,7 @@ class StaticCache extends \yii\base\Component
 
         Craft::info(new PsrMessage('Adding cache tags to response', $tagsForHeader->all()));
 
-        $tagsForHeader->each(fn(string $tag) => $response->getHeaders()->add(
+        $tagsForHeader->each(fn(string $tag) => $headers->add(
             HeaderEnum::CACHE_TAG->value,
             $tag,
         ));
