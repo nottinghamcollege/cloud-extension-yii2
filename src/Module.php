@@ -20,8 +20,6 @@ use craft\fs\Temp;
 use craft\helpers\App;
 use craft\imagetransforms\FallbackTransformer;
 use craft\imagetransforms\ImageTransformer as CraftImageTransformer;
-use craft\log\Dispatcher;
-use craft\log\MonologTarget;
 use craft\services\Elements;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
@@ -31,7 +29,6 @@ use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\base\InvalidConfigException;
-use yii\log\Target;
 
 /**
  * @property ?string $id When auto-bootstrapped as an extension, this can be `null`.
@@ -134,21 +131,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
                 ->reject(fn(string $header) => $header === 'X-Forwarded-Host')
                 ->all();
         }
-
-        /** @var Dispatcher $dispatcher */
-        $dispatcher = $app->getLog();
-        $dispatcher->targets = Collection::make($dispatcher->getTargets())
-            ->map(function(Target $target) {
-                if (!($target instanceof MonologTarget)) {
-                    return $target;
-                }
-
-                return Craft::configure($target, [
-                    'logContext' => false,
-                ]);
-            })
-            ->all();
-
 
         Craft::$container->set(
             Temp::class,
