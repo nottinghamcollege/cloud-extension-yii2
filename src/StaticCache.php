@@ -213,7 +213,7 @@ class StaticCache extends \yii\base\Component
         $isWebResponse = $response instanceof \craft\web\Response;
 
         if ($isWebResponse) {
-            $existingTags = $response->getHeaders()->get($header, first: false);
+            $existingTags = $response->getHeaders()->get($header, first: false) ?? [];
             $items->push(...$existingTags);
         }
 
