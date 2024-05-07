@@ -11,6 +11,7 @@ use craft\helpers\ElementHelper;
 use craft\services\Elements;
 use craft\utilities\ClearCaches;
 use craft\web\Application as WebApplication;
+use craft\web\Response;
 use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
@@ -26,7 +27,7 @@ class StaticCache extends \yii\base\Component
         Event::on(
             WebApplication::class,
             WebApplication::EVENT_INIT,
-            [$this, 'handleWebApplicationInit'],
+            [$this, 'handleInitWebApplication'],
         );
 
         Event::on(
@@ -36,9 +37,9 @@ class StaticCache extends \yii\base\Component
         );
 
         Event::on(
-            View::class,
-            View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
-            [$this, 'handleAfterRenderPageTemplate'],
+            Response::class,
+            \yii\web\Response::EVENT_BEFORE_SEND,
+            [$this, 'handleBeforeSendResponse'],
         );
 
         Event::on(
@@ -66,13 +67,28 @@ class StaticCache extends \yii\base\Component
         );
     }
 
-    private function handleWebApplicationInit(Event $event): void
+    private function handleInitWebApplication(Event $event): void
     {
         if (!$this->shouldCollectCacheInfo()) {
             return;
         }
 
         Craft::$app->getElements()->startCollectingCacheInfo();
+    }
+
+    private function handleBeforeSendResponse(Event $event): void
+    {
+        if (!$this->shouldCollectCacheInfo()) {
+            return;
+        }
+
+        /** @var TagDependency|null $dependency */
+        /** @var int|null $duration */
+        [$dependency, $duration] = Craft::$app->getElements()->stopCollectingCacheInfo();
+
+        if ($dependency?->tags) {
+            $this->addCacheTagsToResponse($dependency->tags, $duration);
+        }
     }
 
     private function handleBeforeRenderPageTemplate(TemplateEvent $event): void
@@ -87,25 +103,6 @@ class StaticCache extends \yii\base\Component
 
         if ($matchedElement) {
             Craft::$app->getElements()->collectCacheInfoForElement($matchedElement);
-        }
-    }
-
-    private function handleAfterRenderPageTemplate(TemplateEvent $event): void
-    {
-        // ignore CP and CLI requests
-        if (
-            $event->templateMode !== View::TEMPLATE_MODE_SITE ||
-            !(Craft::$app->getResponse() instanceof WebResponse)
-        ) {
-            return;
-        }
-
-        /** @var TagDependency|null $dependency */
-        /** @var int|null $duration */
-        [$dependency, $duration] = Craft::$app->getElements()->stopCollectingCacheInfo();
-
-        if ($dependency?->tags) {
-            $this->addCacheTagsToResponse($dependency->tags, $duration);
         }
     }
 
