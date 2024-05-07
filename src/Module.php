@@ -3,7 +3,6 @@
 namespace craft\cloud;
 
 use Craft;
-use craft\base\Element;
 use craft\base\Event;
 use craft\base\Model;
 use craft\cloud\fs\AssetsFs;
@@ -21,10 +20,8 @@ use craft\fs\Temp;
 use craft\helpers\App;
 use craft\imagetransforms\FallbackTransformer;
 use craft\imagetransforms\ImageTransformer as CraftImageTransformer;
-use craft\services\Elements;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
-use craft\utilities\ClearCaches;
 use craft\web\Application as WebApplication;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
@@ -197,41 +194,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
 
     protected function registerCloudEventHandlers(): void
     {
-        Event::on(
-            View::class,
-            View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
-            [$this->getStaticCache(), 'handleBeforeRenderPageTemplate'],
-        );
-
-        Event::on(
-            View::class,
-            View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
-            [$this->getStaticCache(), 'handleAfterRenderPageTemplate'],
-        );
-
-        Event::on(
-            Elements::class,
-            Elements::EVENT_INVALIDATE_CACHES,
-            [$this->getStaticCache(), 'handleInvalidateCaches'],
-        );
-
-        Event::on(
-            ClearCaches::class,
-            ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
-            [$this->getStaticCache(), 'handleRegisterCacheOptions'],
-        );
-
-        Event::on(
-            Element::class,
-            Element::EVENT_AFTER_SAVE,
-            [$this->getStaticCache(), 'handleAfterUpdate'],
-        );
-
-        Event::on(
-            Element::class,
-            Element::EVENT_AFTER_DELETE,
-            [$this->getStaticCache(), 'handleAfterUpdate'],
-        );
+        $this->getStaticCache()->registerEventHandlers();
 
         Event::on(
             Asset::class,

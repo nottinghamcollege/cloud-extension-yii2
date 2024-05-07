@@ -8,6 +8,9 @@ use craft\events\InvalidateElementCachesEvent;
 use craft\events\RegisterCacheOptionsEvent;
 use craft\events\TemplateEvent;
 use craft\helpers\ElementHelper;
+use craft\services\Elements;
+use craft\utilities\ClearCaches;
+use craft\web\Application as WebApplication;
 use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
@@ -18,18 +21,65 @@ use yii\caching\TagDependency;
 
 class StaticCache extends \yii\base\Component
 {
-    public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
+    public function registerEventHandlers(): void
     {
-        // ignore CP and CLI requests
-        if (
-            $event->templateMode !== View::TEMPLATE_MODE_SITE ||
-            !(Craft::$app->getResponse() instanceof WebResponse)
-        ) {
+        Event::on(
+            WebApplication::class,
+            WebApplication::EVENT_INIT,
+            [$this, 'handleWebApplicationInit'],
+        );
+
+        Event::on(
+            View::class,
+            View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
+            [$this, 'handleBeforeRenderPageTemplate'],
+        );
+
+        Event::on(
+            View::class,
+            View::EVENT_AFTER_RENDER_PAGE_TEMPLATE,
+            [$this, 'handleAfterRenderPageTemplate'],
+        );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_INVALIDATE_CACHES,
+            [$this, 'handleInvalidateElementCaches'],
+        );
+
+        Event::on(
+            ClearCaches::class,
+            ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
+            [$this, 'handleRegisterCacheOptions'],
+        );
+
+        Event::on(
+            Element::class,
+            Element::EVENT_AFTER_SAVE,
+            [$this, 'handleAfterUpdate'],
+        );
+
+        Event::on(
+            Element::class,
+            Element::EVENT_AFTER_DELETE,
+            [$this, 'handleAfterUpdate'],
+        );
+    }
+
+    private function handleWebApplicationInit(Event $event): void
+    {
+        if (!$this->shouldCollectCacheInfo()) {
             return;
         }
 
-        // start collecting element cache info
         Craft::$app->getElements()->startCollectingCacheInfo();
+    }
+
+    private function handleBeforeRenderPageTemplate(TemplateEvent $event): void
+    {
+        if (!$this->shouldCollectCacheInfo()) {
+            return;
+        }
 
         // capture the matched element, if there was one
         /** @var UrlManager $urlManager */
@@ -40,7 +90,7 @@ class StaticCache extends \yii\base\Component
         }
     }
 
-    public function handleAfterRenderPageTemplate(TemplateEvent $event): void
+    private function handleAfterRenderPageTemplate(TemplateEvent $event): void
     {
         // ignore CP and CLI requests
         if (
@@ -59,7 +109,7 @@ class StaticCache extends \yii\base\Component
         }
     }
 
-    public function handleAfterUpdate(Event $event): void
+    private function handleAfterUpdate(Event $event): void
     {
         /** @var Element $element */
         $element = $event->sender;
@@ -77,7 +127,7 @@ class StaticCache extends \yii\base\Component
         $this->purgePrefixes($url);
     }
 
-    public function handleInvalidateCaches(InvalidateElementCachesEvent $event): void
+    private function handleInvalidateElementCaches(InvalidateElementCachesEvent $event): void
     {
         $tags = $event->tags ?? [];
 
@@ -88,7 +138,7 @@ class StaticCache extends \yii\base\Component
         $this->purgeTags(...$tags);
     }
 
-    public function handleRegisterCacheOptions(RegisterCacheOptionsEvent $event): void
+    private function handleRegisterCacheOptions(RegisterCacheOptionsEvent $event): void
     {
         $event->options[] = [
             'key' => 'cloud-static-caches',
@@ -169,7 +219,7 @@ class StaticCache extends \yii\base\Component
         }
     }
 
-    protected function prepareTags(iterable $tags): Collection
+    private function prepareTags(iterable $tags): Collection
     {
         Craft::info(new PsrMessage('Preparing tags', Collection::make($tags)->all()));
 
@@ -194,17 +244,17 @@ class StaticCache extends \yii\base\Component
             ->values();
     }
 
-    protected function removeNonPrintableChars(string $string): string
+    private function removeNonPrintableChars(string $string): string
     {
         return preg_replace('/[^[:print:]]/', '', $string);
     }
 
-    protected function hash(string $string): ?string
+    private function hash(string $string): string
     {
         return sprintf('%x', crc32($string));
     }
 
-    protected function addCacheTagsToResponse(array $tags, $duration = null): void
+    private function addCacheTagsToResponse(array $tags, $duration = null): void
     {
         $response = Craft::$app->getResponse();
         $headers = $response->getHeaders();
@@ -238,10 +288,17 @@ class StaticCache extends \yii\base\Component
         $response->setCacheHeaders($duration, false);
     }
 
-    protected function shouldIgnoreTags(iterable $tags): bool
+    private function shouldIgnoreTags(iterable $tags): bool
     {
         return Collection::make($tags)->contains(function(string $tag) {
             return preg_match('/element::craft\\\\elements\\\\\S+::(drafts|revisions)/', $tag);
         });
+    }
+
+    private function shouldCollectCacheInfo(): bool
+    {
+        return
+            Craft::$app->getView()->templateMode === View::TEMPLATE_MODE_SITE &&
+            Craft::$app->getResponse() instanceof WebResponse;
     }
 }
