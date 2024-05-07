@@ -83,7 +83,7 @@ class StaticCache extends \yii\base\Component
             false,
         );
 
-        $this->addTagsToWebResponse(...$preparedElementTags);
+        $this->addTags(...$preparedElementTags);
     }
 
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
@@ -145,6 +145,65 @@ class StaticCache extends \yii\base\Component
             HeaderEnum::CACHE_PURGE_TAG->value,
             ...$tags,
         );
+    }
+
+    public function getTags(): Collection
+    {
+        if (!$this->shouldBeCacheable()) {
+            return new Collection();
+        }
+
+        $tags = Craft::$app
+            ->getResponse()
+            ->getHeaders()
+            ->get(HeaderEnum::CACHE_TAG->value, first: false) ?? [];
+
+        return new Collection($tags);
+    }
+
+    public function addTags(string ...$tags): void
+    {
+        if (!$this->shouldBeCacheable()) {
+            return;
+        }
+
+        $headers = Craft::$app->getResponse()->getHeaders();
+        $tags = $this->prepareTagsForResponse(
+            Module::getInstance()->getConfig()->environmentId,
+            ...$this->getTags(),
+            ...$tags,
+        );
+
+        Craft::info(new PsrMessage('Adding tags to {header} header', [
+            'header' => HeaderEnum::CACHE_TAG->value,
+            'tags' => $tags->all(),
+        ]));
+
+        $headers->remove(HeaderEnum::CACHE_TAG->value);
+        $tags->each(fn(string $tag) => $headers->add(
+            HeaderEnum::CACHE_TAG->value,
+            $tag,
+        ));
+    }
+
+    public function removeTags(string ...$tags): void
+    {
+        if (!$this->shouldBeCacheable()) {
+            return;
+        }
+
+        $tags = $this->getTags()->diff($tags);
+
+        Craft::info(new PsrMessage('Removing tags from {header} header', [
+            'tags' => $tags->all(),
+        ]));
+
+        $headers = Craft::$app->getResponse()->getHeaders();
+        $headers->remove(HeaderEnum::CACHE_TAG->value);
+        $tags->each(fn(string $tag) => $headers->add(
+            HeaderEnum::CACHE_TAG->value,
+            $tag,
+        ));
     }
 
     private function purgeItemsByHeader($header, ...$items): void
@@ -209,27 +268,6 @@ class StaticCache extends \yii\base\Component
     private function hash(string $string): string
     {
         return sprintf('%x', crc32($string));
-    }
-
-    private function addTagsToWebResponse(string ...$tags): void
-    {
-        $headers = Craft::$app->getResponse()->getHeaders();
-        $tags = $this->prepareTagsForResponse(
-            Module::getInstance()->getConfig()->environmentId,
-            ...$headers->get(HeaderEnum::CACHE_TAG->value, first: false),
-            ...$tags,
-        );
-
-        Craft::info(new PsrMessage('Adding {header} header to response', [
-            'header' => HeaderEnum::CACHE_TAG->value,
-            'tags' => $tags->all(),
-        ]));
-
-        $headers->remove(HeaderEnum::CACHE_TAG->value);
-        $tags->each(fn(string $tag) => $headers->add(
-            HeaderEnum::CACHE_TAG->value,
-            $tag,
-        ));
     }
 
     private function shouldBeCacheable(): bool
