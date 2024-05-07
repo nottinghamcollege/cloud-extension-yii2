@@ -3,9 +3,11 @@
 namespace craft\cloud;
 
 use Craft;
+use craft\events\ElementEvent;
 use craft\events\InvalidateElementCachesEvent;
 use craft\events\RegisterCacheOptionsEvent;
 use craft\events\TemplateEvent;
+use craft\helpers\ElementHelper;
 use craft\services\Elements;
 use craft\utilities\ClearCaches;
 use craft\web\UrlManager;
@@ -41,6 +43,18 @@ class StaticCache extends \yii\base\Component
             Elements::class,
             Elements::EVENT_INVALIDATE_CACHES,
             [$this, 'handleInvalidateElementCaches'],
+        );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_AFTER_SAVE_ELEMENT,
+            [$this, 'handleUpdateElement'],
+        );
+
+        Event::on(
+            Elements::class,
+            Elements::EVENT_AFTER_DELETE_ELEMENT,
+            [$this, 'handleUpdateElement'],
         );
 
         Event::on(
@@ -117,6 +131,18 @@ class StaticCache extends \yii\base\Component
             'label' => Craft::t('app', 'Craft Cloud caches'),
             'action' => [$this, 'purgeAll'],
         ];
+    }
+
+    public function handleUpdateElement(ElementEvent $event): void
+    {
+        $element = $event->element;
+        $url = $element->getUrl();
+
+        if (ElementHelper::isDraftOrRevision($element) || !$url) {
+            return;
+        }
+
+        $this->purgeUrlPrefixes($url);
     }
 
     public function purgeAll(): void
