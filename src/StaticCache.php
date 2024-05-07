@@ -67,7 +67,7 @@ class StaticCache extends \yii\base\Component
         );
     }
 
-    private function handleInitWebApplication(Event $event): void
+    public function handleInitWebApplication(Event $event): void
     {
         if (!$this->shouldCollectCacheInfo()) {
             return;
@@ -76,7 +76,7 @@ class StaticCache extends \yii\base\Component
         Craft::$app->getElements()->startCollectingCacheInfo();
     }
 
-    private function handleBeforeSendResponse(Event $event): void
+    public function handleBeforeSendResponse(Event $event): void
     {
         if (!$this->shouldCollectCacheInfo()) {
             return;
@@ -91,7 +91,7 @@ class StaticCache extends \yii\base\Component
         }
     }
 
-    private function handleBeforeRenderPageTemplate(TemplateEvent $event): void
+    public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
     {
         if (!$this->shouldCollectCacheInfo()) {
             return;
@@ -106,7 +106,7 @@ class StaticCache extends \yii\base\Component
         }
     }
 
-    private function handleAfterUpdate(Event $event): void
+    public function handleAfterUpdate(Event $event): void
     {
         /** @var Element $element */
         $element = $event->sender;
@@ -124,7 +124,7 @@ class StaticCache extends \yii\base\Component
         $this->purgePrefixes($url);
     }
 
-    private function handleInvalidateElementCaches(InvalidateElementCachesEvent $event): void
+    public function handleInvalidateElementCaches(InvalidateElementCachesEvent $event): void
     {
         $tags = $event->tags ?? [];
 
@@ -135,7 +135,7 @@ class StaticCache extends \yii\base\Component
         $this->purgeTags(...$tags);
     }
 
-    private function handleRegisterCacheOptions(RegisterCacheOptionsEvent $event): void
+    public function handleRegisterCacheOptions(RegisterCacheOptionsEvent $event): void
     {
         $event->options[] = [
             'key' => 'cloud-static-caches',
