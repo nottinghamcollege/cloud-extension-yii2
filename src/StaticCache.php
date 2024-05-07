@@ -17,8 +17,6 @@ use yii\caching\TagDependency;
 
 class StaticCache extends \yii\base\Component
 {
-    private const CDN_TAG_PREFIX = 'cdn:';
-
     public function registerEventHandlers(): void
     {
         Event::on(
@@ -123,12 +121,7 @@ class StaticCache extends \yii\base\Component
 
     public function purgeAll(): void
     {
-        $environmentId = Module::getInstance()->getConfig()->environmentId;
-
-        $this->purgeTags(
-            $environmentId,
-            self::CDN_TAG_PREFIX . $environmentId,
-        );
+        $this->purgeTags(Module::getInstance()->getConfig()->environmentId);
     }
 
     public function purgeUrlPrefixes(string ...$urlPrefixes): void
