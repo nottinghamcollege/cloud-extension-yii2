@@ -133,71 +133,53 @@ class StaticCache extends \yii\base\Component
 
     public function purgeUrlPrefixes(string ...$urlPrefixes): void
     {
-        $urlPrefixes = Collection::make($urlPrefixes)
-            ->filter()
-            ->unique()
-            ->values();
-
-        if ($urlPrefixes->isEmpty()) {
-            return;
-        }
-
-        Craft::info(new PsrMessage('Purging URL prefixes', [
-            'urlPrefixes' => $urlPrefixes->all(),
-        ]));
-
-        if (Craft::$app->getResponse() instanceof \yii\console\Response) {
-            Helper::makeGatewayApiRequest([
-                HeaderEnum::CACHE_PURGE_PREFIX->value => $urlPrefixes->implode(','),
-            ]);
-
-            return;
-        }
-
-        $headers = Craft::$app->getResponse()->getHeaders();
-
-        Craft::info(new PsrMessage('Adding {header} header to response', [
-            'header' => HeaderEnum::CACHE_PURGE_PREFIX->value,
-            'prefixes' => $urlPrefixes->all(),
-        ]));
-
-        $urlPrefixes->each(fn(string $prefix) => $headers->add(
+        $this->purgeItemsByHeader(
             HeaderEnum::CACHE_PURGE_PREFIX->value,
-            $prefix,
-        ));
+            ...$urlPrefixes,
+        );
     }
 
     public function purgeTags(string ...$tags): void
     {
-        $tags = $this->prepareTagsForResponse(...$tags);
-
-        if ($tags->isEmpty()) {
-            return;
-        }
-
-        Craft::info(new PsrMessage('Purging tags', [
-            'tags' => $tags->all(),
-        ]));
-
-        if (Craft::$app->getResponse() instanceof \yii\console\Response) {
-            Helper::makeGatewayApiRequest([
-                HeaderEnum::CACHE_PURGE_TAG->value => $tags->implode(','),
-            ]);
-
-            return;
-        }
-
-        $headers = Craft::$app->getResponse()->getHeaders();
-
-        Craft::info(new PsrMessage('Adding {header} header to response', [
-            'header' => HeaderEnum::CACHE_PURGE_TAG->value,
-            'tags' => $tags->all(),
-        ]));
-
-        $tags->each(fn(string $tag) => $headers->add(
+        $this->purgeItemsByHeader(
             HeaderEnum::CACHE_PURGE_TAG->value,
-            $tag,
-        ));
+            ...$tags,
+        );
+    }
+
+    private function purgeItemsByHeader($header, ...$items): void
+    {
+        $items = Collection::make($items);
+        $response = Craft::$app->getResponse();
+        $isWebResponse = $response instanceof \craft\web\Response;
+
+        if ($isWebResponse) {
+            $existingTags = $response->getHeaders()->get($header, first: false);
+            $items->push(...$existingTags);
+        }
+
+        $items = $items->filter()->unique();
+
+        if ($items->isEmpty()) {
+            return;
+        }
+
+        Craft::info(new PsrMessage('Purging items via {header}', [
+            'items' => $items->all(),
+            'header' => $header,
+        ]));
+
+        if ($isWebResponse) {
+            $response->getHeaders()->remove($header);
+            $items->each(fn(string $tag) => $response->getHeaders()->add(
+                $header,
+                $tag,
+            ));
+        } else {
+            Helper::makeGatewayApiRequest([
+                $header => $items->implode(','),
+            ]);
+        }
     }
 
     private function prepareTagsForResponse(string ...$tags): Collection
@@ -231,15 +213,19 @@ class StaticCache extends \yii\base\Component
 
     private function addTagsToWebResponse(string ...$tags): void
     {
-        $tags = Collection::make($tags)
-            ->prepend(Module::getInstance()->getConfig()->environmentId);
+        $headers = Craft::$app->getResponse()->getHeaders();
+        $tags = $this->prepareTagsForResponse(
+            Module::getInstance()->getConfig()->environmentId,
+            ...$headers->get(HeaderEnum::CACHE_TAG->value, first: false),
+            ...$tags,
+        );
 
         Craft::info(new PsrMessage('Adding {header} header to response', [
             'header' => HeaderEnum::CACHE_TAG->value,
             'tags' => $tags->all(),
         ]));
 
-        $headers = Craft::$app->getResponse()->getHeaders();
+        $headers->remove(HeaderEnum::CACHE_TAG->value);
         $tags->each(fn(string $tag) => $headers->add(
             HeaderEnum::CACHE_TAG->value,
             $tag,
