@@ -11,7 +11,7 @@ class StaticCacheController extends Controller
     public function actionPurgePrefixes(string ...$prefixes): int
     {
         $this->do('Purging prefixes', function() use ($prefixes) {
-            Module::getInstance()->getStaticCache()->purgePrefixes(...$prefixes);
+            Module::getInstance()->getStaticCache()->purgeUrlPrefixes(...$prefixes);
         });
 
         return ExitCode::OK;

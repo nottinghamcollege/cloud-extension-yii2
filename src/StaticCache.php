@@ -3,16 +3,11 @@
 namespace craft\cloud;
 
 use Craft;
-use craft\base\Element;
 use craft\events\InvalidateElementCachesEvent;
 use craft\events\RegisterCacheOptionsEvent;
 use craft\events\TemplateEvent;
-use craft\helpers\ElementHelper;
 use craft\services\Elements;
 use craft\utilities\ClearCaches;
-use craft\web\Application as WebApplication;
-use craft\web\Response;
-use craft\web\Response as WebResponse;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
@@ -22,11 +17,13 @@ use yii\caching\TagDependency;
 
 class StaticCache extends \yii\base\Component
 {
+    private const CDN_TAG_PREFIX = 'cdn:';
+
     public function registerEventHandlers(): void
     {
         Event::on(
-            WebApplication::class,
-            WebApplication::EVENT_INIT,
+            \craft\web\Application::class,
+            \craft\web\Application::EVENT_INIT,
             [$this, 'handleInitWebApplication'],
         );
 
@@ -37,9 +34,9 @@ class StaticCache extends \yii\base\Component
         );
 
         Event::on(
-            Response::class,
-            \yii\web\Response::EVENT_BEFORE_SEND,
-            [$this, 'handleBeforeSendResponse'],
+            \craft\web\Response::class,
+            \yii\web\Response::EVENT_AFTER_PREPARE,
+            [$this, 'handleAfterPrepareWebResponse'],
         );
 
         Event::on(
@@ -53,47 +50,45 @@ class StaticCache extends \yii\base\Component
             ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
             [$this, 'handleRegisterCacheOptions'],
         );
-
-        Event::on(
-            Element::class,
-            Element::EVENT_AFTER_SAVE,
-            [$this, 'handleAfterUpdate'],
-        );
-
-        Event::on(
-            Element::class,
-            Element::EVENT_AFTER_DELETE,
-            [$this, 'handleAfterUpdate'],
-        );
     }
 
     public function handleInitWebApplication(Event $event): void
     {
-        if (!$this->shouldCollectCacheInfo()) {
+        if (!$this->shouldBeCacheable()) {
             return;
         }
 
         Craft::$app->getElements()->startCollectingCacheInfo();
     }
 
-    public function handleBeforeSendResponse(Event $event): void
+    public function handleAfterPrepareWebResponse(Event $event): void
     {
-        if (!$this->shouldCollectCacheInfo()) {
+        if (!$this->shouldBeCacheable()) {
             return;
         }
 
         /** @var TagDependency|null $dependency */
         /** @var int|null $duration */
         [$dependency, $duration] = Craft::$app->getElements()->stopCollectingCacheInfo();
+        $elementTags = $dependency?->tags ?? [];
+        $preparedElementTags = $this->prepareElementTags(...$elementTags);
+        $duration = $duration ?? Craft::$app->getConfig()->getGeneral()->cacheDuration;
 
-        if ($dependency?->tags) {
-            $this->addCacheTagsToResponse($dependency->tags, $duration);
-        }
+        Craft::info(new PsrMessage('Adding cache headers to response', [
+            'duration' => $duration,
+        ]));
+
+        Craft::$app->getResponse()->setCacheHeaders(
+            $duration ?? Craft::$app->getConfig()->getGeneral()->cacheDuration,
+            false,
+        );
+
+        $this->addTagsToWebResponse(...$preparedElementTags);
     }
 
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
     {
-        if (!$this->shouldCollectCacheInfo()) {
+        if (!$this->shouldBeCacheable()) {
             return;
         }
 
@@ -106,29 +101,11 @@ class StaticCache extends \yii\base\Component
         }
     }
 
-    public function handleAfterUpdate(Event $event): void
-    {
-        /** @var Element $element */
-        $element = $event->sender;
-
-        if (ElementHelper::isDraftOrRevision($element)) {
-            return;
-        }
-
-        $url = $element->getUrl();
-
-        if (!$url) {
-            return;
-        }
-
-        $this->purgePrefixes($url);
-    }
-
     public function handleInvalidateElementCaches(InvalidateElementCachesEvent $event): void
     {
-        $tags = $event->tags ?? [];
+        $tags = $this->prepareElementTags(...$event->tags);
 
-        if (!count($tags)) {
+        if ($tags->isEmpty()) {
             return;
         }
 
@@ -138,88 +115,93 @@ class StaticCache extends \yii\base\Component
     public function handleRegisterCacheOptions(RegisterCacheOptionsEvent $event): void
     {
         $event->options[] = [
-            'key' => 'cloud-static-caches',
-            'label' => Craft::t('app', 'Craft Cloud static caches'),
+            'key' => 'cloud-caches',
+            'label' => Craft::t('app', 'Craft Cloud caches'),
             'action' => [$this, 'purgeAll'],
         ];
     }
 
     public function purgeAll(): void
     {
-        foreach (Craft::$app->getSites()->getAllSites() as $site) {
-            $this->purgePrefixes($site->getBaseUrl());
-        }
+        $environmentId = Module::getInstance()->getConfig()->environmentId;
+
+        $this->purgeTags(
+            $environmentId,
+            self::CDN_TAG_PREFIX . $environmentId,
+        );
     }
 
-    public function purgePrefixes(string ...$prefixes): void
+    public function purgeUrlPrefixes(string ...$urlPrefixes): void
     {
-        $prefixesForHeader = Collection::make($prefixes)
+        $urlPrefixes = Collection::make($urlPrefixes)
             ->filter()
             ->unique()
             ->values();
 
-        if ($prefixesForHeader->isEmpty()) {
+        if ($urlPrefixes->isEmpty()) {
             return;
         }
 
-        if (Craft::$app->getResponse() instanceof WebResponse) {
-            $headers = Craft::$app->getResponse()->getHeaders();
+        Craft::info(new PsrMessage('Purging URL prefixes', [
+            'urlPrefixes' => $urlPrefixes->all(),
+        ]));
 
-            $prefixesForHeader = $prefixesForHeader
-                ->diff($headers->get(HeaderEnum::CACHE_PURGE_PREFIX->value, first: false))
-                ->values();
-
-            Craft::info(new PsrMessage('Adding cache purge prefixes to response', $prefixesForHeader->all()));
-
-            $prefixesForHeader->each(fn(string $prefix) => $headers->add(
-                HeaderEnum::CACHE_PURGE_PREFIX->value,
-                $prefix,
-            ));
-        } else {
+        if (Craft::$app->getResponse() instanceof \yii\console\Response) {
             Helper::makeGatewayApiRequest([
-                HeaderEnum::CACHE_PURGE_PREFIX->value => $prefixesForHeader->implode(','),
+                HeaderEnum::CACHE_PURGE_PREFIX->value => $urlPrefixes->implode(','),
             ]);
+
+            return;
         }
+
+        $headers = Craft::$app->getResponse()->getHeaders();
+
+        Craft::info(new PsrMessage('Adding {header} header to response', [
+            'header' => HeaderEnum::CACHE_PURGE_PREFIX->value,
+            'prefixes' => $urlPrefixes->all(),
+        ]));
+
+        $urlPrefixes->each(fn(string $prefix) => $headers->add(
+            HeaderEnum::CACHE_PURGE_PREFIX->value,
+            $prefix,
+        ));
     }
 
     public function purgeTags(string ...$tags): void
     {
-        if ($this->shouldIgnoreTags($tags)) {
-            Craft::info(new PsrMessage('Ignoring cache tags', $tags));
+        $tags = $this->prepareTagsForResponse(...$tags);
 
+        if ($tags->isEmpty()) {
             return;
         }
 
-        $tagsForHeader = $this->prepareTags($tags);
+        Craft::info(new PsrMessage('Purging tags', [
+            'tags' => $tags->all(),
+        ]));
 
-        if ($tagsForHeader->isEmpty()) {
-            return;
-        }
-
-        if (Craft::$app->getResponse() instanceof WebResponse) {
-            $headers = Craft::$app->getResponse()->getHeaders();
-
-            $tagsForHeader = $tagsForHeader
-                ->diff($headers->get(HeaderEnum::CACHE_PURGE_TAG->value, first: false))
-                ->values();
-
-            Craft::info(new PsrMessage('Adding cache purge tags to response', $tagsForHeader->all()));
-
-            $tagsForHeader->each(fn(string $tag) => $headers->add(
-                HeaderEnum::CACHE_PURGE_TAG->value,
-                $tag,
-            ));
-        } else {
+        if (Craft::$app->getResponse() instanceof \yii\console\Response) {
             Helper::makeGatewayApiRequest([
-                HeaderEnum::CACHE_PURGE_TAG->value => $tagsForHeader->implode(','),
+                HeaderEnum::CACHE_PURGE_TAG->value => $tags->implode(','),
             ]);
+
+            return;
         }
+
+        $headers = Craft::$app->getResponse()->getHeaders();
+
+        Craft::info(new PsrMessage('Adding {header} header to response', [
+            'header' => HeaderEnum::CACHE_PURGE_TAG->value,
+            'tags' => $tags->all(),
+        ]));
+
+        $tags->each(fn(string $tag) => $headers->add(
+            HeaderEnum::CACHE_PURGE_TAG->value,
+            $tag,
+        ));
     }
 
-    private function prepareTags(iterable $tags): Collection
+    private function prepareTagsForResponse(string ...$tags): Collection
     {
-        Craft::info(new PsrMessage('Preparing tags', Collection::make($tags)->all()));
-
         // Header value can't exceed 16KB
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
         $bytes = 0;
@@ -227,10 +209,6 @@ class StaticCache extends \yii\base\Component
         return Collection::make($tags)
             ->map(fn(string $tag) => $this->removeNonPrintableChars($tag))
             ->filter()
-            ->sort(SORT_NATURAL)
-            ->map(function(string $tag) {
-                return Module::getInstance()->getConfig()->getShortEnvironmentId() . $this->hash($tag);
-            })
             ->unique()
             ->filter(function($tag) use (&$bytes) {
                 // plus one for comma
@@ -251,51 +229,54 @@ class StaticCache extends \yii\base\Component
         return sprintf('%x', crc32($string));
     }
 
-    private function addCacheTagsToResponse(array $tags, $duration = null): void
+    private function addTagsToWebResponse(string ...$tags): void
     {
-        $response = Craft::$app->getResponse();
-        $headers = $response->getHeaders();
+        $tags = Collection::make($tags)
+            ->prepend(Module::getInstance()->getConfig()->environmentId);
 
-        if (
-            $response->isServerError ||
-            Craft::$app->getConfig()->getGeneral()->devMode ||
-            $this->shouldIgnoreTags($tags)
-        ) {
-            Craft::info(new PsrMessage('Ignoring cache tags', $tags));
+        Craft::info(new PsrMessage('Adding {header} header to response', [
+            'header' => HeaderEnum::CACHE_TAG->value,
+            'tags' => $tags->all(),
+        ]));
 
-            return;
-        }
-
-        $tagsForHeader = $this
-            ->prepareTags($tags)
-            ->diff($headers->get(HeaderEnum::CACHE_TAG->value, first: false))
-            ->values();
-
-        if ($duration === null || $tagsForHeader->isEmpty()) {
-            return;
-        }
-
-        Craft::info(new PsrMessage('Adding cache tags to response', $tagsForHeader->all()));
-
-        $tagsForHeader->each(fn(string $tag) => $headers->add(
+        $headers = Craft::$app->getResponse()->getHeaders();
+        $tags->each(fn(string $tag) => $headers->add(
             HeaderEnum::CACHE_TAG->value,
             $tag,
         ));
-
-        $response->setCacheHeaders($duration, false);
     }
 
-    private function shouldIgnoreTags(iterable $tags): bool
+    private function shouldBeCacheable(): bool
+    {
+        $response = Craft::$app->getResponse();
+
+        return
+            Craft::$app->getView()->templateMode === View::TEMPLATE_MODE_SITE &&
+            $response instanceof \craft\web\Response &&
+            !$response->getIsServerError();
+    }
+
+    private function prepareElementTags(string ...$tags): Collection
+    {
+        if ($this->shouldIgnoreElementTags(...$tags)) {
+            Craft::info(new PsrMessage('Ignoring cache tags', [
+                'tags' => $tags,
+            ]));
+
+            return new Collection();
+        }
+
+        return Collection::make($tags)
+            ->sort(SORT_NATURAL)
+            ->map(function(string $tag) {
+                return Module::getInstance()->getConfig()->getShortEnvironmentId() . $this->hash($tag);
+            });
+    }
+
+    private function shouldIgnoreElementTags(string ...$tags): bool
     {
         return Collection::make($tags)->contains(function(string $tag) {
             return preg_match('/element::craft\\\\elements\\\\\S+::(drafts|revisions)/', $tag);
         });
-    }
-
-    private function shouldCollectCacheInfo(): bool
-    {
-        return
-            Craft::$app->getView()->templateMode === View::TEMPLATE_MODE_SITE &&
-            Craft::$app->getResponse() instanceof WebResponse;
     }
 }
