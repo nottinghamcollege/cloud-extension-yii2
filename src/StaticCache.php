@@ -81,10 +81,10 @@ class StaticCache extends \yii\base\Component
             return;
         }
 
-        // capture the matched element, if there was one
         /** @var UrlManager $urlManager */
         $urlManager = Craft::$app->getUrlManager();
         $matchedElement = $urlManager->getMatchedElement();
+
         if ($matchedElement) {
             Craft::$app->getElements()->collectCacheInfoForElement($matchedElement);
         }
