@@ -19,16 +19,15 @@ use yii\caching\TagDependency;
 class StaticCache extends \yii\base\Component
 {
     private ?int $cacheDuration = null;
-    private Collection $elementTags;
     private Collection $tags;
-    // private Collection $purgeElementTags;
-    // private Collection $purgeTags;
-    // private Collection $purgeUrlPrefixes;
+    private Collection $tagsToPurge;
+    private Collection $urlPrefixesToPurge;
 
     public function init(): void
     {
         $this->tags = new Collection();
-        $this->elementTags = new Collection();
+        $this->tagsToPurge = new Collection();
+        $this->urlPrefixesToPurge = new Collection();
     }
 
     public function registerEventHandlers(): void
@@ -74,10 +73,22 @@ class StaticCache extends \yii\base\Component
             ClearCaches::EVENT_REGISTER_CACHE_OPTIONS,
             [$this, 'handleRegisterCacheOptions'],
         );
+
+        Craft::$app->onAfterRequest(function() {
+            // TODO: combine these into one request
+            if ($this->tagsToPurge->isNotEmpty()) {
+                $this->purgeTags(...$this->tagsToPurge);
+            }
+
+            if ($this->urlPrefixesToPurge->isNotEmpty()) {
+                $this->purgeUrlPrefixes(...$this->urlPrefixesToPurge);
+            }
+        });
     }
 
     public function handleInitWebApplication(Event $event): void
     {
+        // TODO: ifRequestIsCacheable
         Craft::$app->getElements()->startCollectingCacheInfo();
     }
 
@@ -87,10 +98,13 @@ class StaticCache extends \yii\base\Component
         /** @var int|null $duration */
         [$dependency, $duration] = Craft::$app->getElements()->stopCollectingCacheInfo();
         $elementTags = $dependency?->tags ?? [];
-        $this->elementTags->push(...$elementTags);
+        $preparedElementTags = $this->prepareElementTags(...$elementTags);
+        $this->tags->push(...$preparedElementTags);
+
+        // Don't override the cache duration if it's already set
         $this->cacheDuration = $this->cacheDuration ?? $duration;
 
-        $this->addCacheHeadersToResponse();
+        $this->addCacheHeadersToWebResponse();
     }
 
     public function handleBeforeRenderPageTemplate(TemplateEvent $event): void
@@ -107,7 +121,7 @@ class StaticCache extends \yii\base\Component
     public function handleInvalidateElementCaches(InvalidateElementCachesEvent $event): void
     {
         $tags = $this->prepareElementTags(...$event->tags);
-        $this->purgeTags(...$tags);
+        $this->tagsToPurge->push(...$tags);
     }
 
     public function handleRegisterCacheOptions(RegisterCacheOptionsEvent $event): void
@@ -128,15 +142,16 @@ class StaticCache extends \yii\base\Component
             return;
         }
 
-        $this->purgeUrlPrefixes($url);
+        $this->urlPrefixesToPurge->push($url);
     }
 
     public function purgeAll(): void
     {
-        $this->purgeTags(Module::getInstance()->getConfig()->environmentId);
+        $this->tagsToPurge->push(Module::getInstance()->getConfig()->environmentId);
+        // $this->purgeTags(Module::getInstance()->getConfig()->environmentId);
     }
 
-    private function addCacheHeadersToResponse(): void
+    private function addCacheHeadersToWebResponse(): void
     {
         $this->cacheDuration = $this->cacheDuration ?? Craft::$app->getConfig()->getGeneral()->cacheDuration;
 
@@ -149,13 +164,20 @@ class StaticCache extends \yii\base\Component
             false,
         );
 
-        // TODO: Add tags to the response headers
         $headers = Craft::$app->getResponse()->getHeaders();
+        $existingTags = $headers->get(HeaderEnum::CACHE_TAG->value, first: false) ?? [];
+
+        // remove existing tags and prepend for prefixing
+        $headers->remove(HeaderEnum::CACHE_TAG->value);
+        $this->tags->prepend(...$existingTags);
+
+        // prefix tags
+        $this->tags = $this->tags->map(fn(string $tag) => Module::getInstance()->getConfig()->getShortEnvironmentId() . $tag);
+
+        // Prepend environment ID
+        $this->tags->prepend(Module::getInstance()->getConfig()->environmentId);
+
         $this->tags->each(fn(string $tag) => $headers->add(
-            HeaderEnum::CACHE_TAG->value,
-            $tag,
-        ));
-        $this->elementTags->each(fn(string $tag) => $headers->add(
             HeaderEnum::CACHE_TAG->value,
             $tag,
         ));
