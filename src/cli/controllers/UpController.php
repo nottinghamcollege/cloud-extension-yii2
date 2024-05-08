@@ -26,7 +26,7 @@ class UpController extends Controller
 
         if (Craft::$app->getIsInstalled()) {
             $this->run('/up');
-            $this->run('/clear-caches/cloud-caches');
+            $this->run('/clear-caches/craft-cloud-caches');
         }
 
         $event = new CancelableEvent();
