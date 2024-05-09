@@ -2,9 +2,9 @@
 
 namespace craft\cloud;
 
-class StaticCacheTag
+class StaticCacheTag implements \Stringable
 {
-    public string $originalValue;
+    public readonly string $originalValue;
     private bool $minify = true;
 
     public function __construct(

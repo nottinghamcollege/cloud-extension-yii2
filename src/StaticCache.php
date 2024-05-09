@@ -7,11 +7,13 @@ use craft\events\ElementEvent;
 use craft\events\InvalidateElementCachesEvent;
 use craft\events\RegisterCacheOptionsEvent;
 use craft\events\TemplateEvent;
+use craft\helpers\ElementHelper;
 use craft\services\Elements;
 use craft\utilities\ClearCaches;
 use craft\web\UrlManager;
 use craft\web\View;
 use Illuminate\Support\Collection;
+use League\Uri\Components\Path;
 use samdark\log\PsrMessage;
 use yii\base\Event;
 use yii\caching\TagDependency;
@@ -143,15 +145,19 @@ class StaticCache extends \yii\base\Component
     {
         $element = $event->element;
 
-        if (!$element->uri) {
+        if (!$element->uri || ElementHelper::isDraftOrRevision($element)) {
             return;
         }
 
-        $tag = StaticCacheTag::create($element->uri)
+        $uri = $element->getIsHomepage()
+            ? '/'
+            : Path::new($element->uri)->withLeadingSlash()->withoutTrailingSlash();
+
+        $tag = StaticCacheTag::create($uri)
             ->withPrefix(Module::getInstance()->getConfig()->environmentId . ':')
             ->minify(false);
 
-        $this->tagsToPurge->push($tag);
+        $this->tagsToPurge->prepend($tag);
     }
 
     public function purgeAll(): void
