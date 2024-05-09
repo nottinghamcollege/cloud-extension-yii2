@@ -385,6 +385,8 @@ abstract class Fs extends FlysystemFs
         } catch (FilesystemException|UnableToMoveFile $exception) {
             throw new FsException($exception->getMessage(), 0, $exception);
         }
+
+        $this->invalidateCdnPath($path);
     }
 
     /**
