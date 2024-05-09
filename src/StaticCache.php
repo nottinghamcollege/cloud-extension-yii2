@@ -18,6 +18,19 @@ use samdark\log\PsrMessage;
 use yii\base\Event;
 use yii\caching\TagDependency;
 
+/**
+ * Static Cache tags can appear in the `Cache-Tag` and `Cache-Purge-Tag` headers.
+ * The values are comma-separated and can be in several formats:
+ *
+ * - Added by the gateway:
+ *   - `{environmentId}`
+ *   - `{environmentId}:{uri}` (URI must have a leading and no trailing slash)
+ * - Added by the CDN:
+ *    - `cdn:{environmentId}`
+ *    - `cdn:{environmentId}:{objectPath}`
+ * - Added by Craft:
+ *   - `{environmentShortId}{hashed}`
+ */
 class StaticCache extends \yii\base\Component
 {
     public const CDN_PREFIX = 'cdn:';
