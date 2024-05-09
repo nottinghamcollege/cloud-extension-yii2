@@ -24,10 +24,10 @@ use yii\caching\TagDependency;
  *
  * - Added by the gateway:
  *   - `{environmentId}`
- *   - `{environmentId}:{uri}` (URI must have a leading and no trailing slash)
+ *   - `{environmentId}:{uri}` (URI has a leading and no trailing slash)
  * - Added by the CDN:
  *    - `cdn:{environmentId}`
- *    - `cdn:{environmentId}:{objectPath}`
+ *    - `cdn:{environmentId}:{objectKey}` (object key has no leading slash)
  * - Added by Craft:
  *   - `{environmentShortId}{hashed}`
  */
