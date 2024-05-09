@@ -3,8 +3,6 @@
 namespace craft\cloud;
 
 use Craft;
-use craft\base\Element;
-use craft\base\ElementInterface;
 use craft\events\ElementEvent;
 use craft\events\InvalidateElementCachesEvent;
 use craft\events\RegisterCacheOptionsEvent;
@@ -21,7 +19,6 @@ use yii\caching\TagDependency;
 class StaticCache extends \yii\base\Component
 {
     private ?int $cacheDuration = null;
-    private ?ElementInterface $matchedElement = null;
     private Collection $tags;
     private Collection $tagsToPurge;
 
@@ -116,7 +113,6 @@ class StaticCache extends \yii\base\Component
         $matchedElement = $urlManager->getMatchedElement();
 
         if ($matchedElement) {
-            $this->matchedElement = $matchedElement;
             Craft::$app->getElements()->collectCacheInfoForElement($matchedElement);
         }
     }
@@ -131,8 +127,7 @@ class StaticCache extends \yii\base\Component
             return;
         }
 
-        $tags = $this->prepareTags(...$event->tags);
-        $this->tagsToPurge->push(...$tags);
+        $this->tagsToPurge->push(...$event->tags);
     }
 
     public function handleRegisterCacheOptions(RegisterCacheOptionsEvent $event): void
@@ -152,12 +147,20 @@ class StaticCache extends \yii\base\Component
             return;
         }
 
-        $this->tagsToPurge->push($element->uri);
+        $tag = StaticCacheTag::create($element->uri)
+            ->withPrefix(Module::getInstance()->getConfig()->environmentId . ':')
+            ->minify(false);
+
+        $this->tagsToPurge->push($tag);
     }
 
     public function purgeAll(): void
     {
-        $this->tagsToPurge->push(Module::getInstance()->getConfig()->environmentId);
+        $tag = StaticCacheTag::create(
+            Module::getInstance()->getConfig()->environmentId,
+        )->minify(false);
+
+        $this->tagsToPurge->push($tag);
     }
 
     private function addCacheHeadersToWebResponse(): void
@@ -172,32 +175,25 @@ class StaticCache extends \yii\base\Component
         Craft::$app->getResponse()->setCacheHeaders(
             $this->cacheDuration,
             false,
-    );
+        );
 
-        // Capture and remove any existing headers so we can prepare them
+        // Capture, remove any existing headers so we can prepare them
         $existingTagsFromHeader = Collection::make($headers->get(HeaderEnum::CACHE_TAG->value, first: false) ?? []);
         $headers->remove(HeaderEnum::CACHE_TAG->value);
-
-        // TODO: leading/trailing slashes?
-        $uri = ($this->matchedElement?->uri ?? Craft::$app->getRequest()->getFullPath()) ?: Element::HOMEPAGE_URI;
-        $this->tags = $this->tags
-            ->push(...$existingTagsFromHeader)
-            ->prepend($uri);
+        $this->tags = $this->tags->push(...$existingTagsFromHeader);
 
         // TODO: should I reassign this back to $this->tags with prepared values?
-        $tags = $this->prepareTags(...$this->tags)
-            ->prepend(Module::getInstance()->getConfig()->environmentId);
-
         // Header value can't exceed 16KB
         // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
-        $this->limitTagsToBytes(16 * 1024, ...$tags)
+        $this->prepareTags(...$this->tags)
+            ->tap(fn(Collection $tags) => $this->limitTagsToBytes(16 * 1024, ...$tags))
             ->each(fn(string $tag) => $headers->add(
                 HeaderEnum::CACHE_TAG->value,
                 $tag,
             ));
     }
 
-    public function purgeTags(string ...$tags): void
+    public function purgeTags(string|StaticCacheTag ...$tags): void
     {
         $tags = Collection::make($tags);
         $response = Craft::$app->getResponse();
@@ -206,11 +202,11 @@ class StaticCache extends \yii\base\Component
         // Add any existing tags from the response headers
         if ($isWebResponse) {
             $existingTagsFromHeader = $response->getHeaders()->get(HeaderEnum::CACHE_PURGE_TAG->value, first: false) ?? [];
-            $tags->push(...$this->prepareTags(...$existingTagsFromHeader));
+            $tags->push(...$existingTagsFromHeader);
             $response->getHeaders()->remove(HeaderEnum::CACHE_PURGE_TAG->value);
         }
 
-        $tags = $tags->filter()->unique();
+        $tags = $this->prepareTags(...$tags);
 
         if ($tags->isEmpty()) {
             return;
@@ -263,29 +259,16 @@ class StaticCache extends \yii\base\Component
             !$response->getIsServerError();
     }
 
-    private function removeNonPrintableChars(string $string): string
-    {
-        return preg_replace('/[^[:print:]]/', '', $string);
-    }
-
-    private function prepareTags(string ...$tags): Collection
+    private function prepareTags(string|StaticCacheTag ...$tags): Collection
     {
         return Collection::make($tags)
-            ->map(fn(string $tag) => $this->prepareTag($tag))
+            ->map(function(string|StaticCacheTag $tag): string {
+                $tag = is_string($tag) ? StaticCacheTag::create($tag) : $tag;
+
+                return $tag->getValue();
+            })
             ->filter()
             ->unique();
-    }
-
-    private function prepareTag(string $tag): string
-    {
-        if (Module::getInstance()->getConfig()->getDevMode()) {
-            return $tag;
-        }
-
-        $tag = $this->removeNonPrintableChars($tag);
-        $hashed = sprintf('%x', crc32($tag));
-
-        return Module::getInstance()->getConfig()->getShortEnvironmentId() . $hashed;
     }
 
     private function limitTagsToBytes(int $limit, string ...$tags): Collection
@@ -295,7 +278,7 @@ class StaticCache extends \yii\base\Component
         return Collection::make($tags)
             ->filter()
             ->unique()
-            ->filter(function($tag) use (&$bytes, $limit) {
+            ->filter(function(string $tag) use (&$bytes, $limit) {
                 // plus one for comma
                 $bytes += strlen($tag) + 1;
 
