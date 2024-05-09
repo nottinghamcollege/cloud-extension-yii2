@@ -20,6 +20,7 @@ use yii\caching\TagDependency;
 
 class StaticCache extends \yii\base\Component
 {
+    public const CDN_PREFIX = 'cdn:';
     private ?int $cacheDuration = null;
     private Collection $tags;
     private Collection $tagsToPurge;
@@ -162,9 +163,24 @@ class StaticCache extends \yii\base\Component
 
     public function purgeAll(): void
     {
+        $this->purgeCdn();
+        $this->purgeGateway();
+    }
+
+    public function purgeCdn(): void
+    {
         $tag = StaticCacheTag::create(
             Module::getInstance()->getConfig()->environmentId,
         )->minify(false);
+
+        $this->tagsToPurge->push($tag);
+    }
+
+    public function purgeGateway(): void
+    {
+        $tag = StaticCacheTag::create(
+            Module::getInstance()->getConfig()->environmentId,
+        )->withPrefix(self::CDN_PREFIX)->minify(false);
 
         $this->tagsToPurge->push($tag);
     }
