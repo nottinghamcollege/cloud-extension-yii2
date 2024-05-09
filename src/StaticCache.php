@@ -176,11 +176,11 @@ class StaticCache extends \yii\base\Component
 
     public function purgeAll(): void
     {
-        $this->purgeCdn();
         $this->purgeGateway();
+        $this->purgeCdn();
     }
 
-    public function purgeCdn(): void
+    public function purgeGateway(): void
     {
         $tag = StaticCacheTag::create(
             Module::getInstance()->getConfig()->environmentId,
@@ -189,7 +189,7 @@ class StaticCache extends \yii\base\Component
         $this->tagsToPurge->push($tag);
     }
 
-    public function purgeGateway(): void
+    public function purgeCdn(): void
     {
         $tag = StaticCacheTag::create(
             Module::getInstance()->getConfig()->environmentId,
