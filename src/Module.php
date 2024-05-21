@@ -38,30 +38,21 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     /**
      * @inheritDoc
      * @throws InvalidConfigException
+     * @param WebApplication|ConsoleApplication $app
      */
-    public function init(): void
+    public function bootstrap($app): void
     {
-        parent::init();
-
         $this->id = $this->id ?? 'cloud';
 
         // Set instance early so our dependencies can use it
         self::setInstance($this);
 
-        $this->controllerNamespace = Craft::$app->getRequest()->getIsConsoleRequest()
+        $this->controllerNamespace = $app->getRequest()->getIsConsoleRequest()
             ? 'craft\\cloud\\cli\\controllers'
             : 'craft\\cloud\\controllers';
 
         $this->registerGlobalEventHandlers();
         $this->validateConfig();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function bootstrap($app): void
-    {
-        /** @var WebApplication|ConsoleApplication $app */
 
         // Required for controllers to be found
         $app->setModule($this->id, $this);
