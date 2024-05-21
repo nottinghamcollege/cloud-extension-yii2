@@ -23,7 +23,6 @@ use craft\imagetransforms\ImageTransformer as CraftImageTransformer;
 use craft\services\Fs as FsService;
 use craft\services\ImageTransforms;
 use craft\web\Application as WebApplication;
-use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\base\InvalidConfigException;
@@ -170,16 +169,6 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             View::EVENT_REGISTER_CP_TEMPLATE_ROOTS,
             function(RegisterTemplateRootsEvent $e) {
                 $e->roots[$this->id] = sprintf('%s/templates', $this->getBasePath());
-            }
-        );
-
-        Event::on(
-            CraftVariable::class,
-            CraftVariable::EVENT_INIT,
-            function(\yii\base\Event $e) {
-                /** @var CraftVariable $craftVariable */
-                $craftVariable = $e->sender;
-                $craftVariable->set('cloud', Module::class);
             }
         );
     }
