@@ -36,9 +36,9 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
     private Config $_config;
 
     /**
-     * @inheritDoc
      * @throws InvalidConfigException
      * @param WebApplication|ConsoleApplication $app
+     * @inheritDoc
      */
     public function bootstrap($app): void
     {
