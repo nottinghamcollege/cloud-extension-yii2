@@ -8,6 +8,7 @@ use craft\base\Model;
 use craft\cloud\fs\AssetsFs;
 use craft\cloud\fs\StorageFs;
 use craft\cloud\fs\TmpFs;
+use craft\cloud\twig\TwigExtension;
 use craft\cloud\web\assets\uploader\UploaderAsset;
 use craft\cloud\web\ResponseEventHandler;
 use craft\console\Application as ConsoleApplication;
