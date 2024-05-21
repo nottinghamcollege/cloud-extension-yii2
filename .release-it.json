@@ -1,10 +1,14 @@
 {
+  "git": {
+    "commit": false
+  },
   "npm": {
     "publish": false
   },
   "github": {
     "release": true,
-    "releaseName": "Release ${version}",
-    "autoGenerate": true
+    "autoGenerate": true,
+    "comments": true,
+    "tokenRef": "RELEASE_IT_GITHUB_TOKEN"
   }
 }
