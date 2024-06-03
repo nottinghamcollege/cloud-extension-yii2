@@ -17,8 +17,8 @@ class BuildController extends Controller
     public function options($actionID): array
     {
         return array_merge(parent::options($actionID), [
-            'publish-asset-bundles-to',
-            'craft-edition',
+            'publishAssetBundlesTo',
+            'craftEdition',
         ]);
     }
 
