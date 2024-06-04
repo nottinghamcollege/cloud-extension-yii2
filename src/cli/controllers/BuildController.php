@@ -24,34 +24,31 @@ class BuildController extends Controller
 
     public function actionBuild(): int
     {
-        if (!$this->isEditionValid($this->craftEdition)) {
-            throw new Exception('Invalid Craft CMS edition.');
-        }
+        $this->validateEdition($this->craftEdition);
 
         return $this->run('/cloud/asset-bundles/publish', [
             'to' => $this->publishAssetBundlesTo,
         ]);
     }
 
-    private function isEditionValid(string $edition): bool
+    private function validateEdition(string $edition): void
     {
-        $craftVersion = Craft::$app->getInfo()->version;
+        $craftVersion = Craft::$app->getVersion();
+        $editionFromEnv = App::env('CRAFT_EDITION');
 
         // CRAFT_EDITION is enforced in these versions, so we don't need to validate
-        if (App::env('CRAFT_EDITION') && Semver::satisfies($craftVersion, '^4.10 || ^5.2')) {
-            return true;
+        if ($editionFromEnv && Semver::satisfies($craftVersion, '^4.10 || ^5.2')) {
+            return;
         }
 
         $editionFromProjectConfig = Craft::$app->getProjectConfig()->get('system.edition', true);
 
-        if (!$editionFromProjectConfig) {
+        if (!$editionFromProjectConfig || !$edition) {
             throw new Exception('Unable to determine the Craft CMS edition.');
         }
 
         if ($edition !== $editionFromProjectConfig) {
-            return false;
+            throw new Exception("This Craft Cloud project is only valid for the Craft CMS edition “{$edition}”.");
         }
-
-        return true;
     }
 }
