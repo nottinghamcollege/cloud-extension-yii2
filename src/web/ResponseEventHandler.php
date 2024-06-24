@@ -32,6 +32,10 @@ class ResponseEventHandler
 
     public function gzip(): void
     {
+        if (!Module::getInstance()->getConfig()->gzipResponse) {
+            return;
+        }
+
         $accepts = preg_split(
             '/\s*\,\s*/',
             Craft::$app->getRequest()->getHeaders()->get('Accept-Encoding') ?? ''
