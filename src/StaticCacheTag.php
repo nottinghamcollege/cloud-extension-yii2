@@ -53,8 +53,9 @@ class StaticCacheTag implements \Stringable
 
     private function removeInvalidCharacters(): self
     {
-        // Filter non-ASCII characters and asterisks
-        // Asterisks should be valid, but Lambda mysteriously dies with a 502
+        // Filter non-ASCII characters and asterisks, as these will tags end up in headers.
+        // Asterisks should be valid, but Lambda mysteriously dies
+        // with a 502 if they're present in the value of a response header.
         $this->value = preg_replace('/[^\x00-\x7F]|\*/', '', $this->value);
 
         return $this;
