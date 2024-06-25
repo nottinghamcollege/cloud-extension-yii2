@@ -7,6 +7,7 @@ use craft\cloud\fs\TmpFs;
 use craft\cloud\HeaderEnum;
 use craft\cloud\Module;
 use craft\web\Response;
+use GuzzleHttp\Psr7\Header;
 use Illuminate\Support\Collection;
 use yii\base\Event;
 use yii\web\Response as YiiResponse;
@@ -36,7 +37,8 @@ class ResponseEventHandler
             $this->addDevModeHeader();
         }
 
-        $this->joinMultiValueHeaders();
+        $this->normalizeHeaders();
+        // $this->joinMultiValueHeaders();
 
         if (Module::getInstance()->getConfig()->gzipResponse) {
             $this->gzipResponse();
@@ -107,6 +109,26 @@ class ResponseEventHandler
         Craft::$app->end();
     }
 
+    private function normalizeHeaders(): void
+    {
+        Collection::make($this->response->getHeaders())
+            ->each(function(array $values, string $name) {
+                if (HeaderEnum::SET_COOKIE->matches($name)) {
+                    return;
+                }
+
+                $value = $this->joinHeaderValues($values);
+
+                // Header value can't exceed 16KB
+                // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
+                if (HeaderEnum::CACHE_TAG->matches($name)) {
+                    $value = $this->limitHeaderToBytes($value, 16 * 1024);
+                }
+
+                $this->response->getHeaders()->set($name, $value);
+            });
+    }
+
     /**
      * API Gateway v2, Cloudflare, and Bref all flatten multi-value headers into a CSV single string.
      * Rather than relying on this, we join them ourselves.
@@ -115,26 +137,30 @@ class ResponseEventHandler
      * @see https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-parameter-mapping.html
      * @see https://github.com/brefphp/bref/issues/1691
      */
-    private function joinMultiValueHeaders(string $glue = ','): void
+    private function joinHeaderValues(array $values, string $glue = ','): string
     {
-        Collection::make($this->response->getHeaders())
-            ->reject(fn(array $values, string $name) => strcasecmp($name, 'Set-Cookie') === 0)
-            ->each(function(array $values, string $name) use ($glue) {
-                $this->joinHeaderValues($name, $values, $glue);
-            });
-    }
-
-    private function joinHeaderValues(string $name, array $values, string $glue): void
-    {
-        $value = Collection::make($values)
+        return Collection::make($values)
             ->filter()
             ->join($glue);
-
-        $this->response->getHeaders()->set($name, $value);
     }
 
     private function addDevModeHeader(): void
     {
         $this->response->getHeaders()->set(HeaderEnum::DEV_MODE->value, '1');
+    }
+
+    private function limitHeaderToBytes(string $value, int $bytes, ?string $glue = ','): string
+    {
+        $truncated = substr($value, 0, $bytes);
+
+        if (!$glue) {
+            return $truncated;
+        }
+
+        $length = strrpos($truncated, $glue);
+
+        return $length === false
+            ? $truncated
+            : substr($truncated, 0, $length);
     }
 }

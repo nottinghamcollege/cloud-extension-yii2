@@ -229,10 +229,7 @@ class StaticCache extends \yii\base\Component
         $headers->remove(HeaderEnum::CACHE_TAG->value);
         $this->tags = $this->tags->push(...$existingTagsFromHeader);
 
-        // Header value can't exceed 16KB
-        // https://developers.cloudflare.com/cache/how-to/purge-cache/purge-by-tags/#a-few-things-to-remember
         $this->prepareTags(...$this->tags)
-            ->tap(fn(Collection $tags) => $this->limitTagsToBytes(16 * 1024, ...$tags))
             ->each(fn(string $tag) => $headers->add(
                 HeaderEnum::CACHE_TAG->value,
                 $tag,
@@ -315,21 +312,5 @@ class StaticCache extends \yii\base\Component
             })
             ->filter()
             ->unique();
-    }
-
-    private function limitTagsToBytes(int $limit, string ...$tags): Collection
-    {
-        $bytes = 0;
-
-        return Collection::make($tags)
-            ->filter()
-            ->unique()
-            ->filter(function(string $tag) use (&$bytes, $limit) {
-                // plus one for comma
-                $bytes += strlen($tag) + 1;
-
-                return $bytes < $limit;
-            })
-            ->values();
     }
 }
