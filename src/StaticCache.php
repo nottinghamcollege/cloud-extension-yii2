@@ -302,7 +302,7 @@ class StaticCache extends \yii\base\Component
         return
             Craft::$app->getView()->templateMode === View::TEMPLATE_MODE_SITE &&
             $response instanceof \craft\web\Response &&
-            !$response->getIsServerError();
+            $response->getIsOk();
     }
 
     private function prepareTags(string|StaticCacheTag ...$tags): Collection
