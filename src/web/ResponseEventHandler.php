@@ -14,28 +14,41 @@ use yii\web\ServerErrorHttpException;
 
 class ResponseEventHandler
 {
-    protected Response $response;
+    private Response $response;
 
     public function __construct()
     {
         $this->response = Craft::$app->getResponse();
     }
 
-    public function handle()
+    public function handle(): void
     {
         Event::on(
             Response::class,
             YiiResponse::EVENT_AFTER_PREPARE,
-            [$this, 'afterPrepare'],
+            fn(Event $event) => $this->afterPrepare($event),
         );
     }
 
-    public function gzip(): void
+    private function afterPrepare(Event $event): void
     {
-        if (!Module::getInstance()->getConfig()->gzipResponse) {
-            return;
+        if (Module::getInstance()->getConfig()->getDevMode()) {
+            $this->addDevModeHeader();
         }
 
+        $this->joinMultiValueHeaders();
+
+        if (Module::getInstance()->getConfig()->gzipResponse) {
+            $this->gzipResponse();
+        }
+
+        if ($this->response->stream) {
+            $this->serveBinaryFromS3();
+        }
+    }
+
+    private function gzipResponse(): void
+    {
         $accepts = preg_split(
             '/\s*\,\s*/',
             Craft::$app->getRequest()->getHeaders()->get('Accept-Encoding') ?? ''
@@ -49,28 +62,11 @@ class ResponseEventHandler
         $this->response->getHeaders()->set('Content-Encoding', 'gzip');
     }
 
-    public function afterPrepare(Event $event): void
-    {
-        $this->addDevModeHeader();
-        $this->joinMultiValueHeaders();
-        $this->gzip();
-        $this->serveBinaryFromS3();
-    }
-
     /**
      * @throws ServerErrorHttpException
      */
-    protected function serveBinaryFromS3(): void
+    private function serveBinaryFromS3(): void
     {
-        if (!$this->response->stream) {
-            return;
-        }
-
-        /** @var TmpFs $fs */
-        $fs = Craft::createObject([
-            'class' => TmpFs::class,
-        ]);
-
         $stream = $this->response->stream[0] ?? null;
 
         if (!$stream) {
@@ -78,6 +74,11 @@ class ResponseEventHandler
         }
 
         $path = uniqid('binary', true);
+
+        /** @var TmpFs $fs */
+        $fs = Craft::createObject([
+            'class' => TmpFs::class,
+        ]);
 
         // TODO: set expiry
         $fs->writeFileFromStream($path, $stream);
@@ -89,7 +90,7 @@ class ResponseEventHandler
             'ResponseContentDisposition' => $this->response->getHeaders()->get('content-disposition'),
         ]);
 
-        // TODO: config
+        // TODO: expiry config
         $s3Request = $fs->getClient()->createPresignedRequest($cmd, '+20 minutes');
         $url = (string) $s3Request->getUri();
 
@@ -114,7 +115,7 @@ class ResponseEventHandler
      * @see https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-parameter-mapping.html
      * @see https://github.com/brefphp/bref/issues/1691
      */
-    protected function joinMultiValueHeaders(string $glue = ','): void
+    private function joinMultiValueHeaders(string $glue = ','): void
     {
         Collection::make($this->response->getHeaders())
             ->reject(fn(array $values, string $name) => strcasecmp($name, 'Set-Cookie') === 0)
@@ -123,21 +124,17 @@ class ResponseEventHandler
             });
     }
 
-    protected function joinHeaderValues(string $name, array $values, string $glue): ?string
+    private function joinHeaderValues(string $name, array $values, string $glue): void
     {
         $value = Collection::make($values)
             ->filter()
             ->join($glue);
 
         $this->response->getHeaders()->set($name, $value);
-
-        return $value;
     }
 
-    protected function addDevModeHeader(): void
+    private function addDevModeHeader(): void
     {
-        if (Module::getInstance()->getConfig()->getDevMode()) {
-            $this->response->getHeaders()->set(HeaderEnum::DEV_MODE->value, '1');
-        }
+        $this->response->getHeaders()->set(HeaderEnum::DEV_MODE->value, '1');
     }
 }
