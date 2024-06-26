@@ -65,7 +65,7 @@ class Module extends \yii\base\Module implements \yii\base\BootstrapInterface
             $this->bootstrapCloud($app);
         }
 
-        if ($this->getConfig()->getUseAssetCdn()) {
+        if ($this->getConfig()->useAssetCdn) {
             $app->getImages()->supportedImageFormats = ImageTransformer::SUPPORTED_IMAGE_FORMATS;
 
             /**
