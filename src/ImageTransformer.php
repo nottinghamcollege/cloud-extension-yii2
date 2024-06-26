@@ -145,6 +145,13 @@ class ImageTransformer extends Component implements ImageTransformerInterface
             true,
         );
 
-        return Helper::base64UrlEncode($hash);
+        return $this->base64UrlEncode($hash);
+    }
+
+    private function base64UrlEncode(string $data): string
+    {
+        $base64Url = strtr(base64_encode($data), '+/', '-_');
+
+        return rtrim($base64Url, '=');
     }
 }
