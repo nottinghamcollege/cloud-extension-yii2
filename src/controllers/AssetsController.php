@@ -350,7 +350,7 @@ class AssetsController extends Controller
         // Try again, in case the resulting filename has a tmp suffix from `avoidFilenameConflicts`
         if ($saved && $oldPath !== $asset->getPath()) {
             $asset->newFilename = $targetFilename;
-            $saved = Craft::$app->getElements()->saveElement($asset);
+            $saved = $this->saveAsset($asset);
         }
 
         if ($assets->hasEventHandlers($assets::EVENT_AFTER_REPLACE_ASSET)) {
