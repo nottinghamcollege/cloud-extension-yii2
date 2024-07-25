@@ -235,6 +235,14 @@ class AssetsController extends Controller
         $sourceAssetId = $this->request->getBodyParam('sourceAssetId');
         $filename = $this->request->getBodyParam('filename');
         $targetFilename = $this->request->getBodyParam('targetFilename');
+        $size = $this->request->getBodyParam('size');
+        $width = $this->request->getBodyParam('width');
+        $height = $this->request->getBodyParam('height');
+        $lastModifiedMs = (int) $this->request->getBodyParam('lastModified');
+        $dateModified = $lastModifiedMs
+            ? DateTime::createFromFormat('U', (string) floor($lastModifiedMs / 1000))
+            : new DateTime();
+
         $assets = Craft::$app->getAssets();
 
         // Must have at least one existing asset (source or target).
@@ -260,6 +268,10 @@ class AssetsController extends Controller
 
         // Handle the Element Action
         if ($assetToReplace !== null && $filename) {
+            $assetToReplace->width = $width;
+            $assetToReplace->height = $height;
+            $assetToReplace->size = $size;
+            $assetToReplace->dateModified = $dateModified;
             if (!$this->replaceAssetFile($assetToReplace, $filename, $targetFilename)) {
                 throw new Exception('Unable to replace asset.');
             }
@@ -348,7 +360,7 @@ class AssetsController extends Controller
         $asset->getVolume()->deleteFile($oldPath);
 
         // Try again, in case the resulting filename has a tmp suffix from `avoidFilenameConflicts`
-        if ($saved && $oldPath !== $asset->getPath()) {
+        if ($saved && $targetFilename !== $asset->getFilename()) {
             $asset->newFilename = $targetFilename;
             $saved = $this->saveAsset($asset);
         }
