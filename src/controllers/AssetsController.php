@@ -360,7 +360,7 @@ class AssetsController extends Controller
         $asset->getVolume()->deleteFile($oldPath);
 
         // Try again, in case the resulting filename has a tmp suffix from `avoidFilenameConflicts`
-        if ($saved && $oldPath !== $asset->getPath()) {
+        if ($saved && $targetFilename !== $asset->getFilename()) {
             $asset->newFilename = $targetFilename;
             $saved = $this->saveAsset($asset);
         }
