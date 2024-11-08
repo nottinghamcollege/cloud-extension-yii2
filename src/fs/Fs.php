@@ -65,16 +65,10 @@ abstract class Fs extends FlysystemFs
 
     protected function getLocalFs(): Local
     {
-        $path = $this->localFsPath ? Craft::getAlias($this->localFsPath) : '';
-
-        if (!$path) {
-            throw new InvalidConfigException('Local filesystem path is not set.');
-        }
-
         $this->localFs = $this->localFs ?? Craft::createObject([
             'class' => Local::class,
             'hasUrls' => $this->hasUrls,
-            'path' => HierarchicalPath::fromAbsolute($path, $this->prefixPath())->withoutTrailingSlash()->toString(),
+            'path' => HierarchicalPath::new($this->localFsPath)->append($this->prefixPath())->toString(),
             'url' => $this->localFsUrl,
         ]);
 
